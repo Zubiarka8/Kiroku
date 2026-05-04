@@ -2,9 +2,14 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Kirokuu.Pages.ErregistroOrria"
              x:DataType="vm:ErregistroViewModel"
              Title="Kontua sortu">
+
+    <ContentPage.Resources>
+        <toolkit:IsStringNotNullOrEmptyConverter x:Key="TestuaDagoConverter" />
+    </ContentPage.Resources>
 
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
@@ -37,21 +42,65 @@
                    Keyboard="Email"
                    SemanticProperties.Hint="Posta elektronikoa" />
 
-            <Entry x:Name="PasahitzaErregistroSarrera"
-                   Text="{Binding Pasahitza}"
-                   Placeholder="Pasahitza (min. 8)"
-                   IsPassword="True"
-                   SemanticProperties.Hint="Pasahitza" />
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="4"
+                  VerticalOptions="Center">
+                <Entry x:Name="PasahitzaErregistroSarrera"
+                       Grid.Column="0"
+                       Text="{Binding Pasahitza}"
+                       Placeholder="Pasahitza (min. 8)"
+                       IsPassword="{Binding PasahitzaMaskaratuta}"
+                       SemanticProperties.Hint="Pasahitza" />
+                <ImageButton x:Name="PasahitzaErregistroBegiTekla"
+                             Grid.Column="1"
+                             Source="{Binding PasahitzaBegiarenIrudiarenIzena}"
+                             Command="{Binding AlderantzikatuPasahitzaMaskaCommand}"
+                             BackgroundColor="Transparent"
+                             BorderWidth="0"
+                             Padding="8"
+                             WidthRequest="44"
+                             HeightRequest="44"
+                             VerticalOptions="Center"
+                             Aspect="AspectFit"
+                             SemanticProperties.Description="{Binding PasahitzaBegiarenDeskribapena}" />
+            </Grid>
 
-            <Entry x:Name="PasahitzaBerretsiSarrera"
-                   Text="{Binding PasahitzaBerretsi}"
-                   Placeholder="Pasahitza berretsi"
-                   IsPassword="True"
-                   SemanticProperties.Hint="Pasahitza berretsi" />
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="4"
+                  VerticalOptions="Center">
+                <Entry x:Name="PasahitzaBerretsiSarrera"
+                       Grid.Column="0"
+                       Text="{Binding PasahitzaBerretsi}"
+                       Placeholder="Pasahitza berretsi"
+                       IsPassword="{Binding PasahitzaBerretsiMaskaratuta}"
+                       SemanticProperties.Hint="Pasahitza berretsi" />
+                <ImageButton x:Name="PasahitzaBerretsiBegiTekla"
+                             Grid.Column="1"
+                             Source="{Binding PasahitzaBerretsiBegiarenIrudiarenIzena}"
+                             Command="{Binding AlderantzikatuPasahitzaBerretsiMaskaCommand}"
+                             BackgroundColor="Transparent"
+                             BorderWidth="0"
+                             Padding="8"
+                             WidthRequest="44"
+                             HeightRequest="44"
+                             VerticalOptions="Center"
+                             Aspect="AspectFit"
+                             SemanticProperties.Description="{Binding PasahitzaBerretsiBegiarenDeskribapena}" />
+            </Grid>
 
             <Label Text="{Binding ErroreMezua}"
                    TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-                   HorizontalTextAlignment="Center" />
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap"
+                   MaximumWidthRequest="520" />
+
+            <Label Text="{Binding ErroreXehetasuna}"
+                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
+                   HorizontalTextAlignment="Center"
+                   LineBreakMode="WordWrap"
+                   MaximumWidthRequest="520"
+                   FontSize="13"
+                   IsVisible="{Binding ErroreXehetasuna, Converter={StaticResource TestuaDagoConverter}}" />
 
             <Button x:Name="ErregistratuTekla"
                     Text="Erregistratu"

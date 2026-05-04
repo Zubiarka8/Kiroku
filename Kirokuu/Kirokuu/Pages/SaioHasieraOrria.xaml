@@ -32,11 +32,28 @@
                    Keyboard="Email"
                    SemanticProperties.Hint="Posta elektronikoa" />
 
-            <Entry x:Name="PasahitzaSarrera"
-                   Text="{Binding Pasahitza}"
-                   Placeholder="Pasahitza"
-                   IsPassword="True"
-                   SemanticProperties.Hint="Pasahitza" />
+            <Grid ColumnDefinitions="*,Auto"
+                  ColumnSpacing="4"
+                  VerticalOptions="Center">
+                <Entry x:Name="PasahitzaSarrera"
+                       Grid.Column="0"
+                       Text="{Binding Pasahitza}"
+                       Placeholder="Pasahitza"
+                       IsPassword="{Binding PasahitzaMaskaratuta}"
+                       SemanticProperties.Hint="Pasahitza" />
+                <ImageButton x:Name="PasahitzaBegiTekla"
+                             Grid.Column="1"
+                             Source="{Binding PasahitzaBegiarenIrudiarenIzena}"
+                             Command="{Binding AlderantzikatuPasahitzaMaskaCommand}"
+                             BackgroundColor="Transparent"
+                             BorderWidth="0"
+                             Padding="8"
+                             WidthRequest="44"
+                             HeightRequest="44"
+                             VerticalOptions="Center"
+                             Aspect="AspectFit"
+                             SemanticProperties.Description="{Binding PasahitzaBegiarenDeskribapena}" />
+            </Grid>
 
             <Label Text="{Binding ErroreMezua}"
                    TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"

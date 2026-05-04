@@ -4,6 +4,7 @@ using Kirokuu.ViewModels;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
+using Microsoft.Extensions.Logging.Debug;
 
 namespace Kirokuu;
 
@@ -11,7 +12,44 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
-        InguruneKargatzailea.KargatuDotEnv();
+        var dotEnvKargatua = InguruneKargatzailea.KargatuDotEnv();
+        if (!InguruneKargatzailea.TursoAldagaiNagusiakDaude())
+        {
+            var prozesuKarpeta = Environment.ProcessPath is { } pk ? Path.GetDirectoryName(pk) : null;
+            if (!string.IsNullOrEmpty(prozesuKarpeta))
+                dotEnvKargatua = InguruneKargatzailea.KargatuDotEnv(prozesuKarpeta) || dotEnvKargatua;
+        }
+
+        if (!InguruneKargatzailea.TursoAldagaiNagusiakDaude())
+        {
+            var multzoBidea = typeof(MauiProgram).Assembly.Location;
+            var multzoKarpeta = string.IsNullOrEmpty(multzoBidea) ? null : Path.GetDirectoryName(multzoBidea);
+            if (!string.IsNullOrEmpty(multzoKarpeta))
+                dotEnvKargatua = InguruneKargatzailea.KargatuDotEnv(multzoKarpeta) || dotEnvKargatua;
+        }
+        #region agent log
+        var envBideaOndoren = InguruneKargatzailea.BilatuEnvFitxategiarenBidea();
+        var envGurasoOndoren = envBideaOndoren is null ? null : Path.GetDirectoryName(envBideaOndoren);
+        InguruneKargatzailea.ErantsiAgenteDebugNeurria(envGurasoOndoren, "D", "MauiProgram.cs:CreateMauiApp:karga_ondoren", "maui_program_ingurunea", new Dictionary<string, object?>
+        {
+            ["dotEnvKargatuBool"] = dotEnvKargatua,
+            ["tursoUrlDago"] = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("TURSO_DATABASE_URL")),
+            ["tursoTokenDago"] = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("TURSO_AUTH_TOKEN")),
+            ["cloudinaryIzenaDago"] = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME"))
+        });
+        #endregion
+#if DEBUG
+        if (!dotEnvKargatua)
+        {
+            using var inguruneLogiAlorra = LoggerFactory.Create(b =>
+            {
+                b.AddDebug();
+                b.SetMinimumLevel(LogLevel.Debug);
+            });
+            inguruneLogiAlorra.CreateLogger(nameof(MauiProgram)).LogWarning(
+                ".env fitxategia ez da aurkitu edo kargatu. TURSO_* aldagaiak hutsik badaude SQLite lokala erabiliko da.");
+        }
+#endif
 
         var builder = MauiApp.CreateBuilder();
         builder

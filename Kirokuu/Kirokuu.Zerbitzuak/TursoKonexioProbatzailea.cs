@@ -21,7 +21,7 @@ public static class TursoKonexioProbatzailea
         if (string.IsNullOrWhiteSpace(authToken))
             throw new InvalidOperationException("TURSO_AUTH_TOKEN is not set.");
 
-        var normalizedUrl = NormalizatuTursoHttpsUrl(databaseUrl.Trim());
+        var normalizedUrl = TursoHttpsHelbideaNormalizatu(databaseUrl.Trim());
 
         using var client = await DatabaseClient.Create(options =>
         {
@@ -50,7 +50,7 @@ public static class TursoKonexioProbatzailea
     /// <summary>
     /// Libsql.Client expects an <c>https://</c> host URL; Turso dashboard often shows <c>libsql://</c>.
     /// </summary>
-    private static string NormalizatuTursoHttpsUrl(string databaseUrl)
+    public static string TursoHttpsHelbideaNormalizatu(string databaseUrl)
     {
         const string libsqlPrefix = "libsql://";
         if (databaseUrl.StartsWith(libsqlPrefix, StringComparison.OrdinalIgnoreCase))

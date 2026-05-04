@@ -1,6 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.ZerbitzuakSaioa;
+using Libsql.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Kirokuu.ViewModels;
@@ -42,6 +43,22 @@ public partial class HasieraViewModel : ObservableObject
         {
             ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
             _logger.LogError(opEx, "Hasiera: saioa irakurtzean.");
+        }
+        catch (LibsqlException libEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
+                ?? "Datu-base errorea: ezin izan da kargatu. Saiatu berriro.";
+            _logger.LogError(libEx, "Hasiera: Turso/libSQL errorea.");
+        }
+        catch (KeyNotFoundException knfEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
+            _logger.LogError(knfEx, "Hasiera: zutabe edo mapa errorea.");
+        }
+        catch (FormatException fmtEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
+            _logger.LogError(fmtEx, "Hasiera: balio formatu errorea.");
         }
         catch (Exception ex)
         {

@@ -3,8 +3,10 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuEreduak;
 using Kirokuu.ZerbitzuakSaioa;
+using Libsql.Client;
 using Microsoft.Extensions.Logging;
 using SQLite;
+using System.Net.Http;
 
 namespace Kirokuu.ViewModels;
 
@@ -58,10 +60,31 @@ public partial class LangileZerrendaViewModel : ObservableObject
             if (Langileak.Count == 0)
                 HutsaMezua = "Oraindik ez dago langilerik erregistratuta.";
         }
+        catch (LibsqlException libEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
+                ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
+            _logger.LogError(libEx, "Langile zerrenda: Turso/libSQL errorea.");
+        }
+        catch (KeyNotFoundException knfEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
+            _logger.LogError(knfEx, "Langile zerrenda: zutabe edo mapa errorea.");
+        }
+        catch (FormatException fmtEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
+            _logger.LogError(fmtEx, "Langile zerrenda: balio formatu errorea.");
+        }
         catch (SQLiteException sqlEx)
         {
             ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
             _logger.LogError(sqlEx, "Langile zerrenda: SQLite errorea.");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
+            _logger.LogError(httpEx, "Langile zerrenda: sare errorea (Turso?).");
         }
         catch (InvalidOperationException opEx)
         {

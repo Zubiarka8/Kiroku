@@ -2,8 +2,10 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.ZerbitzuakSaioa;
+using Libsql.Client;
 using Microsoft.Extensions.Logging;
 using SQLite;
+using System.Net.Http;
 
 namespace Kirokuu.ViewModels;
 
@@ -72,10 +74,31 @@ public partial class EzarpenakViewModel : ObservableObject
             Abizena = profila.Abizena;
             Posta = profila.Posta;
         }
+        catch (LibsqlException libEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
+                ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
+            _logger.LogError(libEx, "Ezarpenak: Turso/libSQL errorea.");
+        }
+        catch (KeyNotFoundException knfEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
+            _logger.LogError(knfEx, "Ezarpenak: zutabe edo mapa errorea.");
+        }
+        catch (FormatException fmtEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
+            _logger.LogError(fmtEx, "Ezarpenak: balio formatu errorea.");
+        }
         catch (SQLiteException sqlEx)
         {
             ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
             _logger.LogError(sqlEx, "Ezarpenak: SQLite errorea.");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
+            _logger.LogError(httpEx, "Ezarpenak: sare errorea (Turso?).");
         }
         catch (InvalidOperationException opEx)
         {
