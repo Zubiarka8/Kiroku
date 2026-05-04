@@ -1,0 +1,65 @@
+﻿
+Microsoft Visual Studio Solution File, Format Version 12.00
+# Visual Studio Version 17
+VisualStudioVersion = 17.14.36908.2
+MinimumVisualStudioVersion = 10.0.40219.1
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kirokuu", "Kirokuu\Kirokuu.csproj", "{37229A5B-75C0-4612-9C39-D4CCBEB9C461}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kirokuu.Zerbitzuak", "Kirokuu.Zerbitzuak\Kirokuu.Zerbitzuak.csproj", "{37359B7F-F90A-4B76-8275-A8B289236CD6}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Kirokuu.Tests", "Kirokuu.Tests\Kirokuu.Tests.csproj", "{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}"
+EndProject
+Global
+	GlobalSection(SolutionConfigurationPlatforms) = preSolution
+		Debug|Any CPU = Debug|Any CPU
+		Debug|x64 = Debug|x64
+		Debug|x86 = Debug|x86
+		Release|Any CPU = Release|Any CPU
+		Release|x64 = Release|x64
+		Release|x86 = Release|x86
+	EndGlobalSection
+	GlobalSection(ProjectConfigurationPlatforms) = postSolution
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Debug|x64.Build.0 = Debug|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Debug|x86.Build.0 = Debug|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Release|x64.ActiveCfg = Release|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Release|x64.Build.0 = Release|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Release|x86.ActiveCfg = Release|Any CPU
+		{37229A5B-75C0-4612-9C39-D4CCBEB9C461}.Release|x86.Build.0 = Release|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Debug|x64.Build.0 = Debug|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Debug|x86.Build.0 = Debug|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Release|Any CPU.Build.0 = Release|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Release|x64.ActiveCfg = Release|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Release|x64.Build.0 = Release|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Release|x86.ActiveCfg = Release|Any CPU
+		{37359B7F-F90A-4B76-8275-A8B289236CD6}.Release|x86.Build.0 = Release|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Debug|x64.ActiveCfg = Debug|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Debug|x64.Build.0 = Debug|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Debug|x86.ActiveCfg = Debug|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Debug|x86.Build.0 = Debug|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Release|Any CPU.Build.0 = Release|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Release|x64.ActiveCfg = Release|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Release|x64.Build.0 = Release|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Release|x86.ActiveCfg = Release|Any CPU
+		{8C21E99C-E53B-4803-B8D5-964FCC64C1CB}.Release|x86.Build.0 = Release|Any CPU
+	EndGlobalSection
+	GlobalSection(SolutionProperties) = preSolution
+		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(ExtensibilityGlobals) = postSolution
+		SolutionGuid = {18C2C84E-D2C0-46B0-87D3-7C281A55D16C}
+	EndGlobalSection
+EndGlobal

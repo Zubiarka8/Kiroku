@@ -1,0 +1,299 @@
+﻿---
+description: Kiroku .NET MAUI core rules (structure, Basque identifiers, MVVM, UX, database)
+alwaysApply: true
+---
+============================================================
+CURSOR RULES — KIROKU
+C# .NET MAUI | SQLite | Android (tablet-adaptive)
+Code language: Basque (Euskara) | Rules language: English
+============================================================
+
+╔══════════════════════════════════════════════════════════╗
+║          MANDATORY — READ BEFORE ANY ACTION              ║
+║                                                          ║
+║  You MUST read and apply ALL rules in this file          ║
+║  before writing, modifying, or deleting ANY code.        ║
+║  No exceptions. No skipping sections.                    ║
+║                                                          ║
+║  Before touching any file:                               ║
+║    1. Read ALL rules below completely                    ║
+║    2. State which files you will modify and why          ║
+║    3. Wait for approval on large or multi-file changes   ║
+╚══════════════════════════════════════════════════════════╝
+
+============================================================
+1. PROJECT DESCRIPTION
+============================================================
+
+Project name: Kiroku
+Platform: .NET MAUI — Android (phone + tablet adaptive)
+Description:
+  Corporate expense management app. Employees submit expense
+  tickets (meals, fuel, hotel, public transport, tolls, parking,
+  and other business expenses). Admins approve or reject them.
+  Employees see real-time status of their submissions.
+
+Roles:
+  - Administratzailea (Admin):
+      * Approves or rejects employee tickets
+      * Creates their OWN expense tickets directly (auto-approved,
+        no confirmation needed from anyone)
+      * Views all employees and all tickets
+      * Has a completely separate tab/navigation set from employees
+  - Langilea (Employee):
+      * Submits expense tickets for approval
+      * Can ONLY see their own tickets — never other users' data
+      * Tracks status of their own submissions
+      * Has their own dedicated tab set, separate from admin
+
+============================================================
+2. REAL PROJECT STRUCTURE (do not invent names)
+============================================================
+
+Confirmed structure observed in the codebase:
+
+Proiektua/
+  DatuBasea/
+    Ereduak/
+      AuditoretzaLoga.cs          <- Audit log entity
+      BidaiaTxostena.cs           <- Expense ticket entity
+      Erabiltzailea.cs            <- User entity
+      GastuKontzeptua.cs          <- Expense concept/category entity
+      GastuLerroa.cs              <- Expense line entity
+    SortzeAginduak/
+      AuditoretzaLogaSortuSql.cs
+      BidaiaTxostenakSortuSql.cs
+      ErabiltzaileakSortuSql.cs
+      GastuKontzeptuakSortuSql.cs
+      GastuLerroakSortuSql.cs
+    DatuBaseaEraikitzailea.cs     <- DB builder/initializer
+  DatuEreduak/                    <- DTOs / data transfer objects
+  EskemaIkuspegia/
+    EskemaEreduak.cs
+    EskemaIkuspegiModeloa.cs
+  Bihurgailuak/                   <- XAML value converters
+
+RULE: Follow this exact naming and placement for new files.
+NEVER create files outside this structure without asking first.
+
+============================================================
+3. TECHNOLOGY STACK
+============================================================
+
+- Language:        C# 13 / .NET 9
+- UI Framework:    .NET MAUI + XAML
+- Local DB:        SQLite via sqlite-net-pcl
+- Online DB:       Turso (libSQL) — SQLite wire-compatible
+    Migration path: swap SQLiteAsyncConnection for LibSQLConnection
+    and update connection string. ~95% of SQL stays unchanged.
+- ORM:             sqlite-net-pcl (LibSQL.Client for online)
+- MVVM:            CommunityToolkit.Mvvm
+- DI:              Microsoft.Extensions.DependencyInjection (MAUI built-in)
+- Images:          MediaPicker (MAUI built-in) + upload to Cloudinary
+- Image storage:   Server-side (see §9) — DB stores URL/path only
+- Auth:            SecureStorage + SHA256 + salt (local) / JWT (online)
+
+============================================================
+4. BASQUE LANGUAGE RULE — CRITICAL
+============================================================
+
+ALL code identifiers MUST be written in Basque (Euskara).
+This applies to:
+  - Class names, method names, variable names, property names
+  - Interface names, enum names and values
+  - All comments (// and /* */) and XML doc (/// <summary>)
+  - XAML x:Name values and Binding Path names
+  - SQLite table and column names
+  - File names
+
+Allowed exceptions (keep in English — .NET conventions):
+  - .NET / MAUI API calls (override, async, await, Task, ICommand...)
+  - NuGet package names
+  - XAML attribute names (Grid, StackLayout, xmlns...)
+  - Known interfaces (INotifyPropertyChanged, ICommand...)
+  - Standard C# keywords
+
+Confirmed Basque names from the codebase — use these exactly:
+  AuditoretzaLoga      <- Audit log
+  BidaiaTxostena       <- Expense ticket
+  Erabiltzailea        <- User
+  GastuKontzeptua      <- Expense concept/category
+  GastuLerroa          <- Expense line
+  ErabiltzaileId       <- UserId FK
+  Ekintza              <- Action
+  DataOrdua            <- DateTime
+  Deskribapena         <- Description
+  IP_Helbidea          <- IP address
+  Administratzailea    <- Admin role
+  Langilea             <- Employee role
+  OnartuEgin()         <- Approve method
+  UkatuEgin()          <- Reject method
+  ZenbatekoGarbia      <- Net amount
+  BidaliData           <- Sent date
+  TxartelEgoera        <- Ticket status enum
+  ArgazkiUrl           <- Photo URL stored in DB
+  ArgazkiIgotzeZerbitzua <- Photo upload service
+
+============================================================
+5. ARCHITECTURE RULES
+============================================================
+
+MVVM — non-negotiable:
+  - All ViewModels inherit ObservableObject (CommunityToolkit.Mvvm)
+  - Properties decorated with [ObservableProperty]
+  - Commands decorated with [RelayCommand]
+  - Code-behind: ONLY InitializeComponent() allowed
+  - Zero business logic in Views or code-behind
+  - View <-> ViewModel binding via BindingContext only
+  - Services injected via DI, never instantiated with new()
+
+Dependency Injection (register in MauiProgram.cs):
+  - Singleton: DatuBaseaZerbitzua, AutorizazioZerbitzua,
+               ArgazkiIgotzeZerbitzua, EncryptionZerbitzua
+  - Transient: ViewModels
+  - Scoped: not used in MAUI
+
+============================================================
+6. ROLE-BASED NAVIGATION — SEPARATE TAB SETS
+============================================================
+
+Admin and Employee MUST have completely separate Shell tab sets.
+Use Shell routing with role-based conditional loading at login.
+NEVER show admin tabs to employees or employee tabs to admins.
+
+Admin tab set (Administratzailea):
+  Tab 1 — Txartel Guztiak     (all employee tickets to review)
+  Tab 2 — Nire Gastuak        (admin's own expenses, auto-approved)
+  Tab 3 — Langile Zerrenda    (employee management)
+  Tab 4 — Ezarpenak           (settings / logout)
+
+Employee tab set (Langilea):
+  Tab 1 — Nire Txartelak      (my submitted tickets + status)
+  Tab 2 — Txartel Berria      (submit new expense ticket)
+  Tab 3 — Ezarpenak           (settings / logout)
+
+RULE: Admin's own expense tickets are created directly as
+TxartelEgoera.Onartua — no approval workflow needed.
+RULE: Employees can NEVER access admin routes, even by URL manipulation.
+
+============================================================
+7. UX AND USABILITY RULES — CRITICAL
+============================================================
+
+The app MUST be intuitive and simple for all users.
+Assume users are not tech-savvy. Follow these rules:
+
+General UX:
+  - Every screen must have a clear single primary action (one main button)
+  - Use plain Basque language — no technical jargon in UI text
+  - Loading states: always show a spinner or skeleton for async ops
+  - Empty states: always show a friendly message (not a blank screen)
+    Example: "Oraindik ez duzu txartelik bidali" (No tickets yet)
+  - Confirmation dialogs for destructive actions (delete, reject)
+  - Success/error feedback after every user action (Toast/Snackbar)
+  - Back navigation always available (never trap the user in a screen)
+
+Forms (ticket submission):
+  - Validate inline — show error under the field immediately
+  - Required fields marked visually (asterisk or color hint)
+  - "Gorde" (Save) button disabled until form is valid
+  - Auto-fill date with today's date
+  - Amount field: numeric keyboard, 2 decimal places, currency symbol
+
+Ticket list (both roles):
+  - Status badge prominently visible (color-coded):
+      Zain     -> Amber/yellow badge
+      Onartua  -> Green badge
+      Ukatua   -> Red badge
+  - Most recent tickets at the top (sorted by DataOrdua DESC)
+  - Pull-to-refresh on all lists
+  - Swipe or tap to open ticket detail
+
+Admin review flow:
+  - Detail screen shows full ticket info + photo (if any)
+  - Onartu (Approve) and Ukatu (Reject) buttons clearly separated
+  - Reject MUST show a text input for reason (AdminOharra)
+  - After action: return to list and show result Toast
+
+Photo attachment:
+  - Optional on ticket form
+  - Show thumbnail preview immediately after selection
+  - Clear button to remove selected photo
+  - If upload fails: inform user, allow retry, do not block form save
+
+============================================================
+8. DATABASE RULES
+============================================================
+
+  - Single connection (singleton) in DatuBaseaZerbitzua
+  - Always async: CreateTableAsync, InsertAsync, QueryAsync...
+  - NEVER access the database on the UI thread — always await
+  - Maintain a DatabaseVersion constant for migration tracking
+  - Follow the SortzeAginduak pattern already in the project
+  - Indexes required on: ErabiltzaileId, TxartelEgoera
+
+Turso (libSQL) migration when ready:
+  1. Replace sqlite-net-pcl with LibSQL.Client NuGet
+  2. Replace SQLiteAsyncConnection with LibSQLConnection
+  3. Connection string MUST be built using environment variables.
+     - Use a .env file (e.g., via DotNetEnv package) for local dev.
+     - NEVER hardcode the libsql:// URL or the JWT auth token in the code.
+  4. Everything else stays identical
+
+============================================================
+9. PHOTO UPLOAD — ARCHITECTURE
+============================================================
+
+Photos are NEVER stored as blobs in the SQLite database.
+The database stores ONLY the URL or server path of the image.
+
+Upload flow:
+  1. User picks photo via MediaPicker (MAUI built-in)
+  2. Show thumbnail preview in the form immediately (local file)
+  3. On form submit: ArgazkiIgotzeZerbitzua uploads the file to Cloudinary
+  4. Cloudinary returns a public HTTPS URL (string)
+  5. Store that URL in BidaiaTxostena.ArgazkiUrl (string? column)
+  6. If upload fails: show error Toast, allow retry, do not save null URL
+     silently — ask user whether to submit without photo or retry
+
+Server upload implementation (Cloudinary):
+  - ArgazkiIgotzeZerbitzua uploads to Cloudinary. Load CLOUDINARY_CLOUD_NAME,
+    CLOUDINARY_UPLOAD_PRESET (unsigned preset for mobile), and any signing keys
+    from environment / secure config only — never hardcode in .cs or rules.
+  - Typical client flow: POST multipart to
+    https://api.cloudinary.com/v1_1/{cloud_name}/image/upload with file + upload_preset.
+  - Store the HTTPS asset URL returned by Cloudinary (e.g. secure_url) in ArgazkiUrl.
+  - Use HttpClient with MultipartFormDataContent (or Cloudinary .NET SDK if you add it).
+  - Inject IHttpClientFactory, never create HttpClient with new()
+  - Set timeout: 30 seconds for upload
+  - Accepted formats: JPEG, PNG only — validate before upload
+  - Max file size: 10 MB — validate before upload, show clear error if exceeded
+  - Use a unique public_id when calling the API if you need predictable naming; otherwise rely on Cloudinary response URLs only
+  - Register IHttpClientFactory in MauiProgram.cs
+
+DB column for photo:
+  BidaiaTxostena.ArgazkiUrl — string? (nullable)
+  A null value means "no photo attached" — handle gracefully in UI
+
+============================================================
+10. EXPENSE TYPES AND TICKET STATUS — REFERENCE
+============================================================
+
+Expense types — use these exact Basque names:
+  GastuMota.Bazkaria          -> Meals and dinners
+  GastuMota.Gasolina          -> Fuel
+  GastuMota.GarraioPublikoa   -> Metro, bus, train
+  GastuMota.Hotela            -> Hotels and accommodation
+  GastuMota.Peajea            -> Highway tolls
+  GastuMota.Aparkalekua       -> Parking
+  GastuMota.Bidaia            -> Flights and long-distance travel
+  GastuMota.Materialak        -> Materials and tools
+  GastuMota.Bestelakoa        -> Other expenses
+
+Ticket statuses:
+  TxartelEgoera.Zain          -> Pending (employee submitted, awaiting review)
+  TxartelEgoera.Onartua       -> Approved
+  TxartelEgoera.Ukatua        -> Rejected (AdminOharra must be set)
+
+============================================================
+

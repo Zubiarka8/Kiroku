@@ -1,0 +1,233 @@
+﻿---
+description: Kiroku security, errors, XAML, prohibitions, and change protocol
+alwaysApply: true
+---
+11. SECURITY RULES — COMPREHENSIVE
+============================================================
+
+--- Authentication ---
+  - Passwords: NEVER plain text — SHA256 + unique salt per user
+  - Tokens and session data: SecureStorage only
+  - Session timeout: auto-logout after inactivity (configurable)
+  - Failed login attempts: lock account after 5 consecutive failures
+
+--- Data isolation (most critical rule) ---
+  EVERY database query that fetches user data MUST include
+  a WHERE ErabiltzaileId = [currentUserId] filter.
+  An employee MUST NEVER be able to see another employee's tickets,
+  name, amount, or any personal data — not through the UI,
+  not through API calls, not through any workaround.
+  Validate this server-side too, not only in the ViewModel.
+
+--- Role enforcement ---
+  - Role stored in SecureStorage after login, verified on every navigation
+  - Admin routes: check role BEFORE loading any data (fail fast)
+  - If role check fails: redirect to login, clear session, show error
+  - Never trust role data coming from the UI — always re-verify from storage
+
+--- Database file protection (SQLite) ---
+  - Enable SQLite encryption using SQLCipher (SQLite-net-pcl extension)
+    so the .db file is unreadable if copied to a PC
+  - Encryption key: derived from a device-specific value + app secret
+    (never hardcoded as a plain string)
+  - Store the derived key in SecureStorage, regenerate if not found
+  - NEVER store the raw encryption key in source code or config files
+  - On Turso: data is encrypted in transit (TLS) and at rest by default
+
+--- Network ---
+  - All HTTP requests use HTTPS only — no HTTP allowed
+  - Pin SSL certificate for production API (if custom backend)
+  - Never log request bodies, tokens, or user data to console/files
+  - All API responses validated before use (never trust raw server data)
+
+--- Photo security ---
+  - Server-side: photos accessible only via authenticated URLs (signed URLs
+    or token-protected endpoints) — never public/unauthenticated access
+  - Client-side: cached photos stored in app private cache directory only
+
+--- Input sanitization ---
+  - Sanitize all user text inputs before DB insert
+  - Always use parameterized queries — never string concatenation in SQL
+  - Validate amount: must be positive number, max 2 decimal places
+  - Validate date: must not be in the future
+
+--- Audit log ---
+  - Every approve/reject action logged in AuditoretzaLoga
+  - Log: ErabiltzaileId, Ekintza, DataOrdua, IP_Helbidea, affected ticket Id
+  - Logs are read-only — no delete or update operations on AuditoretzaLoga
+
+--- Environment Variables & Secrets ---
+  - External credentials (Turso URL/token, Cloudinary cloud name, upload preset, API keys) MUST be stored in a .env file (or secure pipeline secrets for release builds).
+  - The .env file MUST be explicitly listed in .gitignore.
+  - NEVER write real database URLs, JWT tokens, or API keys in this .cursorrules file or any .cs file.
+
+============================================================
+12. ERROR HANDLING — SPECIFIC CATCH BLOCKS REQUIRED
+============================================================
+
+NEVER use a generic catch-all as the only handler.
+ALWAYS catch specific exceptions and give the user a clear,
+actionable message in Basque. Follow this pattern:
+
+try
+{
+    // operation
+}
+catch (SQLiteException sqlEx) when (sqlEx.Result == SQLite3.Result.Constraint)
+{
+    // Duplicate or constraint violation
+    ErroreMezua = "Datu bikoiztua: sarrera hau dagoeneko existitzen da.";
+}
+catch (SQLiteException sqlEx)
+{
+    // Generic DB error
+    ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
+    LogErrorea(sqlEx);
+}
+catch (HttpRequestException httpEx)
+{
+    // Network error (photo upload, API calls)
+    ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
+    LogErrorea(httpEx);
+}
+catch (TaskCanceledException)
+{
+    // Timeout
+    ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
+}
+catch (UnauthorizedAccessException)
+{
+    // Permission denied (file, camera, storage)
+    ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
+}
+catch (ArgumentNullException argEx)
+{
+    // Null/empty required value
+    ErroreMezua = "Eremu bat edo gehiago hutsik daude. Bete beharrezko eremuak.";
+    LogErrorea(argEx);
+}
+catch (ArgumentException argEx)
+{
+    // Invalid argument (bad format, bad value)
+    ErroreMezua = "Baliogabeko balioa: " + argEx.Message;
+    LogErrorea(argEx);
+}
+catch (InvalidOperationException opEx)
+{
+    // Logic error (wrong state, session expired, etc.)
+    ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
+    LogErrorea(opEx);
+}
+catch (IOException ioEx)
+{
+    // File read/write error (photo save, cache)
+    ErroreMezua = "Fitxategi errorea: ezin izan da argazkia gorde.";
+    LogErrorea(ioEx);
+}
+catch (Exception ex)
+{
+    // Last resort — unexpected error
+    ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
+    LogErrorea(ex);  // Always log the full exception here
+}
+
+RULES for error handling:
+  - Try/catch ONLY in ViewModels and Services (never in Views)
+  - Every catch block MUST set ErroreMezua or show a Toast — never silent
+  - Every catch block MUST call LogErrorea() — never empty
+  - Never show raw exception messages (ex.Message) to the user
+  - Empty inputs/fields: validate BEFORE the try block with guard clauses
+  - Show errors via Toast/Snackbar (CommunityToolkit.Maui), not alerts
+  - ViewModel must always expose: IsKargatzean (bool), ErroreMezua (string?)
+
+============================================================
+13. XAML AND UI RULES
+============================================================
+
+  - x:Name values must be in Basque
+    Example: x:Name="GastuZerrenda", x:Name="BidaliTekla"
+  - All styles in ResourceDictionary (App.xaml or merged dicts)
+  - No inline styles except unavoidable one-off overrides
+
+Phone vs Tablet adaptation:
+  - Phone:  StackLayout vertical, min 44px touch targets
+  - Tablet: Grid 2-column master-detail layout
+  - Use OnIdiom in XAML for layout switching
+  - Admin panel on tablet: list + detail side by side
+  - Admin panel on phone:  list -> navigate -> detail page
+
+Images:
+  Aspect="AspectFit", CacheStrategy="InMemory"
+  Local preview from file path, then replace with server URL on save
+
+============================================================
+14. ABSOLUTE PROHIBITIONS
+============================================================
+
+  - NEVER write business logic in code-behind
+  - NEVER instantiate services with new() — use DI
+  - NEVER store passwords in plain text
+  - NEVER query the database on the UI thread
+  - NEVER use English for variable/method/class names (see §4 exceptions)
+  - NEVER leave empty catch blocks
+  - NEVER use a single generic catch without specific ones above it
+  - NEVER use Thread.Sleep — use Task.Delay
+  - NEVER put DB queries in ViewModel constructors — use OnAppearing/LoadAsync
+  - NEVER modify files outside the agreed scope without asking
+  - NEVER invent file or folder names not in §2
+  - NEVER proceed with large changes without presenting a plan first
+  - NEVER store photos as blobs in SQLite — store URL/path only (see §9)
+  - NEVER allow a user to access another user's data (see §11)
+  - NEVER show admin UI elements to employees or vice versa (see §6)
+  - NEVER hardcode encryption keys or secrets in source code
+  - NEVER hardcode Turso credentials (URL/Token) or Cloudinary secrets — always read from .env or secure config
+  - NEVER generate decorative comments, ASCII art, or structural borders (like =================== or -------------------) in the code. Keep comments plain, minimal, and professional using standard // or /* */ without extra symbols.
+
+============================================================
+15. CHANGE PROTOCOL — MANDATORY BEFORE EVERY ACTION
+============================================================
+
+STEP 1 — READ RULES
+  Read this entire file before doing anything.
+  Do not skip sections. This step is required for every change.
+
+STEP 2 — PLAN
+  State explicitly:
+    a) Which files you will modify
+    b) What exact change in each file
+    c) Why (problem it solves)
+    d) Which files you will NOT touch
+
+STEP 3 — CONFIRM
+  Large or multi-file changes: present plan, wait for approval.
+  Small single-file changes: state plan inline, proceed if unambiguous.
+
+STEP 4 — EXECUTE
+  Make only the changes stated in Step 2.
+  If something unexpected appears: STOP and report. Never improvise.
+
+STEP 5 — REPORT
+  Summarize: what changed, what did not change, follow-up needed.
+
+============================================================
+16. QUICK REFERENCE CARD
+============================================================
+
+   1.  READ THESE RULES BEFORE EVERY SINGLE ACTION
+   2.  All code identifiers in Basque — no exceptions (see §4)
+   3.  Follow project structure in §2 exactly — never invent paths
+   4.  MVVM + CommunityToolkit — zero logic in Views
+   5.  All DB operations async/await — never on UI thread
+   6.  Admin and Employee have SEPARATE tab sets (see §6)
+   7.  Admin's own tickets are auto-approved — no workflow
+   8.  Photos: upload to server, store URL in DB — never blob (see §9)
+   9.  Specific catch blocks per error type — never generic only (see §12)
+  10.  Data isolation: users NEVER see other users' data (see §11)
+  11.  SQLite encrypted with SQLCipher — DB file unreadable if stolen
+  12.  Phone + tablet layout via OnIdiom in XAML (see §13)
+  13.  UX: simple, intuitive, always feedback after actions (see §7)
+  14.  SQLite now, Turso (libSQL) later — easy migration (see §8)
+  15.  Present a plan before any large change (see §15)
+
+============================================================
+

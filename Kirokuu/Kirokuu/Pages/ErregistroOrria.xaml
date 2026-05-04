@@ -1,0 +1,67 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             x:Class="Kirokuu.Pages.ErregistroOrria"
+             x:DataType="vm:ErregistroViewModel"
+             Title="Kontua sortu">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
+                               IsVisible="{Binding IsKargatzean}"
+                               HorizontalOptions="Center" />
+
+            <Label Text="Erabiltzaile berria"
+                   Style="{StaticResource Headline}"
+                   HorizontalOptions="Center" />
+
+            <Label Text="Langile kontua sortuko da."
+                   Style="{StaticResource SubHeadline}"
+                   HorizontalOptions="Center"
+                   HorizontalTextAlignment="Center" />
+
+            <Entry x:Name="IzenaSarrera"
+                   Text="{Binding Izena}"
+                   Placeholder="Izena"
+                   SemanticProperties.Hint="Izena" />
+
+            <Entry x:Name="AbizenaSarrera"
+                   Text="{Binding Abizena}"
+                   Placeholder="Abizena"
+                   SemanticProperties.Hint="Abizena" />
+
+            <Entry x:Name="PostaErregistroSarrera"
+                   Text="{Binding Posta}"
+                   Placeholder="Posta"
+                   Keyboard="Email"
+                   SemanticProperties.Hint="Posta elektronikoa" />
+
+            <Entry x:Name="PasahitzaErregistroSarrera"
+                   Text="{Binding Pasahitza}"
+                   Placeholder="Pasahitza (min. 8)"
+                   IsPassword="True"
+                   SemanticProperties.Hint="Pasahitza" />
+
+            <Entry x:Name="PasahitzaBerretsiSarrera"
+                   Text="{Binding PasahitzaBerretsi}"
+                   Placeholder="Pasahitza berretsi"
+                   IsPassword="True"
+                   SemanticProperties.Hint="Pasahitza berretsi" />
+
+            <Label Text="{Binding ErroreMezua}"
+                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
+                   HorizontalTextAlignment="Center" />
+
+            <Button x:Name="ErregistratuTekla"
+                    Text="Erregistratu"
+                    Command="{Binding ErregistratuCommand}" />
+
+            <Button x:Name="ItzuliTekla"
+                    Text="Itzuli"
+                    Command="{Binding ItzuliCommand}"
+                    BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                    TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

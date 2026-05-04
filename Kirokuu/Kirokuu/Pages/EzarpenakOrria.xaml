@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="Kirokuu.Pages.EzarpenakOrria"
+             x:DataType="vm:EzarpenakViewModel"
+             Title="Ezarpenak">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing"
+                                        Command="{Binding AgertzenDeneanCommand}" />
+    </ContentPage.Behaviors>
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
+                               IsVisible="{Binding IsKargatzean}"
+                               HorizontalOptions="Center" />
+
+            <Label Text="Nire kontua"
+                   Style="{StaticResource Headline}" />
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Izena" FontAttributes="Bold" />
+                <Label Text="{Binding Izena}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Abizena" FontAttributes="Bold" />
+                <Label Text="{Binding Abizena}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Posta" FontAttributes="Bold" />
+                <Label Text="{Binding Posta}" />
+            </VerticalStackLayout>
+
+            <Label Text="{Binding ErroreMezua}"
+                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
+                   HorizontalTextAlignment="Center" />
+
+            <Button Text="Saioa itxi"
+                    Command="{Binding SaioaItxiCommand}"
+                    SemanticProperties.Hint="Saioa itxi eta hasierara itzuli" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
