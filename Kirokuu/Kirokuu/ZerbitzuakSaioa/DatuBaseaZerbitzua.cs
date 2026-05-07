@@ -213,8 +213,7 @@ public sealed class DatuBaseaZerbitzua
                 Rola INTEGER NOT NULL,
                 SorkuntzaData TEXT NOT NULL DEFAULT '',
                 PasahitzaHash TEXT NOT NULL,
-                PasahitzaGatza TEXT NOT NULL,
-                HutsuneakSaioan INTEGER NOT NULL
+                PasahitzaGatza TEXT NOT NULL
             );
             """;
         await bezeroa.Execute(sql).ConfigureAwait(false);
@@ -227,7 +226,7 @@ public sealed class DatuBaseaZerbitzua
             return await ExekutatuTursoanAsync(async bezeroa =>
             {
                 const string sql = """
-                    INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza, HutsuneakSaioan)
+                    INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                     """;
                 var emaitza = await bezeroa.Execute(
@@ -241,8 +240,7 @@ public sealed class DatuBaseaZerbitzua
                     erabiltzailea.Rola,
                     erabiltzailea.SorkuntzaData,
                     erabiltzailea.PasahitzaHash,
-                    erabiltzailea.PasahitzaGatza,
-                    erabiltzailea.HutsuneakSaioan).ConfigureAwait(false);
+                    erabiltzailea.PasahitzaGatza).ConfigureAwait(false);
 
                 var idBerria = (int)emaitza.LastInsertRowId;
                 erabiltzailea.Id = idBerria;
@@ -283,7 +281,7 @@ public sealed class DatuBaseaZerbitzua
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza, HutsuneakSaioan FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
+        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
         var emaitza = await bezeroa.Execute(sql, postaNormalizatua).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
@@ -294,7 +292,7 @@ public sealed class DatuBaseaZerbitzua
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza, HutsuneakSaioan FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
+        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
         var emaitza = await bezeroa.Execute(sql, id).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
@@ -305,7 +303,7 @@ public sealed class DatuBaseaZerbitzua
         {
             const string sql = """
                 UPDATE Erabiltzaileak
-                SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Rola = ?, SorkuntzaData = ?, PasahitzaHash = ?, PasahitzaGatza = ?, HutsuneakSaioan = ?
+                SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Rola = ?, SorkuntzaData = ?, PasahitzaHash = ?, PasahitzaGatza = ?
                 WHERE ErabiltzaileId = ?;
                 """;
             await bezeroa.Execute(
@@ -320,7 +318,6 @@ public sealed class DatuBaseaZerbitzua
                 erabiltzailea.SorkuntzaData,
                 erabiltzailea.PasahitzaHash,
                 erabiltzailea.PasahitzaGatza,
-                erabiltzailea.HutsuneakSaioan,
                 erabiltzailea.Id).ConfigureAwait(false);
             return 0;
         }, cancellationToken).ConfigureAwait(false);
@@ -422,8 +419,7 @@ public sealed class DatuBaseaZerbitzua
             Rola = IrakurriMapaOsoa(mapa, "Rola"),
             SorkuntzaData = IrakurriMapaDataOrduaLehenetsia(mapa, "SorkuntzaData"),
             PasahitzaHash = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaHash"),
-            PasahitzaGatza = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaGatza"),
-            HutsuneakSaioan = IrakurriMapaOsoaLehenetsia(mapa, "HutsuneakSaioan"),
+            PasahitzaGatza = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaGatza")
         };
     }
 
@@ -482,7 +478,7 @@ public sealed class DatuBaseaZerbitzua
             var orain = DateTime.UtcNow;
             await bezeroa.Execute(
                 """
-                INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza, HutsuneakSaioan)
+                INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
                 "Admin",
@@ -547,8 +543,7 @@ public sealed class DatuBaseaZerbitzua
                 SorkuntzaData = orain,
                 PasahitzaGatza = gatza,
                 PasahitzaHash = hash,
-                Rola = (int)ErabiltzaileRola.Administratzailea,
-                HutsuneakSaioan = 0
+                Rola = (int)ErabiltzaileRola.Administratzailea
             };
 
             await _sqliteKonexioa.InsertAsync(admin).ConfigureAwait(false);

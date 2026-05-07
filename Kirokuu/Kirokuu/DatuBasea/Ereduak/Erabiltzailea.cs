@@ -41,7 +41,4 @@ public sealed class Erabiltzailea
     [NotNull]
     public string PasahitzaGatza { get; set; } = string.Empty;
 
-    [NotNull]
-    public int HutsuneakSaioan { get; set; }
-
 }
