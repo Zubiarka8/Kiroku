@@ -297,3 +297,18 @@ Ticket statuses:
 
 ============================================================
 
+11. ROOT CAUSE FIRST — MANDATORY
+============================================================
+
+When the user reports a problem, do not apply a quick patch first.
+You MUST identify and explain the origin of the problem, then fix the root cause directly.
+
+Rules:
+  - Do not stop at symptom-level fixes.
+  - Trace the failure path until the true source is found.
+  - Prefer structural fixes that prevent recurrence.
+  - If a temporary workaround is unavoidable, mark it explicitly as
+    temporary and still provide the root-cause fix plan.
+
+============================================================
+
