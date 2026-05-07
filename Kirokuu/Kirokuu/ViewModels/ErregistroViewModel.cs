@@ -140,8 +140,9 @@ public partial class ErregistroViewModel : ObservableObject
         }
         catch (SQLiteException sqlEx) when (sqlEx.Result == SQLite3.Result.Constraint)
         {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Datu bikoiztua: posta hau dagoeneko erregistratuta dago.";
+            var (eskN, eskX) = DatuBaseaErroreaErabiltzaileMezura.EskuratuSqliteMezuak(sqlEx.Message);
+            ErroreMezua = eskN ?? "Datu bikoiztua: posta hau dagoeneko erregistratuta dago.";
+            ErroreXehetasuna = eskX;
             _logger.LogWarning(sqlEx, "Erregistroa: murrizketa urratua.");
         }
         catch (LibsqlException libEx)

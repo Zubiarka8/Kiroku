@@ -21,6 +21,10 @@ public static class DatuBaseaErroreaErabiltzaileMezura
         @"table\s+(?<t>[A-Za-z0-9_]+)\s+has\s+no\s+column\s+named\s+(?<c>[A-Za-z0-9_]+)",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
 
+    private static readonly Regex BakarraUrratuta = new(
+        @"UNIQUE\s+constraint\s+failed:\s*(?<tc>[A-Za-z0-9_.,\s]+)",
+        RegexOptions.IgnoreCase | RegexOptions.Compiled);
+
     private static readonly Regex ZutabeaInBarne = new(
         @"no\s+such\s+column:\s*(?<c>[A-Za-z0-9_]+)\s+in",
         RegexOptions.IgnoreCase | RegexOptions.Compiled);
@@ -37,6 +41,15 @@ public static class DatuBaseaErroreaErabiltzaileMezura
             return (null, null);
 
         var t = testua;
+
+        var mBakarra = BakarraUrratuta.Match(t);
+        if (mBakarra.Success)
+        {
+            var xehetasuna = SegurtatuXehetasunBakarra(mBakarra.Groups["tc"].Value);
+            return (
+                "Datu bikoiztua: balio hau dagoeneko existitzen da.",
+                xehetasuna);
+        }
 
         var mTaulaZutabe = TaulakEzDuZutaberik.Match(t);
         if (mTaulaZutabe.Success)
@@ -88,6 +101,26 @@ public static class DatuBaseaErroreaErabiltzaileMezura
         if (zutabea is not null)
             return $"Zutabea: '{zutabea}'.";
         return null;
+    }
+
+    private static string? SegurtatuXehetasunBakarra(string? balioa)
+    {
+        if (string.IsNullOrWhiteSpace(balioa))
+            return null;
+
+        var zatiSeguruak = balioa
+            .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+            .Select(zatia =>
+            {
+                var puntuZatiak = zatia.Split('.', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
+                return puntuZatiak.All(puntuZatia => SegurtatuIzena(puntuZatia) is not null)
+                    ? string.Join('.', puntuZatiak)
+                    : null;
+            })
+            .Where(zatia => zatia is not null)
+            .ToArray();
+
+        return zatiSeguruak.Length == 0 ? null : $"Eremua: '{string.Join(", ", zatiSeguruak)}'.";
     }
 
     /// <summary>

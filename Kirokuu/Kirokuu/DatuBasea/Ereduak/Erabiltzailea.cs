@@ -18,7 +18,7 @@ public sealed class Erabiltzailea
     [NotNull]
     public string Abizena2 { get; set; } = string.Empty;
 
-    [NotNull, Indexed(Unique = true)]
+    [NotNull]
     [Column("DNI")]
     public string Nan { get; set; } = string.Empty;
 

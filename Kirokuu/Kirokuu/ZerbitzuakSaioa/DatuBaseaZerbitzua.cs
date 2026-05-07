@@ -82,17 +82,31 @@ public sealed class DatuBaseaZerbitzua
         await HasieratuAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
-        if (_urrunTursoModua)
-            return await TxertatuTursoAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
+        _logger.LogDebug("Erabiltzailea txertatzen hasi da. Modua: {Modua}.", _urrunTursoModua ? "Turso" : "SQLite");
+        GarapenLogaDebug($"Erabiltzailea txertatzen hasi da. Modua: {(_urrunTursoModua ? "Turso" : "SQLite")}.");
 
-        await _sqliteKonexioa!.InsertAsync(erabiltzailea).ConfigureAwait(false);
-        var berrizIrakurria = (await _sqliteKonexioa
-            .QueryAsync<Erabiltzailea>(
-                "SELECT * FROM Erabiltzaileak WHERE Email = ? LIMIT 1",
-                erabiltzailea.Posta)
-            .ConfigureAwait(false)).FirstOrDefault();
+        try
+        {
+            if (_urrunTursoModua)
+                return await TxertatuTursoAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
 
-        return berrizIrakurria ?? erabiltzailea;
+            await _sqliteKonexioa!.InsertAsync(erabiltzailea).ConfigureAwait(false);
+            var berrizIrakurria = (await _sqliteKonexioa
+                .QueryAsync<Erabiltzailea>(
+                    "SELECT * FROM Erabiltzaileak WHERE Email = ? LIMIT 1",
+                    erabiltzailea.Posta)
+                .ConfigureAwait(false)).FirstOrDefault();
+
+            _logger.LogDebug("Erabiltzailea ondo txertatu da SQLite datu-basean.");
+            GarapenLogaDebug("Erabiltzailea ondo txertatu da SQLite datu-basean.");
+            return berrizIrakurria ?? erabiltzailea;
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Erabiltzailea txertatzean errorea. Modua: {Modua}.", _urrunTursoModua ? "Turso" : "SQLite");
+            GarapenLogaError(ex, $"Erabiltzailea txertatzean errorea. Modua: {(_urrunTursoModua ? "Turso" : "SQLite")}.");
+            throw;
+        }
     }
 
     public async Task<Erabiltzailea?> BilatuErabiltzaileaPostazAsync(string postaNormalizatua, CancellationToken cancellationToken = default)
@@ -103,10 +117,14 @@ public sealed class DatuBaseaZerbitzua
         if (_urrunTursoModua)
             return await BilatuErabiltzaileaPostazTursoAsync(postaNormalizatua, cancellationToken).ConfigureAwait(false);
 
+        _logger.LogDebug("Erabiltzailea postaz bilatzen hasi da SQLite datu-basean.");
+        GarapenLogaDebug("Erabiltzailea postaz bilatzen hasi da SQLite datu-basean.");
         var zerrenda = await _sqliteKonexioa!.QueryAsync<Erabiltzailea>(
             "SELECT * FROM Erabiltzaileak WHERE Email = ? LIMIT 1",
             postaNormalizatua).ConfigureAwait(false);
 
+        _logger.LogDebug("Erabiltzailea postaz bilatzea amaitu da SQLite datu-basean. Aurkitua: {Aurkitua}.", zerrenda.Count > 0);
+        GarapenLogaDebug($"Erabiltzailea postaz bilatzea amaitu da SQLite datu-basean. Aurkitua: {zerrenda.Count > 0}.");
         return zerrenda.FirstOrDefault();
     }
 
@@ -121,7 +139,9 @@ public sealed class DatuBaseaZerbitzua
             return;
         }
 
+        _logger.LogDebug("Erabiltzailea eguneratzen hasi da SQLite datu-basean.");
         await _sqliteKonexioa!.UpdateAsync(erabiltzailea).ConfigureAwait(false);
+        _logger.LogDebug("Erabiltzailea ondo eguneratu da SQLite datu-basean.");
     }
 
     public async Task<ErabiltzaileLaburpena?> BilatuErabiltzaileLaburpenaIdzAsync(int id, CancellationToken cancellationToken = default)
@@ -156,27 +176,48 @@ public sealed class DatuBaseaZerbitzua
 
     private async Task HasieratuBarneanAsync()
     {
-        if (_urrunTursoModua)
+        try
         {
-            await ExekutatuTursoanAsync(async bezeroa =>
+            _logger.LogDebug("Datu-basea hasieratzen hasi da. Modua: {Modua}.", _urrunTursoModua ? "Turso" : "SQLite");
+            GarapenLogaDebug($"Datu-basea hasieratzen hasi da. Modua: {(_urrunTursoModua ? "Turso" : "SQLite")}.");
+            if (_urrunTursoModua)
             {
-                await BermatErabiltzaileaTaulaTursoAsync(bezeroa).ConfigureAwait(false);
+                await ExekutatuTursoanAsync(async bezeroa =>
+                {
+                    await BermatErabiltzaileaTaulaTursoAsync(bezeroa).ConfigureAwait(false);
 #if DEBUG
-                await AdministratzaileLehenarenSeedTursoAsync(bezeroa).ConfigureAwait(false);
+                    await AdministratzaileLehenarenSeedTursoAsync(bezeroa).ConfigureAwait(false);
 #endif
-                return 0;
-            }, CancellationToken.None).ConfigureAwait(false);
-            return;
-        }
+                    return 0;
+                }, CancellationToken.None).ConfigureAwait(false);
+                return;
+            }
 
-        await _sqliteKonexioa!.CreateTableAsync<Erabiltzailea>().ConfigureAwait(false);
-        await _sqliteKonexioa.CreateTableAsync<GastuKontzeptua>().ConfigureAwait(false);
-        await _sqliteKonexioa.CreateTableAsync<BidaiaTxostena>().ConfigureAwait(false);
-        await _sqliteKonexioa.CreateTableAsync<GastuLerroa>().ConfigureAwait(false);
-        await _sqliteKonexioa.CreateTableAsync<AuditoretzaLoga>().ConfigureAwait(false);
+            await SortuSqliteTaulaAsync<Erabiltzailea>("Erabiltzaileak").ConfigureAwait(false);
+            await BermatuSqliteErabiltzaileEskemaAsync().ConfigureAwait(false);
+            await SortuSqliteTaulaAsync<GastuKontzeptua>("GastuKontzeptuak").ConfigureAwait(false);
+            await SortuSqliteTaulaAsync<BidaiaTxostena>("BidaiaTxostenak").ConfigureAwait(false);
+            await SortuSqliteTaulaAsync<GastuLerroa>("GastuLerroak").ConfigureAwait(false);
+            await SortuSqliteTaulaAsync<AuditoretzaLoga>("AuditoretzaLoga").ConfigureAwait(false);
 #if DEBUG
-        await AdministratzaileLehenarenSeedGarapeneanAsync().ConfigureAwait(false);
+            await AdministratzaileLehenarenSeedGarapeneanAsync().ConfigureAwait(false);
 #endif
+            _logger.LogDebug("Datu-basea hasieratzea amaitu da.");
+            GarapenLogaDebug("Datu-basea hasieratzea amaitu da.");
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Datu-basea hasieratzean errorea.");
+            GarapenLogaError(ex, "Datu-basea hasieratzean errorea.");
+            throw;
+        }
+    }
+
+    private async Task SortuSqliteTaulaAsync<T>(string taulaIzena) where T : new()
+    {
+        GarapenLogaDebug($"SQLite taula sortzen edo egiaztatzen: {taulaIzena}.");
+        await _sqliteKonexioa!.CreateTableAsync<T>().ConfigureAwait(false);
+        GarapenLogaDebug($"SQLite taula prest: {taulaIzena}.");
     }
 
     private async Task<T> ExekutatuTursoanAsync<T>(Func<IDatabaseClient, Task<T>> lan, CancellationToken cancellationToken)
@@ -219,6 +260,110 @@ public sealed class DatuBaseaZerbitzua
         await bezeroa.Execute(sql).ConfigureAwait(false);
     }
 
+    private async Task BermatuSqliteErabiltzaileEskemaAsync()
+    {
+        _logger.LogDebug("SQLite Erabiltzaileak eskema egiaztatzen hasi da.");
+        GarapenLogaDebug("SQLite Erabiltzaileak eskema egiaztatzen hasi da.");
+        var zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
+
+        if (!zutabeak.Contains("PasahitzaHash"))
+        {
+            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN PasahitzaHash TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
+            _logger.LogWarning("SQLite Erabiltzaileak taulan PasahitzaHash zutabea gehitu da.");
+            GarapenLogaWarning("SQLite Erabiltzaileak taulan PasahitzaHash zutabea gehitu da.");
+        }
+
+        if (!zutabeak.Contains("PasahitzaGatza"))
+        {
+            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN PasahitzaGatza TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
+            _logger.LogWarning("SQLite Erabiltzaileak taulan PasahitzaGatza zutabea gehitu da.");
+            GarapenLogaWarning("SQLite Erabiltzaileak taulan PasahitzaGatza zutabea gehitu da.");
+        }
+
+        zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
+        await MigratuSqlitePasahitzZaharrakAsync(zutabeak).ConfigureAwait(false);
+        await KenduSqliteNanIndizeBakarraAsync().ConfigureAwait(false);
+        _logger.LogDebug("SQLite Erabiltzaileak eskema egiaztatzea amaitu da.");
+        GarapenLogaDebug("SQLite Erabiltzaileak eskema egiaztatzea amaitu da.");
+    }
+
+    private async Task<HashSet<string>> IrakurriSqliteErabiltzaileZutabeakAsync()
+    {
+        var zutabeak = await _sqliteKonexioa!.QueryAsync<SqliteZutabea>("PRAGMA table_info('Erabiltzaileak')").ConfigureAwait(false);
+        return zutabeak
+            .Select(zutabea => zutabea.Izena)
+            .Where(izena => !string.IsNullOrWhiteSpace(izena))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+    }
+
+    private async Task MigratuSqlitePasahitzZaharrakAsync(HashSet<string> zutabeak)
+    {
+        if (!zutabeak.Contains("Pasahitza"))
+            return;
+
+        var erabiltzaileak = await _sqliteKonexioa!.QueryAsync<SqlitePasahitzZaharra>(
+            "SELECT ErabiltzaileId, Pasahitza FROM Erabiltzaileak WHERE (PasahitzaHash IS NULL OR PasahitzaHash = '') AND Pasahitza IS NOT NULL AND Pasahitza <> ''").ConfigureAwait(false);
+
+        foreach (var erabiltzailea in erabiltzaileak)
+        {
+            var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(erabiltzailea.Pasahitza);
+            await _sqliteKonexioa.ExecuteAsync(
+                "UPDATE Erabiltzaileak SET PasahitzaHash = ?, PasahitzaGatza = ? WHERE ErabiltzaileId = ?",
+                hash,
+                gatza,
+                erabiltzailea.Id).ConfigureAwait(false);
+        }
+
+        if (erabiltzaileak.Count > 0)
+            _logger.LogWarning("SQLite erabiltzaile zaharren pasahitzak hash + gatza formatura migratu dira. Kopurua: {Kopurua}.", erabiltzaileak.Count);
+    }
+
+    private async Task KenduSqliteNanIndizeBakarraAsync()
+    {
+        var indizeak = await _sqliteKonexioa!.QueryAsync<SqliteIndizea>("PRAGMA index_list('Erabiltzaileak')").ConfigureAwait(false);
+        foreach (var indizea in indizeak)
+        {
+            if (indizea.Bakarra != 1)
+                continue;
+
+            var zutabeak = await _sqliteKonexioa.QueryAsync<SqliteIndizeZutabea>(
+                $"PRAGMA index_info({KomatxoBikoitzekin(indizea.Izena)})").ConfigureAwait(false);
+            var nanIndizeaDa = zutabeak.Any(zutabea =>
+                string.Equals(zutabea.Izena, "DNI", StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(zutabea.Izena, "Nan", StringComparison.OrdinalIgnoreCase));
+
+            if (!nanIndizeaDa)
+                continue;
+
+            await _sqliteKonexioa.ExecuteAsync($"DROP INDEX IF EXISTS {KomatxoBikoitzekin(indizea.Izena)}").ConfigureAwait(false);
+            _logger.LogWarning("SQLite Erabiltzaileak taulako DNI indize bakarra kendu da: {Indizea}.", indizea.Izena);
+            GarapenLogaWarning($"SQLite Erabiltzaileak taulako DNI indize bakarra kendu da: {indizea.Izena}.");
+        }
+    }
+
+    private static string KomatxoBikoitzekin(string izena) => "\"" + izena.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
+
+    private static void GarapenLogaDebug(string mezua)
+    {
+#if DEBUG && ANDROID
+        Android.Util.Log.Debug("KirokuuDebug", mezua);
+#endif
+    }
+
+    private static void GarapenLogaWarning(string mezua)
+    {
+#if DEBUG && ANDROID
+        Android.Util.Log.Warn("KirokuuDebug", mezua);
+#endif
+    }
+
+    private static void GarapenLogaError(Exception ex, string mezua)
+    {
+#if DEBUG && ANDROID
+        Android.Util.Log.Error("KirokuuDebug", $"{mezua} {ex.GetType().Name}: {ex.Message}");
+#endif
+    }
+
     private async Task<Erabiltzailea> TxertatuTursoAsync(Erabiltzailea erabiltzailea, CancellationToken cancellationToken)
     {
         try
@@ -227,7 +372,7 @@ public sealed class DatuBaseaZerbitzua
             {
                 const string sql = """
                     INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                     """;
                 var emaitza = await bezeroa.Execute(
                     sql,
@@ -479,7 +624,7 @@ public sealed class DatuBaseaZerbitzua
             await bezeroa.Execute(
                 """
                 INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
                 "Admin",
                 "Garapena",
@@ -490,8 +635,7 @@ public sealed class DatuBaseaZerbitzua
                 (int)ErabiltzaileRola.Administratzailea,
                 orain,
                 hash,
-                gatza,
-                0).ConfigureAwait(false);
+                gatza).ConfigureAwait(false);
 
             _logger.LogWarning(
                 "Garapeneko administratzailea sortu da (Turso): {Posta}. Pasahitza aldatu produkzioa baino lehen.",
@@ -561,4 +705,33 @@ public sealed class DatuBaseaZerbitzua
         }
     }
 #endif
+
+    private sealed class SqliteZutabea
+    {
+        [Column("name")]
+        public string Izena { get; set; } = string.Empty;
+    }
+
+    private sealed class SqliteIndizea
+    {
+        [Column("name")]
+        public string Izena { get; set; } = string.Empty;
+
+        [Column("unique")]
+        public int Bakarra { get; set; }
+    }
+
+    private sealed class SqliteIndizeZutabea
+    {
+        [Column("name")]
+        public string Izena { get; set; } = string.Empty;
+    }
+
+    private sealed class SqlitePasahitzZaharra
+    {
+        [Column("ErabiltzaileId")]
+        public int Id { get; set; }
+
+        public string Pasahitza { get; set; } = string.Empty;
+    }
 }

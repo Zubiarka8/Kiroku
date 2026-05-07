@@ -9,11 +9,9 @@ public sealed class GastuLerroa
     [Column("GastuId")]
     public string GastuId { get; set; } = string.Empty;
 
-    [PrimaryKey]
     [Column("TxostenId")]
     public string TxostenId { get; set; } = string.Empty;
 
-    [PrimaryKey]
     [Column("KategoriaId")]
     public int KategoriaId { get; set; }
 
