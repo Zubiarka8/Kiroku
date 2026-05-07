@@ -19,7 +19,7 @@ public sealed class AuditoretzaLoga
     public string Ekintza { get; set; } = string.Empty;
 
     [NotNull]
-    public string DataOrdua { get; set; } = string.Empty;
+    public DateTime  DataOrdua { get; set; }
 
     [NotNull]
     public string Deskribapena { get; set; } = string.Empty;

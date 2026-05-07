@@ -16,7 +16,7 @@ public sealed class GastuKontzeptua
     public string Deskribapena { get; set; } = string.Empty;
 
     [Column("IbilgailuaBeharrezkoa")]
-    public int IbilgailuaBeharrezkoa { get; set; }
+    public int IbilgailuaBeharDu { get; set; }
 
     [NotNull]
     public string Estatusa { get; set; } = string.Empty;

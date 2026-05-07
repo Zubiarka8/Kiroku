@@ -25,14 +25,14 @@ public sealed class BidaiaTxostena
     public string BidaiaHelburua { get; set; } = string.Empty;
 
     [NotNull]
-    public string HasieraData { get; set; } = string.Empty;
+    public DateTime  HasieraData { get; set; }
 
     [NotNull]
-    public string AmaieraData { get; set; } = string.Empty;
+    public DateTime  AmaieraData { get; set; }
 
     public int PertsonaKopurua { get; set; }
 
-    public int JasoAurrekoa { get; set; }
+    public int JasoAurrekina { get; set; }
 
     [NotNull]
     public string Egoera { get; set; } = string.Empty;
@@ -41,11 +41,11 @@ public sealed class BidaiaTxostena
     public string MonetaKodea { get; set; } = string.Empty;
 
     [NotNull]
-    public string SorkuntzaData { get; set; } = string.Empty;
+    public DateTime  SorkuntzaData { get; set; }
 
     [NotNull]
-    public string AzkenEguneratzea { get; set; } = string.Empty;
+    public DateTime  AzkenEguneratzea { get; set; }
 
     [NotNull]
-    public string DataAprobazioa { get; set; } = string.Empty;
+    public DateTime  DataAprobazioa { get; set; }
 }

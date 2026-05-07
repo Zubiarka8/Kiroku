@@ -18,7 +18,7 @@ public sealed class Erabiltzailea
     [NotNull]
     public string Abizena2 { get; set; } = string.Empty;
 
-    [NotNull]
+    [NotNull, Indexed(Unique = true)]
     [Column("DNI")]
     public string Nan { get; set; } = string.Empty;
 
@@ -33,13 +33,9 @@ public sealed class Erabiltzailea
 
     [NotNull]
     [Column("SorkuntzaData")]
-    public string SorkuntzaData { get; set; } = string.Empty;
+    public DateTime SorkuntzaData { get; set; } 
 
     [NotNull]
-    public string PasahitzaHash { get; set; } = string.Empty;
+    public string Pasahitza { get; set; } = string.Empty;
 
-    [NotNull]
-    public string PasahitzaGatza { get; set; } = string.Empty;
-
-    public int HutsuneakSaioan { get; set; }
 }

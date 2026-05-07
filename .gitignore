@@ -5,6 +5,7 @@
 **/bin/
 **/obj/
 *.csproj.user
-
+*.log
 # Garapeneko oharrak (pasahitzak); ez commitatu
 Kirokuu/GARAPENA_NOTAK_ERABILTZAILEAK.md
+Kirokuu/.vs/*

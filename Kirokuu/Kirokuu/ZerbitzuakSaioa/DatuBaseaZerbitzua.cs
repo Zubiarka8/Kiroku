@@ -421,9 +421,6 @@ public sealed class DatuBaseaZerbitzua
             Kargoa = IrakurriMapaTestuaLehenetsia(mapa, "Kargoa"),
             Rola = IrakurriMapaOsoa(mapa, "Rola"),
             SorkuntzaData = IrakurriMapaTestuaLehenetsia(mapa, "SorkuntzaData"),
-            PasahitzaHash = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaHash"),
-            PasahitzaGatza = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaGatza"),
-            HutsuneakSaioan = IrakurriMapaOsoaLehenetsia(mapa, "HutsuneakSaioan")
         };
     }
 
