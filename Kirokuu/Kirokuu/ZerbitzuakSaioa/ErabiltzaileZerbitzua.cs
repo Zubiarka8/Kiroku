@@ -1,3 +1,4 @@
+using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
 using Microsoft.Extensions.Logging;
@@ -7,6 +8,8 @@ namespace Kirokuu.ZerbitzuakSaioa;
 
 public sealed class ErabiltzaileZerbitzua
 {
+    public const int Gehienezko = 5;
+
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
     private readonly PasahitzaZerbitzua _pasahitzaZerbitzua;
     private readonly ILogger<ErabiltzaileZerbitzua> _logger;
@@ -24,23 +27,27 @@ public sealed class ErabiltzaileZerbitzua
     public async Task<Erabiltzailea> ErregistratuLangileaAsync(
         string izena,
         string abizena,
+        string abizena2,
+        string dni,
+        string kargoa,
         string posta,
         string pasahitza,
         CancellationToken cancellationToken = default)
     {
-        var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitza);
-        var orain = DateTime.UtcNow;
+        var pasahitzaGarbia = pasahitza.Trim();
+        ArgumentException.ThrowIfNullOrWhiteSpace(pasahitzaGarbia);
+        var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitzaGarbia);
+        var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
         var erabiltzailea = new Erabiltzailea
         {
             Izena = izena.Trim(),
             Abizena = abizena.Trim(),
-            Abizena2 = string.Empty,
-            Nan = string.Empty,
+            Abizena2 = abizena2.Trim(),
+            DNI = dni.Trim(),
             Posta = NormalizatuPosta(posta),
-            Kargoa = string.Empty,
+            Kargoa = kargoa.Trim(),
             SorkuntzaData = orain,
-            PasahitzaGatza = gatza,
-            PasahitzaHash = hash,
+            Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash),
             Rola = (int)ErabiltzaileRola.Langilea,
         };
 
@@ -61,18 +68,18 @@ public sealed class ErabiltzaileZerbitzua
         CancellationToken cancellationToken = default)
     {
         var postaNormalizatua = NormalizatuPosta(posta);
+        var pasahitzaGarbia = pasahitza.Trim();
+        if (string.IsNullOrEmpty(pasahitzaGarbia))
+            return (SaioHasieraEmaitzaMota.PasahitzaOkerra, null);
+
         var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaPostazAsync(postaNormalizatua, cancellationToken).ConfigureAwait(false);
         if (erabiltzailea is null)
             return (SaioHasieraEmaitzaMota.EzDaExistitzen, null);
 
-        var zuzena = _pasahitzaZerbitzua.Egiaztatu(pasahitza, erabiltzailea.PasahitzaGatza, erabiltzailea.PasahitzaHash);
+        var zuzena = _pasahitzaZerbitzua.EgiaztatuGordetakoKatearekin(pasahitzaGarbia, erabiltzailea.Pasahitza);
         if (!zuzena)
-        {
-            await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
             return (SaioHasieraEmaitzaMota.PasahitzaOkerra, null);
-        }
 
-        await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
         return (SaioHasieraEmaitzaMota.Ongi, erabiltzailea);
     }
 

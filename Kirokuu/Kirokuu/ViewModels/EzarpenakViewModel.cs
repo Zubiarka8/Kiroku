@@ -1,4 +1,3 @@
-using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.ZerbitzuakSaioa;
@@ -135,7 +134,7 @@ public partial class EzarpenakViewModel : ObservableObject
 
             await _saioaGordetzeZerbitzua.GarbituAsync().ConfigureAwait(true);
             await _nabigazioNagusia.JoanSaioHasieraraAsync().ConfigureAwait(true);
-            await Toast.Make("Saioa itxita.").Show().ConfigureAwait(true);
+            await BokadilloErakustzailea.SaiatuErakutsiAsync("Saioa itxita.", _logger).ConfigureAwait(true);
         }
         catch (InvalidOperationException opEx)
         {
