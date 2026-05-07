@@ -1,4 +1,3 @@
-using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
 using Microsoft.Extensions.Logging;
@@ -8,8 +7,6 @@ namespace Kirokuu.ZerbitzuakSaioa;
 
 public sealed class ErabiltzaileZerbitzua
 {
-    public const int GehienezkoHutsuneakSaioan = 5;
-
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
     private readonly PasahitzaZerbitzua _pasahitzaZerbitzua;
     private readonly ILogger<ErabiltzaileZerbitzua> _logger;
@@ -32,7 +29,7 @@ public sealed class ErabiltzaileZerbitzua
         CancellationToken cancellationToken = default)
     {
         var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitza);
-        var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        var orain = DateTime.UtcNow;
         var erabiltzailea = new Erabiltzailea
         {
             Izena = izena.Trim(),
@@ -45,7 +42,6 @@ public sealed class ErabiltzaileZerbitzua
             PasahitzaGatza = gatza,
             PasahitzaHash = hash,
             Rola = (int)ErabiltzaileRola.Langilea,
-            HutsuneakSaioan = 0
         };
 
         try
@@ -69,18 +65,13 @@ public sealed class ErabiltzaileZerbitzua
         if (erabiltzailea is null)
             return (SaioHasieraEmaitzaMota.EzDaExistitzen, null);
 
-        if (erabiltzailea.HutsuneakSaioan >= GehienezkoHutsuneakSaioan)
-            return (SaioHasieraEmaitzaMota.KontuaBlokeatuta, null);
-
         var zuzena = _pasahitzaZerbitzua.Egiaztatu(pasahitza, erabiltzailea.PasahitzaGatza, erabiltzailea.PasahitzaHash);
         if (!zuzena)
         {
-            erabiltzailea.HutsuneakSaioan++;
             await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
             return (SaioHasieraEmaitzaMota.PasahitzaOkerra, null);
         }
 
-        erabiltzailea.HutsuneakSaioan = 0;
         await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
         return (SaioHasieraEmaitzaMota.Ongi, erabiltzailea);
     }
