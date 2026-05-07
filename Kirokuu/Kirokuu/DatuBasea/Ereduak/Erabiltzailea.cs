@@ -36,6 +36,12 @@ public sealed class Erabiltzailea
     public DateTime SorkuntzaData { get; set; } 
 
     [NotNull]
-    public string Pasahitza { get; set; } = string.Empty;
+    public string PasahitzaHash { get; set; } = string.Empty;
+
+    [NotNull]
+    public string PasahitzaGatza { get; set; } = string.Empty;
+
+    [NotNull]
+    public int HutsuneakSaioan { get; set; }
 
 }

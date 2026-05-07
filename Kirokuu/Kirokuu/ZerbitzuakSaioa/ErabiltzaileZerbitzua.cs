@@ -1,4 +1,3 @@
-using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
 using Microsoft.Extensions.Logging;
@@ -32,7 +31,7 @@ public sealed class ErabiltzaileZerbitzua
         CancellationToken cancellationToken = default)
     {
         var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitza);
-        var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        var orain = DateTime.UtcNow;
         var erabiltzailea = new Erabiltzailea
         {
             Izena = izena.Trim(),

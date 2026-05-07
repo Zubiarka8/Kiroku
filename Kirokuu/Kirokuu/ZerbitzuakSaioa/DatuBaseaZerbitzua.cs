@@ -420,8 +420,26 @@ public sealed class DatuBaseaZerbitzua
             Posta = IrakurriPostaEdoEmail(mapa),
             Kargoa = IrakurriMapaTestuaLehenetsia(mapa, "Kargoa"),
             Rola = IrakurriMapaOsoa(mapa, "Rola"),
-            SorkuntzaData = IrakurriMapaTestuaLehenetsia(mapa, "SorkuntzaData"),
+            SorkuntzaData = IrakurriMapaDataOrduaLehenetsia(mapa, "SorkuntzaData"),
+            PasahitzaHash = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaHash"),
+            PasahitzaGatza = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaGatza"),
+            HutsuneakSaioan = IrakurriMapaOsoaLehenetsia(mapa, "HutsuneakSaioan"),
         };
+    }
+
+    private static DateTime IrakurriMapaDataOrduaLehenetsia(Dictionary<string, string> mapa, string gakoa)
+    {
+        if (!mapa.TryGetValue(gakoa, out var testua) || string.IsNullOrWhiteSpace(testua))
+            return DateTime.UtcNow;
+
+        if (DateTime.TryParse(
+                testua,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind | DateTimeStyles.AllowWhiteSpaces,
+                out var dataOrdua))
+            return dataOrdua;
+
+        return DateTime.UtcNow;
     }
 
     private static IReadOnlyList<ErabiltzaileLaburpena> MapeatuLangileLaburpenak(IResultSet emaitza)
@@ -461,7 +479,7 @@ public sealed class DatuBaseaZerbitzua
                 return;
 
             var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash("Garapena123!");
-            var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var orain = DateTime.UtcNow;
             await bezeroa.Execute(
                 """
                 INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza, HutsuneakSaioan)
@@ -517,7 +535,7 @@ public sealed class DatuBaseaZerbitzua
                 return;
 
             var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash("Garapena123!");
-            var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var orain = DateTime.UtcNow;
             var admin = new Erabiltzailea
             {
                 Izena = "Admin",
