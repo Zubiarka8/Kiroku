@@ -1,8 +1,7 @@
-using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
-using Libsql.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.ApplicationModel;
 using SQLite;
@@ -35,6 +34,15 @@ public partial class ErregistroViewModel : ObservableObject
 
     [ObservableProperty]
     private string _abizena = string.Empty;
+
+    [ObservableProperty]
+    private string _abizena2 = string.Empty;
+
+    [ObservableProperty]
+    private string _dni = string.Empty;
+
+    [ObservableProperty]
+    private string _kargoa = string.Empty;
 
     [ObservableProperty]
     private string _posta = string.Empty;
@@ -96,6 +104,8 @@ public partial class ErregistroViewModel : ObservableObject
         ErroreMezua = null;
         ErroreXehetasuna = null;
         if (string.IsNullOrWhiteSpace(Izena) || string.IsNullOrWhiteSpace(Abizena) ||
+            string.IsNullOrWhiteSpace(Abizena2) || string.IsNullOrWhiteSpace(Dni) ||
+            string.IsNullOrWhiteSpace(Kargoa) ||
             string.IsNullOrWhiteSpace(Posta) || string.IsNullOrWhiteSpace(Pasahitza) ||
             string.IsNullOrWhiteSpace(PasahitzaBerretsi))
         {
@@ -124,11 +134,19 @@ public partial class ErregistroViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
-            var erabiltzailea = await _erabiltzaileZerbitzua.ErregistratuLangileaAsync(Izena, Abizena, Posta, Pasahitza).ConfigureAwait(true);
+            var erabiltzailea = await _erabiltzaileZerbitzua.ErregistratuLangileaAsync(
+                Izena,
+                Abizena,
+                Abizena2,
+                Dni,
+                Kargoa,
+                Posta,
+                Pasahitza).ConfigureAwait(true);
             await _saioaGordetzeZerbitzua.GordeAsync(erabiltzailea).ConfigureAwait(true);
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
-                await Toast.Make("Kontua sortu da. Ongi etorri!").Show().ConfigureAwait(true);
+                await BokadilloErakustzailea.SaiatuErakutsiAsync("Kontua sortu da. Ongi etorri!", _logger)
+                    .ConfigureAwait(true);
             }).ConfigureAwait(true);
             await _nabigazioNagusia.JoanAppShelleraAsync().ConfigureAwait(true);
         }
@@ -145,7 +163,7 @@ public partial class ErregistroViewModel : ObservableObject
             ErroreXehetasuna = eskX;
             _logger.LogWarning(sqlEx, "Erregistroa: murrizketa urratua.");
         }
-        catch (LibsqlException libEx)
+        catch (TursoExekuzioSalbuespena libEx)
         {
             var (nagusia, xehetasuna) = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezuaXehetasunarekin(libEx);
             ErroreMezua = nagusia ?? "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";

@@ -2,8 +2,8 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuEreduak;
+using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
-using Libsql.Client;
 using Microsoft.Extensions.Logging;
 using SQLite;
 using System.Net.Http;
@@ -60,7 +60,7 @@ public partial class LangileZerrendaViewModel : ObservableObject
             if (Langileak.Count == 0)
                 HutsaMezua = "Oraindik ez dago langilerik erregistratuta.";
         }
-        catch (LibsqlException libEx)
+        catch (TursoExekuzioSalbuespena libEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
                 ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";

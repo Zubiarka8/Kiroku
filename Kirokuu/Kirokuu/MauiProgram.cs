@@ -27,6 +27,13 @@ public static class MauiProgram
             if (!string.IsNullOrEmpty(multzoKarpeta))
                 dotEnvKargatua = InguruneKargatzailea.KargatuDotEnv(multzoKarpeta) || dotEnvKargatua;
         }
+#if ANDROID
+        if (!InguruneKargatzailea.TursoAldagaiNagusiakDaude())
+        {
+            var paketetikKargatua = InguruneTursoPaketekoAndroid.KargatuTursoGarapenIngurunea();
+            dotEnvKargatua = paketetikKargatua || dotEnvKargatua;
+        }
+#endif
         #region agent log
         var envBideaOndoren = InguruneKargatzailea.BilatuEnvFitxategiarenBidea();
         var envGurasoOndoren = envBideaOndoren is null ? null : Path.GetDirectoryName(envBideaOndoren);
@@ -89,6 +96,10 @@ public static class MauiProgram
 
 #if DEBUG
         builder.Logging.AddDebug();
+#if ANDROID
+        builder.Logging.AddProvider(new LogcatLogatzaileHornitzailea());
+#endif
+        builder.Logging.SetMinimumLevel(LogLevel.Information);
 #endif
 
         return builder.Build();

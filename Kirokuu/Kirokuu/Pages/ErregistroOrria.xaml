@@ -36,6 +36,21 @@
                    Placeholder="Abizena"
                    SemanticProperties.Hint="Abizena" />
 
+            <Entry x:Name="Abizena2Sarrera"
+                   Text="{Binding Abizena2}"
+                   Placeholder="Bigarren abizena"
+                   SemanticProperties.Hint="Bigarren abizena" />
+
+            <Entry x:Name="DniSarrera"
+                   Text="{Binding Dni}"
+                   Placeholder="DNI / NAN"
+                   SemanticProperties.Hint="DNI edo NAN" />
+
+            <Entry x:Name="KargoaSarrera"
+                   Text="{Binding Kargoa}"
+                   Placeholder="Kargoa"
+                   SemanticProperties.Hint="Kargoa" />
+
             <Entry x:Name="PostaErregistroSarrera"
                    Text="{Binding Posta}"
                    Placeholder="Posta"

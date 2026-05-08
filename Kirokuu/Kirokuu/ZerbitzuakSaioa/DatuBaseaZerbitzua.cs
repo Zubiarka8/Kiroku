@@ -2,7 +2,6 @@ using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
 using Kirokuu.Zerbitzuak;
-using Libsql.Client;
 using Microsoft.Extensions.Logging;
 using SQLite;
 
@@ -10,14 +9,15 @@ namespace Kirokuu.ZerbitzuakSaioa;
 
 public sealed class DatuBaseaZerbitzua
 {
-    private const string GarapenAdminPosta = "admin@garapena.eus";
+    // Libsql.Client: UTF-8 zero byte ataletan fixed() punteroa null da; libsql_bind_string kolapsatu daiteke.
+    private const string LibsqlKateHutsarenOrdezkoa = "\u2060";
 
     private readonly bool _urrunTursoModua;
     private readonly SQLiteAsyncConnection? _sqliteKonexioa;
     private readonly string? _tursoHttpsUrl;
     private readonly string? _tursoAuthToken;
     private readonly SemaphoreSlim _tursoLanSarraila = new(1, 1);
-    private IDatabaseClient? _tursoBezeroa;
+    private TursoHttpsPipelineEgikaritzailea? _tursoHttpsEgikaritzailea;
 
     private readonly PasahitzaZerbitzua _pasahitzaZerbitzua;
     private readonly ILogger<DatuBaseaZerbitzua> _logger;
@@ -184,9 +184,9 @@ public sealed class DatuBaseaZerbitzua
             {
                 await ExekutatuTursoanAsync(async bezeroa =>
                 {
-                    await BermatErabiltzaileaTaulaTursoAsync(bezeroa).ConfigureAwait(false);
+                    await BermatErabiltzaileaTaulaTursoAsync(bezeroa, CancellationToken.None).ConfigureAwait(false);
 #if DEBUG
-                    await AdministratzaileLehenarenSeedTursoAsync(bezeroa).ConfigureAwait(false);
+                    await AdministratzaileLehenarenSeedTursoAsync(bezeroa, CancellationToken.None).ConfigureAwait(false);
 #endif
                     return 0;
                 }, CancellationToken.None).ConfigureAwait(false);
@@ -220,19 +220,14 @@ public sealed class DatuBaseaZerbitzua
         GarapenLogaDebug($"SQLite taula prest: {taulaIzena}.");
     }
 
-    private async Task<T> ExekutatuTursoanAsync<T>(Func<IDatabaseClient, Task<T>> lan, CancellationToken cancellationToken)
+    private async Task<T> ExekutatuTursoanAsync<T>(Func<ITursoSqlEgikaritzailea, Task<T>> lan, CancellationToken cancellationToken)
     {
         await _tursoLanSarraila.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            _tursoBezeroa ??= await DatabaseClient.Create(options =>
-            {
-                options.Url = _tursoHttpsUrl!;
-                options.AuthToken = _tursoAuthToken!;
-                options.UseHttps = true;
-            }).ConfigureAwait(false);
+            _tursoHttpsEgikaritzailea ??= new TursoHttpsPipelineEgikaritzailea(_tursoHttpsUrl!, _tursoAuthToken!, _logger);
 
-            return await lan(_tursoBezeroa).ConfigureAwait(false);
+            return await lan(_tursoHttpsEgikaritzailea).ConfigureAwait(false);
         }
         finally
         {
@@ -240,7 +235,7 @@ public sealed class DatuBaseaZerbitzua
         }
     }
 
-    private static async Task BermatErabiltzaileaTaulaTursoAsync(IDatabaseClient bezeroa)
+    private static async Task BermatErabiltzaileaTaulaTursoAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
     {
         const string sql = """
             CREATE TABLE IF NOT EXISTS Erabiltzaileak (
@@ -253,11 +248,10 @@ public sealed class DatuBaseaZerbitzua
                 Kargoa TEXT NOT NULL DEFAULT '',
                 Rola INTEGER NOT NULL,
                 SorkuntzaData TEXT NOT NULL DEFAULT '',
-                PasahitzaHash TEXT NOT NULL,
-                PasahitzaGatza TEXT NOT NULL
+                Pasahitza TEXT NOT NULL DEFAULT ''
             );
             """;
-        await bezeroa.Execute(sql).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task BermatuSqliteErabiltzaileEskemaAsync()
@@ -266,18 +260,11 @@ public sealed class DatuBaseaZerbitzua
         GarapenLogaDebug("SQLite Erabiltzaileak eskema egiaztatzen hasi da.");
         var zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
 
-        if (!zutabeak.Contains("PasahitzaHash"))
+        if (!zutabeak.Contains("Pasahitza"))
         {
-            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN PasahitzaHash TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulan PasahitzaHash zutabea gehitu da.");
-            GarapenLogaWarning("SQLite Erabiltzaileak taulan PasahitzaHash zutabea gehitu da.");
-        }
-
-        if (!zutabeak.Contains("PasahitzaGatza"))
-        {
-            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN PasahitzaGatza TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulan PasahitzaGatza zutabea gehitu da.");
-            GarapenLogaWarning("SQLite Erabiltzaileak taulan PasahitzaGatza zutabea gehitu da.");
+            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN Pasahitza TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
+            _logger.LogWarning("SQLite Erabiltzaileak taulan Pasahitza zutabea gehitu da.");
+            GarapenLogaWarning("SQLite Erabiltzaileak taulan Pasahitza zutabea gehitu da.");
         }
 
         zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
@@ -302,20 +289,25 @@ public sealed class DatuBaseaZerbitzua
             return;
 
         var erabiltzaileak = await _sqliteKonexioa!.QueryAsync<SqlitePasahitzZaharra>(
-            "SELECT ErabiltzaileId, Pasahitza FROM Erabiltzaileak WHERE (PasahitzaHash IS NULL OR PasahitzaHash = '') AND Pasahitza IS NOT NULL AND Pasahitza <> ''").ConfigureAwait(false);
+            """
+            SELECT ErabiltzaileId, Pasahitza FROM Erabiltzaileak
+            WHERE Pasahitza IS NOT NULL AND Pasahitza <> ''
+              AND instr(Pasahitza, '|') = 0
+            """).ConfigureAwait(false);
 
         foreach (var erabiltzailea in erabiltzaileak)
         {
             var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(erabiltzailea.Pasahitza);
+            var katea = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
             await _sqliteKonexioa.ExecuteAsync(
-                "UPDATE Erabiltzaileak SET PasahitzaHash = ?, PasahitzaGatza = ? WHERE ErabiltzaileId = ?",
-                hash,
-                gatza,
-                erabiltzailea.Id).ConfigureAwait(false);
+                    "UPDATE Erabiltzaileak SET Pasahitza = ? WHERE ErabiltzaileId = ?",
+                    katea,
+                    erabiltzailea.Id)
+                .ConfigureAwait(false);
         }
 
         if (erabiltzaileak.Count > 0)
-            _logger.LogWarning("SQLite erabiltzaile zaharren pasahitzak hash + gatza formatura migratu dira. Kopurua: {Kopurua}.", erabiltzaileak.Count);
+            _logger.LogWarning("SQLite erabiltzaile zaharren pasahitzak hash+gatzaren formatu bakarrera migratu dira. Kopurua: {Kopurua}.", erabiltzaileak.Count);
     }
 
     private async Task KenduSqliteNanIndizeBakarraAsync()
@@ -371,23 +363,23 @@ public sealed class DatuBaseaZerbitzua
             return await ExekutatuTursoanAsync(async bezeroa =>
             {
                 const string sql = """
-                    INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                     """;
-                var emaitza = await bezeroa.Execute(
+                var emaitza = await bezeroa.ExekutatuAsync(
                     sql,
-                    erabiltzailea.Izena,
-                    erabiltzailea.Abizena,
-                    erabiltzailea.Abizena2,
-                    erabiltzailea.Nan,
-                    erabiltzailea.Posta,
-                    erabiltzailea.Kargoa,
-                    erabiltzailea.Rola,
-                    erabiltzailea.SorkuntzaData,
-                    erabiltzailea.PasahitzaHash,
-                    erabiltzailea.PasahitzaGatza).ConfigureAwait(false);
-
-                var idBerria = (int)emaitza.LastInsertRowId;
+                    cancellationToken,
+                    LibsqlLoturaNormalizatua(erabiltzailea.Izena),
+                    LibsqlLoturaNormalizatua(erabiltzailea.Abizena),
+                    LibsqlLoturaNormalizatua(erabiltzailea.Abizena2),
+                    LibsqlLoturaNormalizatua(erabiltzailea.DNI),
+                    LibsqlLoturaNormalizatua(erabiltzailea.Posta),
+                    LibsqlLoturaNormalizatua(erabiltzailea.Kargoa),
+                    LibsqlLoturaNormalizatua(erabiltzailea.Rola),
+                    LibsqlLoturaNormalizatua(erabiltzailea.SorkuntzaData),
+                    LibsqlLoturaNormalizatua(erabiltzailea.Pasahitza)
+                ).ConfigureAwait(false);
+                var idBerria = (int)emaitza.AzkenTxertatutakoErrenkadaId;
                 erabiltzailea.Id = idBerria;
                 var berrizIrakurria = await BilatuErabiltzaileaIdzTursoAsync(bezeroa, idBerria, cancellationToken).ConfigureAwait(false);
                 return berrizIrakurria ?? erabiltzailea;
@@ -421,24 +413,24 @@ public sealed class DatuBaseaZerbitzua
     }
 
     private static async Task<Erabiltzailea?> BilatuErabiltzaileaPostazTursoBarneanAsync(
-        IDatabaseClient bezeroa,
+        ITursoSqlEgikaritzailea bezeroa,
         string postaNormalizatua,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
-        var emaitza = await bezeroa.Execute(sql, postaNormalizatua).ConfigureAwait(false);
+        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
+        var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(postaNormalizatua)).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
 
     private static async Task<Erabiltzailea?> BilatuErabiltzaileaIdzTursoAsync(
-        IDatabaseClient bezeroa,
+        ITursoSqlEgikaritzailea bezeroa,
         int id,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
-        var emaitza = await bezeroa.Execute(sql, id).ConfigureAwait(false);
+        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
+        var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, id).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
 
@@ -448,22 +440,22 @@ public sealed class DatuBaseaZerbitzua
         {
             const string sql = """
                 UPDATE Erabiltzaileak
-                SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Rola = ?, SorkuntzaData = ?, PasahitzaHash = ?, PasahitzaGatza = ?
+                SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Rola = ?, SorkuntzaData = ?, Pasahitza = ?
                 WHERE ErabiltzaileId = ?;
                 """;
-            await bezeroa.Execute(
+            await bezeroa.ExekutatuAsync(
                 sql,
-                erabiltzailea.Izena,
-                erabiltzailea.Abizena,
-                erabiltzailea.Abizena2,
-                erabiltzailea.Nan,
-                erabiltzailea.Posta,
-                erabiltzailea.Kargoa,
-                erabiltzailea.Rola,
-                erabiltzailea.SorkuntzaData,
-                erabiltzailea.PasahitzaHash,
-                erabiltzailea.PasahitzaGatza,
-                erabiltzailea.Id).ConfigureAwait(false);
+                cancellationToken,
+                LibsqlLoturaNormalizatua(erabiltzailea.Izena),
+                LibsqlLoturaNormalizatua(erabiltzailea.Abizena),
+                LibsqlLoturaNormalizatua(erabiltzailea.Abizena2),
+                LibsqlLoturaNormalizatua(erabiltzailea.DNI),
+                LibsqlLoturaNormalizatua(erabiltzailea.Posta),
+                LibsqlLoturaNormalizatua(erabiltzailea.Kargoa),
+                LibsqlLoturaNormalizatua(erabiltzailea.Rola),
+                LibsqlLoturaNormalizatua(erabiltzailea.SorkuntzaData),
+                LibsqlLoturaNormalizatua(erabiltzailea.Pasahitza),
+                LibsqlLoturaNormalizatua(erabiltzailea.Id)).ConfigureAwait(false);
             return 0;
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -474,7 +466,7 @@ public sealed class DatuBaseaZerbitzua
         {
             cancellationToken.ThrowIfCancellationRequested();
             const string sql = "SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
-            var emaitza = await bezeroa.Execute(sql, id).ConfigureAwait(false);
+            var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, id).ConfigureAwait(false);
             return MapeatuLangileLaburpenak(emaitza).FirstOrDefault();
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -489,20 +481,31 @@ public sealed class DatuBaseaZerbitzua
                 WHERE Rola = ?
                 ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
                 """;
-            var emaitza = await bezeroa.Execute(sql, (int)ErabiltzaileRola.Langilea).ConfigureAwait(false);
+            var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, (int)ErabiltzaileRola.Langilea).ConfigureAwait(false);
             return MapeatuLangileLaburpenak(emaitza);
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static Erabiltzailea? MapeatuErabiltzaileLehena(IResultSet emaitza)
+    private static Erabiltzailea? MapeatuErabiltzaileLehena(TursoHttpExekuzioarenEmaitza emaitza)
     {
-        var lerroa = emaitza.Rows.FirstOrDefault();
+        var lerroa = emaitza.LerroTestuBalioak.FirstOrDefault();
         if (lerroa is null)
             return null;
 
-        var zutabeak = emaitza.Columns.ToList();
-        var balioak = lerroa.ToList();
+        var zutabeak = emaitza.ZutabeIzenak;
+        var balioak = lerroa;
         return MapeatuErabiltzailea(zutabeak, balioak);
+    }
+
+    private static object LibsqlLoturaNormalizatua(object? balioa) =>
+        balioa is string s && s.Length == 0 ? LibsqlKateHutsarenOrdezkoa : balioa!;
+
+    private static string TursoTestuaIrakurri(string? gordeta)
+    {
+        if (string.IsNullOrEmpty(gordeta))
+            return string.Empty;
+
+        return gordeta == LibsqlKateHutsarenOrdezkoa ? string.Empty : gordeta;
     }
 
     private static string IrakurriMapaTestua(Dictionary<string, string> mapa, string gakoa)
@@ -510,7 +513,7 @@ public sealed class DatuBaseaZerbitzua
         if (!mapa.TryGetValue(gakoa, out var balioa))
             throw new KeyNotFoundException(gakoa);
 
-        return balioa;
+        return TursoTestuaIrakurri(balioa);
     }
 
     private static int IrakurriMapaOsoa(Dictionary<string, string> mapa, string gakoa) =>
@@ -531,14 +534,14 @@ public sealed class DatuBaseaZerbitzua
     private static string IrakurriPostaEdoEmail(Dictionary<string, string> mapa)
     {
         if (mapa.TryGetValue("Email", out var email) && !string.IsNullOrEmpty(email))
-            return email;
+            return TursoTestuaIrakurri(email);
         if (mapa.TryGetValue("Posta", out var posta))
-            return posta;
+            return TursoTestuaIrakurri(posta);
         return string.Empty;
     }
 
     private static string IrakurriMapaTestuaLehenetsia(Dictionary<string, string> mapa, string gakoa, string lehenetsia = "") =>
-        mapa.TryGetValue(gakoa, out var balioa) ? balioa : lehenetsia;
+        mapa.TryGetValue(gakoa, out var balioa) ? TursoTestuaIrakurri(balioa) : lehenetsia;
 
     private static int IrakurriMapaOsoaLehenetsia(Dictionary<string, string> mapa, string gakoa, int lehenetsia = 0) =>
         mapa.TryGetValue(gakoa, out var testua) &&
@@ -546,11 +549,11 @@ public sealed class DatuBaseaZerbitzua
             ? balioa
             : lehenetsia;
 
-    private static Erabiltzailea MapeatuErabiltzailea(IReadOnlyList<string> zutabeak, IReadOnlyList<Value> balioak)
+    private static Erabiltzailea MapeatuErabiltzailea(IReadOnlyList<string> zutabeak, IReadOnlyList<string> balioak)
     {
         var mapa = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < zutabeak.Count && i < balioak.Count; i++)
-            mapa[zutabeak[i]] = balioak[i].ToString() ?? string.Empty;
+            mapa[zutabeak[i]] = TursoTestuaIrakurri(balioak[i].ToString() ?? string.Empty);
 
         return new Erabiltzailea
         {
@@ -558,13 +561,13 @@ public sealed class DatuBaseaZerbitzua
             Izena = IrakurriMapaTestua(mapa, "Izena"),
             Abizena = IrakurriMapaTestua(mapa, "Abizena"),
             Abizena2 = IrakurriMapaTestuaLehenetsia(mapa, "Abizena2"),
-            Nan = IrakurriMapaTestuaLehenetsia(mapa, "DNI"),
+            DNI = IrakurriMapaTestuaLehenetsia(mapa, "DNI"),
             Posta = IrakurriPostaEdoEmail(mapa),
             Kargoa = IrakurriMapaTestuaLehenetsia(mapa, "Kargoa"),
             Rola = IrakurriMapaOsoa(mapa, "Rola"),
-            SorkuntzaData = IrakurriMapaDataOrduaLehenetsia(mapa, "SorkuntzaData"),
-            PasahitzaHash = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaHash"),
-            PasahitzaGatza = IrakurriMapaTestuaLehenetsia(mapa, "PasahitzaGatza")
+            SorkuntzaData = IrakurriMapaDataOrduaLehenetsia(mapa, "SorkuntzaData")
+                .ToString("o", CultureInfo.InvariantCulture),
+            Pasahitza = IrakurriMapaTestuaLehenetsia(mapa, "Pasahitza")
         };
     }
 
@@ -583,16 +586,16 @@ public sealed class DatuBaseaZerbitzua
         return DateTime.UtcNow;
     }
 
-    private static IReadOnlyList<ErabiltzaileLaburpena> MapeatuLangileLaburpenak(IResultSet emaitza)
+    private static IReadOnlyList<ErabiltzaileLaburpena> MapeatuLangileLaburpenak(TursoHttpExekuzioarenEmaitza emaitza)
     {
-        var zutabeak = emaitza.Columns.ToList();
+        var zutabeak = emaitza.ZutabeIzenak;
         var zerrenda = new List<ErabiltzaileLaburpena>();
-        foreach (var lerroa in emaitza.Rows)
+        foreach (var lerroa in emaitza.LerroTestuBalioak)
         {
-            var balioak = lerroa.ToList();
+            var balioak = lerroa;
             var mapa = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < zutabeak.Count && i < balioak.Count; i++)
-                mapa[zutabeak[i]] = balioak[i].ToString() ?? string.Empty;
+                mapa[zutabeak[i]] = TursoTestuaIrakurri(balioak[i].ToString() ?? string.Empty);
 
             zerrenda.Add(new ErabiltzaileLaburpena
             {
@@ -607,39 +610,46 @@ public sealed class DatuBaseaZerbitzua
     }
 
 #if DEBUG
-    private async Task AdministratzaileLehenarenSeedTursoAsync(IDatabaseClient bezeroa)
+    private async Task AdministratzaileLehenarenSeedTursoAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
     {
         try
         {
-            var kopuruaEmaitza = await bezeroa.Execute(
+            var kopuruaEmaitza = await bezeroa.ExekutatuAsync(
                 "SELECT COUNT(*) AS c FROM Erabiltzaileak WHERE Rola = ?;",
+                cancellationToken,
                 (int)ErabiltzaileRola.Administratzailea).ConfigureAwait(false);
 
             var kopurua = IrakurriKontagailuLehena(kopuruaEmaitza);
             if (kopurua > 0)
                 return;
 
-            var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash("Garapena123!");
-            var orain = DateTime.UtcNow;
-            await bezeroa.Execute(
+            var (adminIzena, adminAbizena, adminAbizena2, adminDni, adminPosta, adminKargoa, adminPasahitza) =
+                EskuratuGarapenAdminSeedBalioak();
+            if (adminPosta is null)
+                return;
+
+            var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(adminPasahitza);
+            var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var pasahitzaKatea = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
+            await bezeroa.ExekutatuAsync(
                 """
-                INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, PasahitzaHash, PasahitzaGatza)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
-                "Admin",
-                "Garapena",
-                string.Empty,
-                string.Empty,
-                GarapenAdminPosta,
-                string.Empty,
-                (int)ErabiltzaileRola.Administratzailea,
-                orain,
-                hash,
-                gatza).ConfigureAwait(false);
+                cancellationToken,
+                LibsqlLoturaNormalizatua(adminIzena),
+                LibsqlLoturaNormalizatua(adminAbizena),
+                LibsqlLoturaNormalizatua(adminAbizena2),
+                LibsqlLoturaNormalizatua(adminDni),
+                LibsqlLoturaNormalizatua(adminPosta),
+                LibsqlLoturaNormalizatua(adminKargoa),
+                LibsqlLoturaNormalizatua((int)ErabiltzaileRola.Administratzailea),
+                LibsqlLoturaNormalizatua(orain),
+                LibsqlLoturaNormalizatua(pasahitzaKatea)).ConfigureAwait(false);
 
             _logger.LogWarning(
                 "Garapeneko administratzailea sortu da (Turso): {Posta}. Pasahitza aldatu produkzioa baino lehen.",
-                GarapenAdminPosta);
+                adminPosta);
         }
         catch (Exception ex)
         {
@@ -647,9 +657,9 @@ public sealed class DatuBaseaZerbitzua
         }
     }
 
-    private static int IrakurriKontagailuLehena(IResultSet emaitza)
+    private static int IrakurriKontagailuLehena(TursoHttpExekuzioarenEmaitza emaitza)
     {
-        var lerroa = emaitza.Rows.FirstOrDefault();
+        var lerroa = emaitza.LerroTestuBalioak.FirstOrDefault();
         if (lerroa is null)
             return 0;
 
@@ -674,26 +684,30 @@ public sealed class DatuBaseaZerbitzua
             if (kopurua > 0)
                 return;
 
-            var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash("Garapena123!");
-            var orain = DateTime.UtcNow;
+            var (adminIzena, adminAbizena, adminAbizena2, adminDni, adminPosta, adminKargoa, adminPasahitza) =
+                EskuratuGarapenAdminSeedBalioak();
+            if (adminPosta is null)
+                return;
+
+            var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(adminPasahitza);
+            var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
             var admin = new Erabiltzailea
             {
-                Izena = "Admin",
-                Abizena = "Garapena",
-                Abizena2 = string.Empty,
-                Nan = string.Empty,
-                Posta = GarapenAdminPosta,
-                Kargoa = string.Empty,
+                Izena = adminIzena,
+                Abizena = adminAbizena,
+                Abizena2 = adminAbizena2,
+                DNI = adminDni,
+                Posta = adminPosta,
+                Kargoa = adminKargoa,
                 SorkuntzaData = orain,
-                PasahitzaGatza = gatza,
-                PasahitzaHash = hash,
+                Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash),
                 Rola = (int)ErabiltzaileRola.Administratzailea
             };
 
             await _sqliteKonexioa.InsertAsync(admin).ConfigureAwait(false);
             _logger.LogWarning(
                 "Garapeneko administratzailea sortu da: {Posta}. Pasahitza aldatu produkzioa baino lehen.",
-                GarapenAdminPosta);
+                adminPosta);
         }
         catch (SQLiteException sqlEx)
         {
@@ -703,6 +717,29 @@ public sealed class DatuBaseaZerbitzua
         {
             _logger.LogError(ex, "Administratzaile seed: ustekabeko errorea.");
         }
+    }
+
+    // DEBUG: KIROKU_GARAPEN_ADMIN_POSTA, KIROKU_GARAPEN_ADMIN_PASAHITZA, KIROKU_GARAPEN_ADMIN_IZENA, KIROKU_GARAPEN_ADMIN_ABIZENA derrigorrez.
+    // Aukerako: KIROKU_GARAPEN_ADMIN_ABIZENA2, KIROKU_GARAPEN_ADMIN_DNI, KIROKU_GARAPEN_ADMIN_KARGOA.
+    private (string Izena, string Abizena, string Abizena2, string Dni, string? Posta, string Kargoa, string Pasahitza)
+        EskuratuGarapenAdminSeedBalioak()
+    {
+        var posta = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_POSTA")?.Trim();
+        var pasahitza = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_PASAHITZA");
+        var izena = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_IZENA")?.Trim();
+        var abizena = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_ABIZENA")?.Trim();
+        if (string.IsNullOrWhiteSpace(posta) || string.IsNullOrWhiteSpace(pasahitza) ||
+            string.IsNullOrWhiteSpace(izena) || string.IsNullOrWhiteSpace(abizena))
+        {
+            _logger.LogInformation(
+                "Administratzaile seed: KIROKU_GARAPEN_ADMIN_POSTA, _PASAHITZA, _IZENA eta _ABIZENA behar dira; ez da administratzailea sortuko.");
+            return (string.Empty, string.Empty, string.Empty, string.Empty, null, string.Empty, string.Empty);
+        }
+
+        var abizena2 = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_ABIZENA2")?.Trim() ?? string.Empty;
+        var dni = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_DNI")?.Trim() ?? string.Empty;
+        var kargoa = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_KARGOA")?.Trim() ?? string.Empty;
+        return (izena, abizena, abizena2, dni, posta, kargoa, pasahitza);
     }
 #endif
 
