@@ -49,6 +49,7 @@ public sealed class ErabiltzaileZerbitzua
             SorkuntzaData = orain,
             Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash),
             Rola = (int)ErabiltzaileRola.Langilea,
+            Aktiboa = 1
         };
 
         try
@@ -80,7 +81,59 @@ public sealed class ErabiltzaileZerbitzua
         if (!zuzena)
             return (SaioHasieraEmaitzaMota.PasahitzaOkerra, null);
 
+        if (erabiltzailea.Aktiboa == 0)
+            return (SaioHasieraEmaitzaMota.KontuaDesaktibatuta, null);
+
         return (SaioHasieraEmaitzaMota.Ongi, erabiltzailea);
+    }
+
+    public async Task AdministratzaileakEguneratuErabiltzaileProfilaAsync(
+        int erabiltzaileId,
+        string izena,
+        string abizena,
+        string abizena2,
+        string dni,
+        string posta,
+        string kargoa,
+        int aktiboa,
+        CancellationToken cancellationToken = default)
+    {
+        var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Erabiltzailea ez da aurkitu.");
+
+        erabiltzailea.Izena = izena.Trim();
+        erabiltzailea.Abizena = abizena.Trim();
+        erabiltzailea.Abizena2 = abizena2.Trim();
+        erabiltzailea.DNI = dni.Trim();
+        erabiltzailea.Posta = NormalizatuPosta(posta);
+        erabiltzailea.Kargoa = kargoa.Trim();
+        erabiltzailea.Aktiboa = aktiboa == 0 ? 0 : 1;
+
+        try
+        {
+            await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
+        }
+        catch (SQLiteException sqlEx) when (sqlEx.Result == SQLite3.Result.Constraint)
+        {
+            _logger.LogWarning(sqlEx, "Administratzaile eguneraketa: murrizketa.");
+            throw;
+        }
+    }
+
+    public async Task AdministratzaileakBerrezarriPasahitzaLangilearentzatAsync(
+        int erabiltzaileId,
+        string pasahitzaBerria,
+        CancellationToken cancellationToken = default)
+    {
+        var pasahitzaGarbia = pasahitzaBerria.Trim();
+        ArgumentException.ThrowIfNullOrWhiteSpace(pasahitzaGarbia);
+
+        var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Erabiltzailea ez da aurkitu.");
+
+        var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitzaGarbia);
+        erabiltzailea.Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
+        await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<ErabiltzaileLaburpena?> EskuratuProfilLaburpenaIdzAsync(

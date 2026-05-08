@@ -157,6 +157,9 @@ public partial class SaioHasieraViewModel : ObservableObject
                 case SaioHasieraEmaitzaMota.KontuaBlokeatuta:
                     ErroreMezua = "Kontua blokeatuta dago. Jarri harremanetan administratzailearekin.";
                     break;
+                case SaioHasieraEmaitzaMota.KontuaDesaktibatuta:
+                    ErroreMezua = "Kontua desaktibatuta dago. Jarri harremanetan administratzailearekin.";
+                    break;
                 default:
                     ErroreMezua = "Ezin izan da saioa hasi. Saiatu berriro.";
                     break;

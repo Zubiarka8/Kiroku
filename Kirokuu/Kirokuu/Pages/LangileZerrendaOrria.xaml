@@ -5,8 +5,16 @@
              xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Kirokuu.Pages.LangileZerrendaOrria"
+             x:Name="LangileZerrendaOrriOrokorra"
              x:DataType="vm:LangileZerrendaViewModel"
-             Title="Langile zerrenda">
+             Title="Erabiltzaileak">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Berria"
+                     Command="{Binding LangileBerriaIrekiCommand}"
+                     Order="Primary"
+                     Priority="0" />
+    </ContentPage.ToolbarItems>
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing"
@@ -37,8 +45,13 @@
             </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="datu:ErabiltzaileLaburpena">
-                    <Grid Padding="12,8" ColumnDefinitions="*">
-                        <VerticalStackLayout Spacing="2">
+                    <Border Padding="12,8" Margin="4,2">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={x:Reference LangileZerrendaOrriOrokorra}, Path=BindingContext.IrekiXehetasunaCommand}"
+                                CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="4">
                             <HorizontalStackLayout Spacing="6">
                                 <Label Text="{Binding Izena}" FontAttributes="Bold" />
                                 <Label Text="{Binding Abizena}" FontAttributes="Bold" />
@@ -46,8 +59,11 @@
                             <Label Text="{Binding Posta}"
                                    FontSize="13"
                                    TextColor="{AppThemeBinding Light=#555555, Dark=#BBBBBB}" />
+                            <Label Text="{Binding AktiboTestua}"
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
                         </VerticalStackLayout>
-                    </Grid>
+                    </Border>
                 </DataTemplate>
             </CollectionView.ItemTemplate>
         </CollectionView>

@@ -86,12 +86,26 @@ public static class MauiProgram
         builder.Services.AddTransient<HasieraViewModel>();
         builder.Services.AddTransient<EzarpenakViewModel>();
         builder.Services.AddTransient<LangileZerrendaViewModel>();
+        builder.Services.AddTransient<AdministratzaileHasieraViewModel>();
+        builder.Services.AddTransient<ErabiltzaileBerriaViewModel>();
+        builder.Services.AddTransient<ErabiltzaileXehetasunViewModel>();
+        builder.Services.AddTransient<MugimenduakViewModel>();
+        builder.Services.AddTransient<TxostenOnarpenXehetasunViewModel>();
+        builder.Services.AddTransient<DiruSarreraOnarpenXehetasunViewModel>();
+        builder.Services.AddTransient<LangileDiruEskaeraInformeaViewModel>();
         builder.Services.AddTransient<SaioHasieraOrria>();
         builder.Services.AddTransient<ErregistroOrria>();
         builder.Services.AddTransient<HasieraOrria>();
         builder.Services.AddTransient<LasterEdukiaOrria>();
         builder.Services.AddTransient<EzarpenakOrria>();
         builder.Services.AddTransient<LangileZerrendaOrria>();
+        builder.Services.AddTransient<AdministratzaileHasieraOrria>();
+        builder.Services.AddTransient<ErabiltzaileBerriaOrria>();
+        builder.Services.AddTransient<ErabiltzaileXehetasunOrria>();
+        builder.Services.AddTransient<MugimenduakOrria>();
+        builder.Services.AddTransient<TxostenOnarpenXehetasunOrria>();
+        builder.Services.AddTransient<DiruSarreraOnarpenXehetasunOrria>();
+        builder.Services.AddTransient<DiruEskaerakInformeaOrria>();
         builder.Services.AddTransient<AppShell>();
 
 #if DEBUG

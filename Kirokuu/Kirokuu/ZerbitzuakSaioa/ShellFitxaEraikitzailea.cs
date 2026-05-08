@@ -28,9 +28,10 @@ public sealed class ShellFitxaEraikitzailea
 
         if (adminDa)
         {
-            tabBar.Items.Add(SortuLasterEdukia("Txartel guztiak", "TxartelGuztiak"));
-            tabBar.Items.Add(SortuLasterEdukia("Nire gastuak", "NireGastuak"));
-            tabBar.Items.Add(SortuLangileZerrenda());
+            tabBar.Items.Add(SortuAdministratzaileOrria<AdministratzaileHasieraOrria>("Hasiera"));
+            tabBar.Items.Add(SortuAdministratzaileOrria<LangileZerrendaOrria>("Erabiltzaileak"));
+            tabBar.Items.Add(SortuAdministratzaileOrria<MugimenduakOrria>("Mugimenduak"));
+            tabBar.Items.Add(SortuAdministratzaileOrria<DiruEskaerakInformeaOrria>("Informea"));
             tabBar.Items.Add(SortuEzarpenak());
         }
         else
@@ -43,6 +44,17 @@ public sealed class ShellFitxaEraikitzailea
         shell.Items.Add(tabBar);
     }
 
+    private ShellContent SortuAdministratzaileOrria<T>(string titulua) where T : Page
+    {
+        var orria = _zerbitzuHornitzailea.GetRequiredService<T>();
+        return new ShellContent
+        {
+            Title = titulua,
+            Content = orria,
+            Route = typeof(T).Name
+        };
+    }
+
     private ShellContent SortuLasterEdukia(string titulua, string ibilbidea)
     {
         var orria = _zerbitzuHornitzailea.GetRequiredService<LasterEdukiaOrria>();
@@ -51,17 +63,6 @@ public sealed class ShellFitxaEraikitzailea
             Title = titulua,
             Content = orria,
             Route = ibilbidea
-        };
-    }
-
-    private ShellContent SortuLangileZerrenda()
-    {
-        var orria = _zerbitzuHornitzailea.GetRequiredService<LangileZerrendaOrria>();
-        return new ShellContent
-        {
-            Title = "Langile zerrenda",
-            Content = orria,
-            Route = nameof(LangileZerrendaOrria)
         };
     }
 

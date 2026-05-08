@@ -2,29 +2,27 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuEreduak;
-using Kirokuu.Pages;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.Controls;
 using SQLite;
 using System.Net.Http;
 
 namespace Kirokuu.ViewModels;
 
-public partial class LangileZerrendaViewModel : ObservableObject
+public partial class LangileDiruEskaeraInformeaViewModel : ObservableObject
 {
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
-    private readonly ErabiltzaileZerbitzua _erabiltzaileZerbitzua;
-    private readonly ILogger<LangileZerrendaViewModel> _logger;
+    private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
+    private readonly ILogger<LangileDiruEskaeraInformeaViewModel> _logger;
 
-    public LangileZerrendaViewModel(
+    public LangileDiruEskaeraInformeaViewModel(
         AutorizazioZerbitzua autorizazioZerbitzua,
-        ErabiltzaileZerbitzua erabiltzaileZerbitzua,
-        ILogger<LangileZerrendaViewModel> logger)
+        DatuBaseaZerbitzua datuBaseaZerbitzua,
+        ILogger<LangileDiruEskaeraInformeaViewModel> logger)
     {
         _autorizazioZerbitzua = autorizazioZerbitzua ?? throw new ArgumentNullException(nameof(autorizazioZerbitzua));
-        _erabiltzaileZerbitzua = erabiltzaileZerbitzua ?? throw new ArgumentNullException(nameof(erabiltzaileZerbitzua));
+        _datuBaseaZerbitzua = datuBaseaZerbitzua ?? throw new ArgumentNullException(nameof(datuBaseaZerbitzua));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -37,14 +35,14 @@ public partial class LangileZerrendaViewModel : ObservableObject
     [ObservableProperty]
     private string _hutsaMezua = string.Empty;
 
-    public ObservableCollection<ErabiltzaileLaburpena> Langileak { get; } = new();
+    public ObservableCollection<LangileDiruEskaeraInformea> Informeak { get; } = new();
 
     [RelayCommand]
     private async Task AgertzenDeneanAsync()
     {
         ErroreMezua = null;
         HutsaMezua = string.Empty;
-        Langileak.Clear();
+        Informeak.Clear();
 
         try
         {
@@ -55,43 +53,43 @@ public partial class LangileZerrendaViewModel : ObservableObject
                 return;
             }
 
-            var zerrenda = await _erabiltzaileZerbitzua.EskuratuLangileenLaburpenakAsync().ConfigureAwait(true);
+            var zerrenda = await _datuBaseaZerbitzua.EskuratuLangileDiruEskaeraInformeakAsync().ConfigureAwait(true);
             foreach (var lerroa in zerrenda)
-                Langileak.Add(lerroa);
+                Informeak.Add(lerroa);
 
-            if (Langileak.Count == 0)
-                HutsaMezua = "Oraindik ez dago langilerik erregistratuta.";
+            if (Informeak.Count == 0)
+                HutsaMezua = "Ez dago Zain egoerako eskaerarik langileek.";
         }
         catch (TursoExekuzioSalbuespena libEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
                 ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(libEx, "Langile zerrenda: Turso/libSQL errorea.");
+            _logger.LogError(libEx, "Informea: Turso errorea.");
         }
         catch (KeyNotFoundException knfEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Langile zerrenda: zutabe edo mapa errorea.");
+            _logger.LogError(knfEx, "Informea: mapa errorea.");
         }
         catch (FormatException fmtEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Langile zerrenda: balio formatu errorea.");
+            _logger.LogError(fmtEx, "Informea: formatu errorea.");
         }
         catch (SQLiteException sqlEx)
         {
             ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Langile zerrenda: SQLite errorea.");
+            _logger.LogError(sqlEx, "Informea: SQLite errorea.");
         }
         catch (HttpRequestException httpEx)
         {
             ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Langile zerrenda: sare errorea (Turso?).");
+            _logger.LogError(httpEx, "Informea: sare errorea.");
         }
         catch (InvalidOperationException opEx)
         {
             ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Langile zerrenda: eragiketa baliogabea.");
+            _logger.LogError(opEx, "Informea: eragiketa baliogabea.");
         }
         catch (TaskCanceledException)
         {
@@ -100,28 +98,11 @@ public partial class LangileZerrendaViewModel : ObservableObject
         catch (Exception ex)
         {
             ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Langile zerrenda: ustekabeko errorea.");
+            _logger.LogError(ex, "Informea: ustekabeko errorea.");
         }
         finally
         {
             IsKargatzean = false;
         }
-    }
-
-    [RelayCommand]
-    private async Task LangileBerriaIrekiAsync()
-    {
-        await Shell.Current.GoToAsync(nameof(ErabiltzaileBerriaOrria)).ConfigureAwait(true);
-    }
-
-    [RelayCommand]
-    private async Task IrekiXehetasunaAsync(ErabiltzaileLaburpena? laburpena)
-    {
-        if (laburpena is null)
-            return;
-
-        await Shell.Current
-            .GoToAsync($"{nameof(ErabiltzaileXehetasunOrria)}?ErabiltzaileId={laburpena.Id}")
-            .ConfigureAwait(true);
     }
 }

@@ -37,6 +37,8 @@ public sealed class BidaiaTxostena
     [NotNull]
     public string Egoera { get; set; } = string.Empty;
 
+    public string? AdminOharra { get; set; }
+
     [NotNull]
     public string MonetaKodea { get; set; } = string.Empty;
 

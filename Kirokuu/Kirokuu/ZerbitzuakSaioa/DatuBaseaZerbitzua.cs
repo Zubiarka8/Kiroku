@@ -7,7 +7,7 @@ using SQLite;
 
 namespace Kirokuu.ZerbitzuakSaioa;
 
-public sealed class DatuBaseaZerbitzua
+public sealed partial class DatuBaseaZerbitzua
 {
     // Libsql.Client: UTF-8 zero byte ataletan fixed() punteroa null da; libsql_bind_string kolapsatu daiteke.
     private const string LibsqlKateHutsarenOrdezkoa = "\u2060";
@@ -169,7 +169,11 @@ public sealed class DatuBaseaZerbitzua
             return await BilatuErabiltzaileLaburpenaIdzTursoAsync(id, cancellationToken).ConfigureAwait(false);
 
         var zerrenda = await _sqliteKonexioa!.QueryAsync<ErabiltzaileLaburpena>(
-            "SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1",
+            """
+            SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                   COALESCE(Aktiboa, 1) AS Aktiboa
+            FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1
+            """,
             id).ConfigureAwait(false);
 
         return zerrenda.FirstOrDefault();
@@ -184,7 +188,13 @@ public sealed class DatuBaseaZerbitzua
             return await ZerrendatuLangileLaburpenakTursoAsync(cancellationToken).ConfigureAwait(false);
 
         var zerrenda = await _sqliteKonexioa!.QueryAsync<ErabiltzaileLaburpena>(
-            "SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta FROM Erabiltzaileak WHERE Rola = ? ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE",
+            """
+            SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                   COALESCE(Aktiboa, 1) AS Aktiboa
+            FROM Erabiltzaileak
+            WHERE Rola = ?
+            ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE
+            """,
             (int)ErabiltzaileRola.Langilea).ConfigureAwait(false);
 
         return zerrenda;
@@ -201,8 +211,10 @@ public sealed class DatuBaseaZerbitzua
                 await ExekutatuTursoanAsync(async bezeroa =>
                 {
                     await BermatErabiltzaileaTaulaTursoAsync(bezeroa, CancellationToken.None).ConfigureAwait(false);
+                    await BermatuTursoGainerakoTaulakEtaZutabeakAsync(bezeroa, CancellationToken.None).ConfigureAwait(false);
 #if DEBUG
                     await AdministratzaileLehenarenSeedTursoAsync(bezeroa, CancellationToken.None).ConfigureAwait(false);
+                    await AdministratzaileProbakoDatuakTursoAsync(bezeroa, CancellationToken.None).ConfigureAwait(false);
 #endif
                     return 0;
                 }, CancellationToken.None).ConfigureAwait(false);
@@ -213,10 +225,13 @@ public sealed class DatuBaseaZerbitzua
             await BermatuSqliteErabiltzaileEskemaAsync().ConfigureAwait(false);
             await SortuSqliteTaulaAsync<GastuKontzeptua>("GastuKontzeptuak").ConfigureAwait(false);
             await SortuSqliteTaulaAsync<BidaiaTxostena>("BidaiaTxostenak").ConfigureAwait(false);
+            await BermatuSqliteBidaiaTxostenaAdminOharraAsync().ConfigureAwait(false);
             await SortuSqliteTaulaAsync<GastuLerroa>("GastuLerroak").ConfigureAwait(false);
             await SortuSqliteTaulaAsync<AuditoretzaLoga>("AuditoretzaLoga").ConfigureAwait(false);
+            await SortuSqliteTaulaAsync<DiruSarrera>("DiruSarrerak").ConfigureAwait(false);
 #if DEBUG
-            await AdministratzaileLehenarenSeedGarapeneanAsync().ConfigureAwait(false);
+                    await AdministratzaileLehenarenSeedGarapeneanAsync().ConfigureAwait(false);
+                    await AdministratzaileProbakoDatuakSQLiteAsync().ConfigureAwait(false);
 #endif
             _logger.LogDebug("Datu-basea hasieratzea amaitu da.");
             GarapenLogaDebug("Datu-basea hasieratzea amaitu da.");
@@ -284,10 +299,32 @@ public sealed class DatuBaseaZerbitzua
         }
 
         zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
+        if (!zutabeak.Contains("Aktiboa"))
+        {
+            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN Aktiboa INTEGER NOT NULL DEFAULT 1").ConfigureAwait(false);
+            _logger.LogWarning("SQLite Erabiltzaileak taulan Aktiboa zutabea gehitu da.");
+            GarapenLogaWarning("SQLite Erabiltzaileak taulan Aktiboa zutabea gehitu da.");
+        }
+
+        zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
         await MigratuSqlitePasahitzZaharrakAsync(zutabeak).ConfigureAwait(false);
         await KenduSqliteNanIndizeBakarraAsync().ConfigureAwait(false);
         _logger.LogDebug("SQLite Erabiltzaileak eskema egiaztatzea amaitu da.");
         GarapenLogaDebug("SQLite Erabiltzaileak eskema egiaztatzea amaitu da.");
+    }
+
+    private async Task BermatuSqliteBidaiaTxostenaAdminOharraAsync()
+    {
+        var zutabeak = await _sqliteKonexioa!.QueryAsync<SqliteZutabea>("PRAGMA table_info('BidaiaTxostenak')").ConfigureAwait(false);
+        var izenak = zutabeak
+            .Select(zutabea => zutabea.Izena)
+            .Where(izena => !string.IsNullOrWhiteSpace(izena))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+        if (izenak.Contains("AdminOharra"))
+            return;
+
+        await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN AdminOharra TEXT").ConfigureAwait(false);
+        _logger.LogWarning("SQLite BidaiaTxostenak taulan AdminOharra zutabea gehitu da.");
     }
 
     private async Task<HashSet<string>> IrakurriSqliteErabiltzaileZutabeakAsync()
@@ -379,8 +416,8 @@ public sealed class DatuBaseaZerbitzua
             return await ExekutatuTursoanAsync(async bezeroa =>
             {
                 const string sql = """
-                    INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza, Aktiboa)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                     """;
                 var emaitza = await bezeroa.ExekutatuAsync(
                     sql,
@@ -393,7 +430,8 @@ public sealed class DatuBaseaZerbitzua
                     LibsqlLoturaNormalizatua(erabiltzailea.Kargoa),
                     LibsqlLoturaNormalizatua(erabiltzailea.Rola),
                     LibsqlLoturaNormalizatua(erabiltzailea.SorkuntzaData),
-                    LibsqlLoturaNormalizatua(erabiltzailea.Pasahitza)
+                    LibsqlLoturaNormalizatua(erabiltzailea.Pasahitza),
+                    LibsqlLoturaNormalizatua(erabiltzailea.Aktiboa)
                 ).ConfigureAwait(false);
                 var idBerria = (int)emaitza.AzkenTxertatutakoErrenkadaId;
                 erabiltzailea.Id = idBerria;
@@ -434,7 +472,7 @@ public sealed class DatuBaseaZerbitzua
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
+        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza, Aktiboa FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
         var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(postaNormalizatua)).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
@@ -445,7 +483,7 @@ public sealed class DatuBaseaZerbitzua
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
+        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza, Aktiboa FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
         var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, id).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
@@ -456,7 +494,7 @@ public sealed class DatuBaseaZerbitzua
         {
             const string sql = """
                 UPDATE Erabiltzaileak
-                SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Rola = ?, SorkuntzaData = ?, Pasahitza = ?
+                SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Rola = ?, SorkuntzaData = ?, Pasahitza = ?, Aktiboa = ?
                 WHERE ErabiltzaileId = ?;
                 """;
             await bezeroa.ExekutatuAsync(
@@ -471,6 +509,7 @@ public sealed class DatuBaseaZerbitzua
                 LibsqlLoturaNormalizatua(erabiltzailea.Rola),
                 LibsqlLoturaNormalizatua(erabiltzailea.SorkuntzaData),
                 LibsqlLoturaNormalizatua(erabiltzailea.Pasahitza),
+                LibsqlLoturaNormalizatua(erabiltzailea.Aktiboa),
                 LibsqlLoturaNormalizatua(erabiltzailea.Id)).ConfigureAwait(false);
             return 0;
         }, cancellationToken).ConfigureAwait(false);
@@ -481,7 +520,11 @@ public sealed class DatuBaseaZerbitzua
         return await ExekutatuTursoanAsync(async bezeroa =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            const string sql = "SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
+            const string sql = """
+                SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                       COALESCE(Aktiboa, 1) AS Aktiboa
+                FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;
+                """;
             var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, id).ConfigureAwait(false);
             return MapeatuLangileLaburpenak(emaitza).FirstOrDefault();
         }, cancellationToken).ConfigureAwait(false);
@@ -493,7 +536,9 @@ public sealed class DatuBaseaZerbitzua
         {
             cancellationToken.ThrowIfCancellationRequested();
             const string sql = """
-                SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta FROM Erabiltzaileak
+                SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                       COALESCE(Aktiboa, 1) AS Aktiboa
+                FROM Erabiltzaileak
                 WHERE Rola = ?
                 ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
                 """;
@@ -583,7 +628,8 @@ public sealed class DatuBaseaZerbitzua
             Rola = IrakurriMapaOsoa(mapa, "Rola"),
             SorkuntzaData = IrakurriMapaDataOrduaLehenetsia(mapa, "SorkuntzaData")
                 .ToString("o", CultureInfo.InvariantCulture),
-            Pasahitza = IrakurriMapaTestuaLehenetsia(mapa, "Pasahitza")
+            Pasahitza = IrakurriMapaTestuaLehenetsia(mapa, "Pasahitza"),
+            Aktiboa = IrakurriMapaOsoaLehenetsia(mapa, "Aktiboa", 1)
         };
     }
 
@@ -618,7 +664,8 @@ public sealed class DatuBaseaZerbitzua
                 Id = IrakurriMapaOsoa(mapa, "Id"),
                 Izena = IrakurriMapaTestua(mapa, "Izena"),
                 Abizena = IrakurriMapaTestua(mapa, "Abizena"),
-                Posta = IrakurriMapaTestua(mapa, "Posta")
+                Posta = IrakurriMapaTestua(mapa, "Posta"),
+                Aktiboa = IrakurriMapaOsoaLehenetsia(mapa, "Aktiboa", 1)
             });
         }
 
@@ -649,8 +696,8 @@ public sealed class DatuBaseaZerbitzua
             var pasahitzaKatea = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
             await bezeroa.ExekutatuAsync(
                 """
-                INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
+                INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza, Aktiboa)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
                 cancellationToken,
                 LibsqlLoturaNormalizatua(adminIzena),
@@ -661,7 +708,8 @@ public sealed class DatuBaseaZerbitzua
                 LibsqlLoturaNormalizatua(adminKargoa),
                 LibsqlLoturaNormalizatua((int)ErabiltzaileRola.Administratzailea),
                 LibsqlLoturaNormalizatua(orain),
-                LibsqlLoturaNormalizatua(pasahitzaKatea)).ConfigureAwait(false);
+                LibsqlLoturaNormalizatua(pasahitzaKatea),
+                LibsqlLoturaNormalizatua(1)).ConfigureAwait(false);
 
             _logger.LogWarning(
                 "Garapeneko administratzailea sortu da (Turso): {Posta}. Pasahitza aldatu produkzioa baino lehen.",
@@ -717,7 +765,8 @@ public sealed class DatuBaseaZerbitzua
                 Kargoa = adminKargoa,
                 SorkuntzaData = orain,
                 Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash),
-                Rola = (int)ErabiltzaileRola.Administratzailea
+                Rola = (int)ErabiltzaileRola.Administratzailea,
+                Aktiboa = 1
             };
 
             await _sqliteKonexioa.InsertAsync(admin).ConfigureAwait(false);

@@ -31,6 +31,8 @@ public sealed class Erabiltzailea
 
     public int Rola { get; set; }
 
+    public int Aktiboa { get; set; } = 1;
+
     [NotNull]
     [Column("SorkuntzaData")]
     public string SorkuntzaData { get; set; } = string.Empty;
