@@ -1,8 +1,8 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.Pages;
+using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
-using Libsql.Client;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.ApplicationModel;
@@ -79,7 +79,7 @@ public partial class SaioHasieraViewModel : ObservableObject
             ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
             _logger.LogError(opEx, "Saio hasiera: nabigazio errorea agertzean.");
         }
-        catch (LibsqlException libEx)
+        catch (TursoExekuzioSalbuespena libEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
                 ?? "Datu-base errorea: ezin izan da kargatu. Saiatu berriro.";
@@ -162,7 +162,7 @@ public partial class SaioHasieraViewModel : ObservableObject
                     break;
             }
         }
-        catch (LibsqlException libEx)
+        catch (TursoExekuzioSalbuespena libEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
                 ?? "Datu-base errorea: ezin izan da saioa hasi. Saiatu berriro.";

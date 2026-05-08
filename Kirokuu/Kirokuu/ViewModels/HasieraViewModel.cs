@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
-using Libsql.Client;
 using Microsoft.Extensions.Logging;
 
 namespace Kirokuu.ViewModels;
@@ -44,7 +44,7 @@ public partial class HasieraViewModel : ObservableObject
             ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
             _logger.LogError(opEx, "Hasiera: saioa irakurtzean.");
         }
-        catch (LibsqlException libEx)
+        catch (TursoExekuzioSalbuespena libEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
                 ?? "Datu-base errorea: ezin izan da kargatu. Saiatu berriro.";

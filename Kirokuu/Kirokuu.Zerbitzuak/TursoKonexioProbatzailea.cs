@@ -1,16 +1,14 @@
-using Libsql.Client;
-
 namespace Kirokuu.Zerbitzuak;
 
 /// <summary>
-/// Verifies Turso / libSQL credentials with a trivial remote query.
+/// Egiaztatzen du Tursoaren autentifikazioa eta helbidea kontsulta sinple batekin (HTTPS pipeline).
 /// </summary>
 public static class TursoKonexioProbatzailea
 {
     /// <summary>
-    /// Opens a remote libSQL client using <c>TURSO_DATABASE_URL</c> and <c>TURSO_AUTH_TOKEN</c>, runs <c>SELECT 1</c>, and disposes the client.
+    /// <c>TURSO_DATABASE_URL</c> eta <c>TURSO_AUTH_TOKEN</c> erabiliz <c>SELECT 1</c> exekutatzen du.
     /// </summary>
-    /// <exception cref="InvalidOperationException">When required environment variables are missing or the result is unexpected.</exception>
+    /// <exception cref="InvalidOperationException">Aldagaiak falta dira edo erantzuna ez da espero dena.</exception>
     public static async Task EgiaztatuSelectBatAsync(CancellationToken cancellationToken = default)
     {
         var databaseUrl = Environment.GetEnvironmentVariable("TURSO_DATABASE_URL");
@@ -23,32 +21,22 @@ public static class TursoKonexioProbatzailea
 
         var normalizedUrl = TursoHttpsHelbideaNormalizatu(databaseUrl.Trim());
 
-        using var client = await DatabaseClient.Create(options =>
-        {
-            options.Url = normalizedUrl;
-            options.AuthToken = authToken.Trim();
-            options.UseHttps = true;
-        }).ConfigureAwait(false);
-
+        using var egikaritzaile = new TursoHttpsPipelineEgikaritzailea(normalizedUrl, authToken.Trim());
         cancellationToken.ThrowIfCancellationRequested();
 
-        var result = await client.Execute("SELECT 1").ConfigureAwait(false);
+        var emaitza = await egikaritzaile.ExekutatuAsync("SELECT 1", cancellationToken).ConfigureAwait(false);
 
-        var firstRow = result.Rows.FirstOrDefault();
-        if (firstRow is null)
+        var lehenLerroa = emaitza.LerroTestuBalioak.FirstOrDefault();
+        if (lehenLerroa is null || lehenLerroa.Count == 0)
             throw new InvalidOperationException("SELECT 1 returned no rows.");
 
-        var firstValue = firstRow.FirstOrDefault();
-        if (firstValue is null)
-            throw new InvalidOperationException("SELECT 1 returned an empty row.");
-
-        var text = firstValue.ToString();
-        if (text != "1")
-            throw new InvalidOperationException($"SELECT 1 expected value 1, got: {text}");
+        var testua = lehenLerroa[0];
+        if (testua != "1")
+            throw new InvalidOperationException($"SELECT 1 expected value 1, got: {testua}");
     }
 
     /// <summary>
-    /// Libsql.Client expects an <c>https://</c> host URL; Turso dashboard often shows <c>libsql://</c>.
+    /// Turso panelak askotan <c>libsql://</c> erakusten du; HTTPS pipeline-k <c>https://</c> behar du.
     /// </summary>
     public static string TursoHttpsHelbideaNormalizatu(string databaseUrl)
     {

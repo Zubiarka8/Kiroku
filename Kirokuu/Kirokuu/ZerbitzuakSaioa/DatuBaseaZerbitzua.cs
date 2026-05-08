@@ -2,7 +2,6 @@ using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
 using Kirokuu.Zerbitzuak;
-using Libsql.Client;
 using Microsoft.Extensions.Logging;
 using SQLite;
 
@@ -18,7 +17,7 @@ public sealed class DatuBaseaZerbitzua
     private readonly string? _tursoHttpsUrl;
     private readonly string? _tursoAuthToken;
     private readonly SemaphoreSlim _tursoLanSarraila = new(1, 1);
-    private IDatabaseClient? _tursoBezeroa;
+    private TursoHttpsPipelineEgikaritzailea? _tursoHttpsEgikaritzailea;
 
     private readonly PasahitzaZerbitzua _pasahitzaZerbitzua;
     private readonly ILogger<DatuBaseaZerbitzua> _logger;
@@ -185,9 +184,9 @@ public sealed class DatuBaseaZerbitzua
             {
                 await ExekutatuTursoanAsync(async bezeroa =>
                 {
-                    await BermatErabiltzaileaTaulaTursoAsync(bezeroa).ConfigureAwait(false);
+                    await BermatErabiltzaileaTaulaTursoAsync(bezeroa, CancellationToken.None).ConfigureAwait(false);
 #if DEBUG
-                    await AdministratzaileLehenarenSeedTursoAsync(bezeroa).ConfigureAwait(false);
+                    await AdministratzaileLehenarenSeedTursoAsync(bezeroa, CancellationToken.None).ConfigureAwait(false);
 #endif
                     return 0;
                 }, CancellationToken.None).ConfigureAwait(false);
@@ -221,19 +220,14 @@ public sealed class DatuBaseaZerbitzua
         GarapenLogaDebug($"SQLite taula prest: {taulaIzena}.");
     }
 
-    private async Task<T> ExekutatuTursoanAsync<T>(Func<IDatabaseClient, Task<T>> lan, CancellationToken cancellationToken)
+    private async Task<T> ExekutatuTursoanAsync<T>(Func<ITursoSqlEgikaritzailea, Task<T>> lan, CancellationToken cancellationToken)
     {
         await _tursoLanSarraila.WaitAsync(cancellationToken).ConfigureAwait(false);
         try
         {
-            _tursoBezeroa ??= await DatabaseClient.Create(options =>
-            {
-                options.Url = _tursoHttpsUrl!;
-                options.AuthToken = _tursoAuthToken!;
-                options.UseHttps = true;
-            }).ConfigureAwait(false);
+            _tursoHttpsEgikaritzailea ??= new TursoHttpsPipelineEgikaritzailea(_tursoHttpsUrl!, _tursoAuthToken!, _logger);
 
-            return await lan(_tursoBezeroa).ConfigureAwait(false);
+            return await lan(_tursoHttpsEgikaritzailea).ConfigureAwait(false);
         }
         finally
         {
@@ -241,7 +235,7 @@ public sealed class DatuBaseaZerbitzua
         }
     }
 
-    private static async Task BermatErabiltzaileaTaulaTursoAsync(IDatabaseClient bezeroa)
+    private static async Task BermatErabiltzaileaTaulaTursoAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
     {
         const string sql = """
             CREATE TABLE IF NOT EXISTS Erabiltzaileak (
@@ -257,7 +251,7 @@ public sealed class DatuBaseaZerbitzua
                 Pasahitza TEXT NOT NULL DEFAULT ''
             );
             """;
-        await bezeroa.Execute(sql).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task BermatuSqliteErabiltzaileEskemaAsync()
@@ -372,8 +366,9 @@ public sealed class DatuBaseaZerbitzua
                     INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza)
                     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                     """;
-                var emaitza = await bezeroa.Execute(
+                var emaitza = await bezeroa.ExekutatuAsync(
                     sql,
+                    cancellationToken,
                     LibsqlLoturaNormalizatua(erabiltzailea.Izena),
                     LibsqlLoturaNormalizatua(erabiltzailea.Abizena),
                     LibsqlLoturaNormalizatua(erabiltzailea.Abizena2),
@@ -384,7 +379,7 @@ public sealed class DatuBaseaZerbitzua
                     LibsqlLoturaNormalizatua(erabiltzailea.SorkuntzaData),
                     LibsqlLoturaNormalizatua(erabiltzailea.Pasahitza)
                 ).ConfigureAwait(false);
-                var idBerria = (int)emaitza.LastInsertRowId;
+                var idBerria = (int)emaitza.AzkenTxertatutakoErrenkadaId;
                 erabiltzailea.Id = idBerria;
                 var berrizIrakurria = await BilatuErabiltzaileaIdzTursoAsync(bezeroa, idBerria, cancellationToken).ConfigureAwait(false);
                 return berrizIrakurria ?? erabiltzailea;
@@ -418,24 +413,24 @@ public sealed class DatuBaseaZerbitzua
     }
 
     private static async Task<Erabiltzailea?> BilatuErabiltzaileaPostazTursoBarneanAsync(
-        IDatabaseClient bezeroa,
+        ITursoSqlEgikaritzailea bezeroa,
         string postaNormalizatua,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
-        var emaitza = await bezeroa.Execute(sql, LibsqlLoturaNormalizatua(postaNormalizatua)).ConfigureAwait(false);
+        var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(postaNormalizatua)).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
 
     private static async Task<Erabiltzailea?> BilatuErabiltzaileaIdzTursoAsync(
-        IDatabaseClient bezeroa,
+        ITursoSqlEgikaritzailea bezeroa,
         int id,
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
         const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
-        var emaitza = await bezeroa.Execute(sql, id).ConfigureAwait(false);
+        var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, id).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
 
@@ -448,8 +443,9 @@ public sealed class DatuBaseaZerbitzua
                 SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Rola = ?, SorkuntzaData = ?, Pasahitza = ?
                 WHERE ErabiltzaileId = ?;
                 """;
-            await bezeroa.Execute(
+            await bezeroa.ExekutatuAsync(
                 sql,
+                cancellationToken,
                 LibsqlLoturaNormalizatua(erabiltzailea.Izena),
                 LibsqlLoturaNormalizatua(erabiltzailea.Abizena),
                 LibsqlLoturaNormalizatua(erabiltzailea.Abizena2),
@@ -470,7 +466,7 @@ public sealed class DatuBaseaZerbitzua
         {
             cancellationToken.ThrowIfCancellationRequested();
             const string sql = "SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
-            var emaitza = await bezeroa.Execute(sql, id).ConfigureAwait(false);
+            var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, id).ConfigureAwait(false);
             return MapeatuLangileLaburpenak(emaitza).FirstOrDefault();
         }, cancellationToken).ConfigureAwait(false);
     }
@@ -485,19 +481,19 @@ public sealed class DatuBaseaZerbitzua
                 WHERE Rola = ?
                 ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
                 """;
-            var emaitza = await bezeroa.Execute(sql, (int)ErabiltzaileRola.Langilea).ConfigureAwait(false);
+            var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, (int)ErabiltzaileRola.Langilea).ConfigureAwait(false);
             return MapeatuLangileLaburpenak(emaitza);
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private static Erabiltzailea? MapeatuErabiltzaileLehena(IResultSet emaitza)
+    private static Erabiltzailea? MapeatuErabiltzaileLehena(TursoHttpExekuzioarenEmaitza emaitza)
     {
-        var lerroa = emaitza.Rows.FirstOrDefault();
+        var lerroa = emaitza.LerroTestuBalioak.FirstOrDefault();
         if (lerroa is null)
             return null;
 
-        var zutabeak = emaitza.Columns.ToList();
-        var balioak = lerroa.ToList();
+        var zutabeak = emaitza.ZutabeIzenak;
+        var balioak = lerroa;
         return MapeatuErabiltzailea(zutabeak, balioak);
     }
 
@@ -553,7 +549,7 @@ public sealed class DatuBaseaZerbitzua
             ? balioa
             : lehenetsia;
 
-    private static Erabiltzailea MapeatuErabiltzailea(IReadOnlyList<string> zutabeak, IReadOnlyList<Value> balioak)
+    private static Erabiltzailea MapeatuErabiltzailea(IReadOnlyList<string> zutabeak, IReadOnlyList<string> balioak)
     {
         var mapa = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
         for (var i = 0; i < zutabeak.Count && i < balioak.Count; i++)
@@ -590,13 +586,13 @@ public sealed class DatuBaseaZerbitzua
         return DateTime.UtcNow;
     }
 
-    private static IReadOnlyList<ErabiltzaileLaburpena> MapeatuLangileLaburpenak(IResultSet emaitza)
+    private static IReadOnlyList<ErabiltzaileLaburpena> MapeatuLangileLaburpenak(TursoHttpExekuzioarenEmaitza emaitza)
     {
-        var zutabeak = emaitza.Columns.ToList();
+        var zutabeak = emaitza.ZutabeIzenak;
         var zerrenda = new List<ErabiltzaileLaburpena>();
-        foreach (var lerroa in emaitza.Rows)
+        foreach (var lerroa in emaitza.LerroTestuBalioak)
         {
-            var balioak = lerroa.ToList();
+            var balioak = lerroa;
             var mapa = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
             for (var i = 0; i < zutabeak.Count && i < balioak.Count; i++)
                 mapa[zutabeak[i]] = TursoTestuaIrakurri(balioak[i].ToString() ?? string.Empty);
@@ -614,12 +610,13 @@ public sealed class DatuBaseaZerbitzua
     }
 
 #if DEBUG
-    private async Task AdministratzaileLehenarenSeedTursoAsync(IDatabaseClient bezeroa)
+    private async Task AdministratzaileLehenarenSeedTursoAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
     {
         try
         {
-            var kopuruaEmaitza = await bezeroa.Execute(
+            var kopuruaEmaitza = await bezeroa.ExekutatuAsync(
                 "SELECT COUNT(*) AS c FROM Erabiltzaileak WHERE Rola = ?;",
+                cancellationToken,
                 (int)ErabiltzaileRola.Administratzailea).ConfigureAwait(false);
 
             var kopurua = IrakurriKontagailuLehena(kopuruaEmaitza);
@@ -634,11 +631,12 @@ public sealed class DatuBaseaZerbitzua
             var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(adminPasahitza);
             var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
             var pasahitzaKatea = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
-            await bezeroa.Execute(
+            await bezeroa.ExekutatuAsync(
                 """
                 INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Rola, SorkuntzaData, Pasahitza)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
+                cancellationToken,
                 LibsqlLoturaNormalizatua(adminIzena),
                 LibsqlLoturaNormalizatua(adminAbizena),
                 LibsqlLoturaNormalizatua(adminAbizena2),
@@ -659,9 +657,9 @@ public sealed class DatuBaseaZerbitzua
         }
     }
 
-    private static int IrakurriKontagailuLehena(IResultSet emaitza)
+    private static int IrakurriKontagailuLehena(TursoHttpExekuzioarenEmaitza emaitza)
     {
-        var lerroa = emaitza.Rows.FirstOrDefault();
+        var lerroa = emaitza.LerroTestuBalioak.FirstOrDefault();
         if (lerroa is null)
             return 0;
 

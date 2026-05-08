@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
-using Libsql.Client;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.ApplicationModel;
 using SQLite;
@@ -163,7 +163,7 @@ public partial class ErregistroViewModel : ObservableObject
             ErroreXehetasuna = eskX;
             _logger.LogWarning(sqlEx, "Erregistroa: murrizketa urratua.");
         }
-        catch (LibsqlException libEx)
+        catch (TursoExekuzioSalbuespena libEx)
         {
             var (nagusia, xehetasuna) = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezuaXehetasunarekin(libEx);
             ErroreMezua = nagusia ?? "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";

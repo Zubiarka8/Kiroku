@@ -1,5 +1,4 @@
 using System.Net.Http;
-using Libsql.Client;
 
 namespace Kirokuu.ZerbitzuakSaioa;
 
@@ -30,19 +29,13 @@ public static class LibsqlErroreaErabiltzaileMezura
 
         foreach (var gertatu in BildatuSalbuespenZerrenda(ex))
         {
-            var testua = gertatu is LibsqlException lib ? BilduTestuaKatea(lib) : gertatu.Message;
+            var testua = gertatu.Message;
             if (string.IsNullOrWhiteSpace(testua))
                 continue;
 
             var (n, x) = SaiatuMezuTeknikoaBikotea(testua);
             if (n is not null)
                 return (n, x);
-        }
-
-        foreach (var gertatu in BildatuSalbuespenZerrenda(ex))
-        {
-            if (gertatu is LibsqlException libSql)
-                return (MapatuLibsqlTestua(BilduTestuaKatea(libSql)), null);
         }
 
         return (null, null);

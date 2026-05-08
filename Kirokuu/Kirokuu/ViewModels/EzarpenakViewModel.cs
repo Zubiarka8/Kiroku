@@ -1,7 +1,7 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
-using Libsql.Client;
 using Microsoft.Extensions.Logging;
 using SQLite;
 using System.Net.Http;
@@ -73,7 +73,7 @@ public partial class EzarpenakViewModel : ObservableObject
             Abizena = profila.Abizena;
             Posta = profila.Posta;
         }
-        catch (LibsqlException libEx)
+        catch (TursoExekuzioSalbuespena libEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
                 ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";

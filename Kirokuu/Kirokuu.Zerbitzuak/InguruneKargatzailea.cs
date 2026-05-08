@@ -1,4 +1,3 @@
-using System.Net.Http;
 using System.Text;
 using System.Text.Json;
 
@@ -143,5 +142,26 @@ public static class InguruneKargatzailea
         #endregion
 
         return true;
+    }
+
+    /// <summary>
+    /// Android-en paketean sartutako <c>turso_garapena.env</c> bezalako fluxu batetik aldagaiak kargatzen ditu.
+    /// </summary>
+    public static bool KargatuDotEnvFluxutik(Stream fluxua)
+    {
+        if (fluxua is null)
+            throw new ArgumentNullException(nameof(fluxua));
+
+        try
+        {
+            DotNetEnv.Env.Load(
+                fluxua,
+                new DotNetEnv.LoadOptions(setEnvVars: true, clobberExistingVars: true, onlyExactPath: false));
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
     }
 }

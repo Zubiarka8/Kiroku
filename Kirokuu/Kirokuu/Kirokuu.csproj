@@ -55,8 +55,8 @@
 		<!-- Custom Fonts -->
 		<MauiFont Include="Resources\Fonts\*" />
 
-		<!-- Raw Assets (also remove the "Resources\Raw" prefix) -->
-		<MauiAsset Include="Resources\Raw\**" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
+		<!-- Raw: turso_garapena.env build-garaian gehitzen da (Ikusi TursoGarapenaEnvPrestatu). -->
+		<MauiAsset Include="Resources\Raw\**" Exclude="Resources\Raw\turso_garapena.env" LogicalName="%(RecursiveDir)%(Filename)%(Extension)" />
 	</ItemGroup>
 
 	<ItemGroup>
@@ -65,11 +65,31 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
-		<PackageReference Include="Libsql.Client" Version="0.5.1" />
 	</ItemGroup>
 
 	<ItemGroup>
 		<ProjectReference Include="..\Kirokuu.Zerbitzuak\Kirokuu.Zerbitzuak.csproj" />
 	</ItemGroup>
+
+	<PropertyGroup>
+		<KiroRepoInguruneBidea>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\.env'))</KiroRepoInguruneBidea>
+	</PropertyGroup>
+
+	<Target Name="TursoGarapenaEnvPrestatu" BeforeTargets="ProcessMauiAssets" Condition="$([System.String]::Copy('$(TargetFramework)').Contains('-android'))">
+		<PropertyGroup>
+			<_TursoGarapenaHelbidea>$(MSBuildThisFileDirectory)Resources\Raw\turso_garapena.env</_TursoGarapenaHelbidea>
+		</PropertyGroup>
+		<Copy Condition="'$(Configuration)'=='Debug' And Exists('$(KiroRepoInguruneBidea)')" SourceFiles="$(KiroRepoInguruneBidea)" DestinationFiles="$(_TursoGarapenaHelbidea)" SkipUnchangedFiles="true" />
+		<Delete Condition="'$(Configuration)'!='Debug'" Files="$(_TursoGarapenaHelbidea)" ContinueOnError="true" />
+		<ItemGroup Condition="'$(Configuration)'=='Debug' And Exists('$(_TursoGarapenaHelbidea)')">
+			<MauiAsset Include="$(_TursoGarapenaHelbidea)">
+				<LogicalName>turso_garapena.env</LogicalName>
+				<Link>turso_garapena.env</Link>
+			</MauiAsset>
+		</ItemGroup>
+	</Target>
+	<Target Name="GarbitzeanTursoGarapenaEnv" AfterTargets="Clean">
+		<Delete Files="$(MSBuildThisFileDirectory)Resources\Raw\turso_garapena.env" ContinueOnError="true" />
+	</Target>
 
 </Project>
