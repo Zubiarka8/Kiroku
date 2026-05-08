@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
@@ -17,6 +18,8 @@ public partial class EzarpenakViewModel : ObservableObject
     private readonly BerrespenLeihoZerbitzua _berrespenLeihoZerbitzua;
     private readonly ILogger<EzarpenakViewModel> _logger;
 
+    private int? _erabiltzaileId;
+
     public EzarpenakViewModel(
         AutorizazioZerbitzua autorizazioZerbitzua,
         ErabiltzaileZerbitzua erabiltzaileZerbitzua,
@@ -33,25 +36,78 @@ public partial class EzarpenakViewModel : ObservableObject
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
-    [ObservableProperty]
-    private bool _isKargatzean;
+    [ObservableProperty] private bool _isKargatzean;
+    [ObservableProperty] private string? _erroreMezua;
 
-    [ObservableProperty]
-    private string? _erroreMezua;
+    [ObservableProperty] private string _izena = string.Empty;
+    [ObservableProperty] private string _abizena = string.Empty;
+    [ObservableProperty] private string _abizena2 = string.Empty;
+    [ObservableProperty] private string _dNI = string.Empty;
+    [ObservableProperty] private string _posta = string.Empty;
+    [ObservableProperty] private string _kargoa = string.Empty;
+    [ObservableProperty] private string _rolTestu = string.Empty;
+    [ObservableProperty] private string _sorkuntzaDataTestu = string.Empty;
 
-    [ObservableProperty]
-    private string _izena = string.Empty;
+    [ObservableProperty] private string _pasahitzaZaharra = string.Empty;
+    [ObservableProperty] private bool _pasahitzaZaharraMaskaratuta = true;
+    [ObservableProperty] private string _pasahitzaZaharraBegiIzena = "begia_irekita";
+    [ObservableProperty] private string _pasahitzaZaharraBegiDesk = "Erakutsi pasahitza";
 
-    [ObservableProperty]
-    private string _abizena = string.Empty;
+    [ObservableProperty] private bool _pasahitzaEgiaztatuta;
 
-    [ObservableProperty]
-    private string _posta = string.Empty;
+    [ObservableProperty] private string _pasahitzaBerria = string.Empty;
+    [ObservableProperty] private bool _pasahitzaBerriaMaskaratuta = true;
+    [ObservableProperty] private string _pasahitzaBerriaBegiIzena = "begia_irekita";
+    [ObservableProperty] private string _pasahitzaBerriaBegiDesk = "Erakutsi pasahitza";
+
+    [ObservableProperty] private string _pasahitzaBerriaBerretsi = string.Empty;
+    [ObservableProperty] private bool _pasahitzaBerriaBerretsiMaskaratuta = true;
+    [ObservableProperty] private string _pasahitzaBerriaBerretsiBegiIzena = "begia_irekita";
+    [ObservableProperty] private string _pasahitzaBerriaBerretsiBegiDesk = "Erakutsi pasahitza";
+
+    [ObservableProperty] private bool _pasahitzaEkintza;
+    [ObservableProperty] private string? _pasahitzaErroreMezua;
+    [ObservableProperty] private bool _pasahitzaErroreDago;
+
+    partial void OnPasahitzaZaharraMaskaratutaChanged(bool value)
+    {
+        PasahitzaZaharraBegiIzena = value ? "begia_irekita" : "begia_itxita";
+        PasahitzaZaharraBegiDesk = value ? "Erakutsi pasahitza" : "Ezkutatu pasahitza";
+    }
+
+    partial void OnPasahitzaBerriaMaskaratutaChanged(bool value)
+    {
+        PasahitzaBerriaBegiIzena = value ? "begia_irekita" : "begia_itxita";
+        PasahitzaBerriaBegiDesk = value ? "Erakutsi pasahitza" : "Ezkutatu pasahitza";
+    }
+
+    partial void OnPasahitzaBerriaBerretsiMaskaratutaChanged(bool value)
+    {
+        PasahitzaBerriaBerretsiBegiIzena = value ? "begia_irekita" : "begia_itxita";
+        PasahitzaBerriaBerretsiBegiDesk = value ? "Erakutsi pasahitza" : "Ezkutatu pasahitza";
+    }
+
+    partial void OnPasahitzaErroreMezuaChanged(string? value) =>
+        PasahitzaErroreDago = !string.IsNullOrEmpty(value);
+
+    [RelayCommand]
+    private void AlderantzikatuPasahitzaZaharraMaska() => PasahitzaZaharraMaskaratuta = !PasahitzaZaharraMaskaratuta;
+
+    [RelayCommand]
+    private void AlderantzikatuPasahitzaBerriaMaska() => PasahitzaBerriaMaskaratuta = !PasahitzaBerriaMaskaratuta;
+
+    [RelayCommand]
+    private void AlderantzikatuPasahitzaBerriaBerretsiMaska() => PasahitzaBerriaBerretsiMaskaratuta = !PasahitzaBerriaBerretsiMaskaratuta;
 
     [RelayCommand]
     private async Task AgertzenDeneanAsync()
     {
         ErroreMezua = null;
+        PasahitzaErroreMezua = null;
+        PasahitzaEgiaztatuta = false;
+        PasahitzaZaharra = string.Empty;
+        PasahitzaBerria = string.Empty;
+        PasahitzaBerriaBerretsi = string.Empty;
         try
         {
             IsKargatzean = true;
@@ -61,17 +117,27 @@ public partial class EzarpenakViewModel : ObservableObject
                 ErroreMezua = "Saioa ez da aurkitu. Hasi saioa berriro.";
                 return;
             }
+            _erabiltzaileId = id.Value;
 
-            var profila = await _erabiltzaileZerbitzua.EskuratuProfilLaburpenaIdzAsync(id.Value).ConfigureAwait(true);
-            if (profila is null)
+            var erabiltzailea = await _erabiltzaileZerbitzua.EskuratuErabiltzaileaIdzAsync(id.Value).ConfigureAwait(true);
+            if (erabiltzailea is null)
             {
                 ErroreMezua = "Erabiltzailearen datuak ez dira aurkitu.";
                 return;
             }
 
-            Izena = profila.Izena;
-            Abizena = profila.Abizena;
-            Posta = profila.Posta;
+            Izena = erabiltzailea.Izena;
+            Abizena = erabiltzailea.Abizena;
+            Abizena2 = erabiltzailea.Abizena2;
+            DNI = erabiltzailea.DNI;
+            Posta = erabiltzailea.Posta;
+            Kargoa = erabiltzailea.Kargoa;
+            RolTestu = erabiltzailea.Rola == (int)ErabiltzaileRola.Administratzailea ? "Administratzailea" : "Langilea";
+
+            if (DateTime.TryParse(erabiltzailea.SorkuntzaData, null, System.Globalization.DateTimeStyles.RoundtripKind, out var data))
+                SorkuntzaDataTestu = data.ToLocalTime().ToString("dd/MM/yyyy");
+            else
+                SorkuntzaDataTestu = erabiltzailea.SorkuntzaData;
         }
         catch (TursoExekuzioSalbuespena libEx)
         {
@@ -97,7 +163,7 @@ public partial class EzarpenakViewModel : ObservableObject
         catch (HttpRequestException httpEx)
         {
             ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Ezarpenak: sare errorea (Turso?).");
+            _logger.LogError(httpEx, "Ezarpenak: sare errorea.");
         }
         catch (InvalidOperationException opEx)
         {
@@ -116,6 +182,132 @@ public partial class EzarpenakViewModel : ObservableObject
         finally
         {
             IsKargatzean = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PasahitzaEgiaztatzAsync()
+    {
+        PasahitzaErroreMezua = null;
+        if (string.IsNullOrWhiteSpace(PasahitzaZaharra))
+        {
+            PasahitzaErroreMezua = "Sartu zure uneko pasahitza.";
+            return;
+        }
+        if (string.IsNullOrEmpty(Posta))
+        {
+            PasahitzaErroreMezua = "Profileko datuak ez daude kargatuta. Berrabiarazi orria.";
+            return;
+        }
+
+        try
+        {
+            PasahitzaEkintza = true;
+            var (mota, _) = await _erabiltzaileZerbitzua.SaioaHasiAsync(Posta, PasahitzaZaharra).ConfigureAwait(true);
+            if (mota == SaioHasieraEmaitzaMota.Ongi)
+                PasahitzaEgiaztatuta = true;
+            else
+                PasahitzaErroreMezua = "Pasahitza okerra da. Saiatu berriro.";
+        }
+        catch (TursoExekuzioSalbuespena libEx)
+        {
+            PasahitzaErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
+                ?? "Datu-base errorea. Saiatu berriro.";
+            _logger.LogError(libEx, "Ezarpenak: pasahitza egiaztatzean Turso errorea.");
+        }
+        catch (SQLiteException sqlEx)
+        {
+            PasahitzaErroreMezua = "Datu-base errorea. Saiatu berriro.";
+            _logger.LogError(sqlEx, "Ezarpenak: pasahitza egiaztatzean SQLite errorea.");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            PasahitzaErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
+            _logger.LogError(httpEx, "Ezarpenak: sare errorea pasahitza egiaztatzean.");
+        }
+        catch (TaskCanceledException)
+        {
+            PasahitzaErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
+        }
+        catch (Exception ex)
+        {
+            PasahitzaErroreMezua = "Ustekabeko errorea gertatu da.";
+            _logger.LogError(ex, "Ezarpenak: pasahitza egiaztatzean ustekabeko errorea.");
+        }
+        finally
+        {
+            PasahitzaEkintza = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task PasahitzaAldatuAsync()
+    {
+        PasahitzaErroreMezua = null;
+
+        if (string.IsNullOrWhiteSpace(PasahitzaBerria) || PasahitzaBerria.Length < 8)
+        {
+            PasahitzaErroreMezua = "Pasahitz berriak gutxienez 8 karaktere behar ditu.";
+            return;
+        }
+        if (PasahitzaBerria != PasahitzaBerriaBerretsi)
+        {
+            PasahitzaErroreMezua = "Pasahitz berriak ez datoz bat. Egiaztatu eta saiatu berriro.";
+            return;
+        }
+        if (_erabiltzaileId is null)
+        {
+            PasahitzaErroreMezua = "Saioa ez da aurkitu. Berrabiarazi aplikazioa.";
+            return;
+        }
+
+        try
+        {
+            PasahitzaEkintza = true;
+            var aldatua = await _erabiltzaileZerbitzua.AldatuPasahitzaAsync(
+                _erabiltzaileId.Value, PasahitzaZaharra, PasahitzaBerria).ConfigureAwait(true);
+
+            if (!aldatua)
+            {
+                PasahitzaErroreMezua = "Pasahitza okerra da. Ezin izan da aldatu.";
+                return;
+            }
+
+            PasahitzaZaharra = string.Empty;
+            PasahitzaBerria = string.Empty;
+            PasahitzaBerriaBerretsi = string.Empty;
+            PasahitzaEgiaztatuta = false;
+
+            await BokadilloErakustzailea.SaiatuErakutsiAsync("Pasahitza ondo aldatu da.", _logger).ConfigureAwait(true);
+        }
+        catch (TursoExekuzioSalbuespena libEx)
+        {
+            PasahitzaErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
+                ?? "Datu-base errorea. Saiatu berriro.";
+            _logger.LogError(libEx, "Ezarpenak: pasahitza aldatzean Turso errorea.");
+        }
+        catch (SQLiteException sqlEx)
+        {
+            PasahitzaErroreMezua = "Datu-base errorea. Saiatu berriro.";
+            _logger.LogError(sqlEx, "Ezarpenak: pasahitza aldatzean SQLite errorea.");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            PasahitzaErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
+            _logger.LogError(httpEx, "Ezarpenak: sare errorea pasahitza aldatzean.");
+        }
+        catch (TaskCanceledException)
+        {
+            PasahitzaErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
+        }
+        catch (Exception ex)
+        {
+            PasahitzaErroreMezua = "Ustekabeko errorea gertatu da.";
+            _logger.LogError(ex, "Ezarpenak: pasahitza aldatzean ustekabeko errorea.");
+        }
+        finally
+        {
+            PasahitzaEkintza = false;
         }
     }
 

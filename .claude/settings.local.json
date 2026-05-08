@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(dotnet build *)",
+      "Bash(adb devices *)",
+      "Bash(/c/Users/ZUBIA/AppData/Local/Android/Sdk/platform-tools/adb.exe devices *)",
+      "Bash(/c/Users/ZUBIA/AppData/Local/Android/Sdk/platform-tools/adb.exe *)",
+      "Bash(/c/Users/ZUBIA/AppData/Local/Android/Sdk/emulator/emulator.exe *)",
+      "PowerShell(Start-Process -FilePath \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\emulator\\\\emulator.exe\" -ArgumentList \"-avd Pixel_8\" -WindowStyle Normal; Write-Host \"Emulador Pixel_8 iniciado en background\")",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; $max = 60; $i = 0; do { Start-Sleep -Seconds 3; $i += 3; $status = & $adb shell getprop sys.boot_completed 2>$null; Write-Host \"[$i s] boot_completed=$status\" } until \\($status -eq \"1\" -or $i -ge $max\\); if \\($status -eq \"1\"\\) { Write-Host \"Emulador listo.\" } else { Write-Host \"Timeout esperando.\" })",
+      "PowerShell(& \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\" install -r \"C:\\\\Users\\\\ZUBIA\\\\Downloads\\\\git\\\\Kiroku\\\\Kirokuu\\\\Kirokuu\\\\bin\\\\Debug\\\\net9.0-android\\\\com.companyname.kirokuu-Signed.apk\")",
+      "PowerShell(Start-Process -FilePath \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\emulator\\\\emulator.exe\" -ArgumentList \"-avd Bigarren_P8\" -WindowStyle Normal; Write-Host \"Emulador Bigarren_P8 iniciado\")",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb uninstall com.companyname.kirokuu)",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb install \"C:\\\\Users\\\\ZUBIA\\\\Downloads\\\\git\\\\Kiroku\\\\Kirokuu\\\\Kirokuu\\\\bin\\\\Debug\\\\net9.0-android\\\\com.companyname.kirokuu-Signed.apk\")",
+      "PowerShell(Copy-Item *)",
+      "PowerShell(Select-String *)",
+      "PowerShell(dotnet build *)"
+    ]
+  }
+}

@@ -5,7 +5,11 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Kirokuu.Pages.EzarpenakOrria"
              x:DataType="vm:EzarpenakViewModel"
-             Title="Ezarpenak">
+             Title="Nire kontua">
+
+    <ContentPage.Resources>
+        <toolkit:InvertedBoolConverter x:Key="InvertedBoolConverter" />
+    </ContentPage.Resources>
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing"
@@ -14,6 +18,7 @@
 
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
+
             <ActivityIndicator IsRunning="{Binding IsKargatzean}"
                                IsVisible="{Binding IsKargatzean}"
                                HorizontalOptions="Center" />
@@ -27,22 +32,153 @@
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="4">
-                <Label Text="Abizena" FontAttributes="Bold" />
+                <Label Text="Lehen abizena" FontAttributes="Bold" />
                 <Label Text="{Binding Abizena}" />
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="4">
-                <Label Text="Posta" FontAttributes="Bold" />
+                <Label Text="Bigarren abizena" FontAttributes="Bold" />
+                <Label Text="{Binding Abizena2}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="NAN / IFZ" FontAttributes="Bold" />
+                <Label Text="{Binding DNI}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Posta elektronikoa" FontAttributes="Bold" />
                 <Label Text="{Binding Posta}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Kargoa" FontAttributes="Bold" />
+                <Label Text="{Binding Kargoa}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Rola" FontAttributes="Bold" />
+                <Label Text="{Binding RolTestu}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Erregistro data" FontAttributes="Bold" />
+                <Label Text="{Binding SorkuntzaDataTestu}" />
             </VerticalStackLayout>
 
             <Label Text="{Binding ErroreMezua}"
                    TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
                    HorizontalTextAlignment="Center" />
 
-            <Button Text="Saioa itxi"
+            <BoxView HeightRequest="1"
+                     BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                     Margin="0,8" />
+
+            <Label Text="Pasahitza aldatu"
+                   FontAttributes="Bold"
+                   FontSize="18" />
+
+            <VerticalStackLayout Spacing="8"
+                                 IsVisible="{Binding PasahitzaEgiaztatuta, Converter={StaticResource InvertedBoolConverter}}">
+                <Label Text="Pasahitza aldatzeko, sartu lehenik zure uneko pasahitza:" />
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4" VerticalOptions="Center">
+                    <Entry x:Name="PasahitzaZaharraSarrera"
+                           Grid.Column="0"
+                           Text="{Binding PasahitzaZaharra}"
+                           Placeholder="Uneko pasahitza"
+                           IsPassword="{Binding PasahitzaZaharraMaskaratuta}"
+                           SemanticProperties.Hint="Uneko pasahitza" />
+                    <ImageButton x:Name="PasahitzaZaharraBegiTekla"
+                                 Grid.Column="1"
+                                 Source="{Binding PasahitzaZaharraBegiIzena}"
+                                 Command="{Binding AlderantzikatuPasahitzaZaharraMaskaCommand}"
+                                 BackgroundColor="Transparent"
+                                 Padding="8"
+                                 WidthRequest="44"
+                                 HeightRequest="44"
+                                 Aspect="AspectFit"
+                                 SemanticProperties.Description="{Binding PasahitzaZaharraBegiDesk}" />
+                </Grid>
+
+                <Button x:Name="EgiaztatzuTekla"
+                        Text="Egiaztatu"
+                        Command="{Binding PasahitzaEgiaztatzCommand}"
+                        IsEnabled="{Binding PasahitzaEkintza, Converter={StaticResource InvertedBoolConverter}}" />
+
+                <ActivityIndicator IsRunning="{Binding PasahitzaEkintza}"
+                                   IsVisible="{Binding PasahitzaEkintza}"
+                                   HorizontalOptions="Center" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="8"
+                                 IsVisible="{Binding PasahitzaEgiaztatuta}">
+                <Label Text="Pasahitza egiaztatu da. Sartu pasahitz berria:"
+                       TextColor="#2E7D32" />
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4" VerticalOptions="Center">
+                    <Entry x:Name="PasahitzaBerriaSarrera"
+                           Grid.Column="0"
+                           Text="{Binding PasahitzaBerria}"
+                           Placeholder="Pasahitz berria (8 karaktere gutxienez)"
+                           IsPassword="{Binding PasahitzaBerriaMaskaratuta}"
+                           SemanticProperties.Hint="Pasahitz berria" />
+                    <ImageButton x:Name="PasahitzaBerriaBegiTekla"
+                                 Grid.Column="1"
+                                 Source="{Binding PasahitzaBerriaBegiIzena}"
+                                 Command="{Binding AlderantzikatuPasahitzaBerriaMaskaCommand}"
+                                 BackgroundColor="Transparent"
+                                 Padding="8"
+                                 WidthRequest="44"
+                                 HeightRequest="44"
+                                 Aspect="AspectFit"
+                                 SemanticProperties.Description="{Binding PasahitzaBerriaBegiDesk}" />
+                </Grid>
+
+                <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4" VerticalOptions="Center">
+                    <Entry x:Name="PasahitzaBerriaBerretsiSarrera"
+                           Grid.Column="0"
+                           Text="{Binding PasahitzaBerriaBerretsi}"
+                           Placeholder="Berretsi pasahitz berria"
+                           IsPassword="{Binding PasahitzaBerriaBerretsiMaskaratuta}"
+                           SemanticProperties.Hint="Pasahitz berria berretsi" />
+                    <ImageButton x:Name="PasahitzaBerriaBerretsiBegiTekla"
+                                 Grid.Column="1"
+                                 Source="{Binding PasahitzaBerriaBerretsiBegiIzena}"
+                                 Command="{Binding AlderantzikatuPasahitzaBerriaBerretsiMaskaCommand}"
+                                 BackgroundColor="Transparent"
+                                 Padding="8"
+                                 WidthRequest="44"
+                                 HeightRequest="44"
+                                 Aspect="AspectFit"
+                                 SemanticProperties.Description="{Binding PasahitzaBerriaBerretsiBegiDesk}" />
+                </Grid>
+
+                <Button x:Name="PasahitzaAldatuTekla"
+                        Text="Pasahitza aldatu"
+                        Command="{Binding PasahitzaAldatuCommand}"
+                        IsEnabled="{Binding PasahitzaEkintza, Converter={StaticResource InvertedBoolConverter}}" />
+
+                <ActivityIndicator IsRunning="{Binding PasahitzaEkintza}"
+                                   IsVisible="{Binding PasahitzaEkintza}"
+                                   HorizontalOptions="Center" />
+            </VerticalStackLayout>
+
+            <Label Text="{Binding PasahitzaErroreMezua}"
+                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
+                   HorizontalTextAlignment="Center"
+                   IsVisible="{Binding PasahitzaErroreDago}" />
+
+            <BoxView HeightRequest="1"
+                     BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
+                     Margin="0,8" />
+
+            <Button x:Name="SaioaItxiTekla"
+                    Text="Saioa itxi"
                     Command="{Binding SaioaItxiCommand}"
+                    BackgroundColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
                     SemanticProperties.Hint="Saioa itxi eta hasierara itzuli" />
+
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

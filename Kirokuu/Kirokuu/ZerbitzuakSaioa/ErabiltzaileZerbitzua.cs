@@ -90,6 +90,32 @@ public sealed class ErabiltzaileZerbitzua
         return await _datuBaseaZerbitzua.BilatuErabiltzaileLaburpenaIdzAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<Erabiltzailea?> EskuratuErabiltzaileaIdzAsync(
+        int erabiltzaileId,
+        CancellationToken cancellationToken = default)
+    {
+        return await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<bool> AldatuPasahitzaAsync(
+        int erabiltzaileId,
+        string pasahitzaZaharra,
+        string pasahitzaBerria,
+        CancellationToken cancellationToken = default)
+    {
+        var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false);
+        if (erabiltzailea is null)
+            return false;
+
+        if (!_pasahitzaZerbitzua.EgiaztatuGordetakoKatearekin(pasahitzaZaharra.Trim(), erabiltzailea.Pasahitza))
+            return false;
+
+        var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitzaBerria.Trim());
+        erabiltzailea.Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
+        await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
+        return true;
+    }
+
     public async Task<IReadOnlyList<ErabiltzaileLaburpena>> EskuratuLangileenLaburpenakAsync(
         CancellationToken cancellationToken = default)
     {

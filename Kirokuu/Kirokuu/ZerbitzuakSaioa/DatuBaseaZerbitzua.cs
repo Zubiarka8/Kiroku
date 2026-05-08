@@ -128,6 +128,22 @@ public sealed class DatuBaseaZerbitzua
         return zerrenda.FirstOrDefault();
     }
 
+    public async Task<Erabiltzailea?> BilatuErabiltzaileaIdzAsync(int id, CancellationToken cancellationToken = default)
+    {
+        await HasieratuAsync().ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_urrunTursoModua)
+            return await ExekutatuTursoanAsync(
+                bezeroa => BilatuErabiltzaileaIdzTursoAsync(bezeroa, id, cancellationToken),
+                cancellationToken).ConfigureAwait(false);
+
+        var zerrenda = await _sqliteKonexioa!.QueryAsync<Erabiltzailea>(
+            "SELECT * FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1",
+            id).ConfigureAwait(false);
+        return zerrenda.FirstOrDefault();
+    }
+
     public async Task EguneratuErabiltzaileaAsync(Erabiltzailea erabiltzailea, CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
