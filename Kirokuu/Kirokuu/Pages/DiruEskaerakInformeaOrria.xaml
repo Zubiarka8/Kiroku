@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="Kirokuu.Pages.DiruEskaerakInformeaOrria"
+             x:DataType="vm:LangileDiruEskaeraInformeaViewModel"
+             Title="Informea">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing"
+                                        Command="{Binding AgertzenDeneanCommand}" />
+    </ContentPage.Behaviors>
+
+    <Grid RowDefinitions="Auto,Auto,*" Padding="8">
+        <ActivityIndicator Grid.Row="0"
+                           IsRunning="{Binding IsKargatzean}"
+                           IsVisible="{Binding IsKargatzean}"
+                           HorizontalOptions="Center"
+                           Margin="0,8" />
+
+        <Label Grid.Row="1"
+               Text="{Binding ErroreMezua}"
+               TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
+               HorizontalTextAlignment="Center"
+               Margin="8,4" />
+
+        <CollectionView Grid.Row="2"
+                        ItemsSource="{Binding Informeak}">
+            <CollectionView.EmptyView>
+                <Label Text="{Binding HutsaMezua}"
+                       Padding="24"
+                       HorizontalTextAlignment="Center"
+                       VerticalOptions="Center" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="datu:LangileDiruEskaeraInformea">
+                    <Border Padding="14" Margin="4">
+                        <VerticalStackLayout Spacing="6">
+                            <Label Text="{Binding LangileTestua}" FontAttributes="Bold" />
+                            <Label Text="{Binding Posta}" FontSize="13" />
+                            <Label Text="{Binding ZainGastuenBatuketakoZenbatekoa, StringFormat='Gastu Zain: {0:N2} €'}" FontSize="13" />
+                            <Label Text="{Binding ZainSarrerenBatuketakoZenbatekoa, StringFormat='Diru-sarrera Zain: {0:N2} €'}" FontSize="13" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

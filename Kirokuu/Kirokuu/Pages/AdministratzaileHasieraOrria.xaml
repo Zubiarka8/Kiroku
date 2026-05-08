@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             x:Class="Kirokuu.Pages.AdministratzaileHasieraOrria"
+             x:DataType="vm:AdministratzaileHasieraViewModel"
+             Title="Hasiera">
+
+    <ScrollView>
+        <VerticalStackLayout Padding="24" Spacing="16">
+            <Label Text="{Binding TestuOrokorra}"
+                   Style="{StaticResource Headline}"
+                   HorizontalTextAlignment="Center" />
+            <Label Text="{Binding ErroreMezua}"
+                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
+                   HorizontalTextAlignment="Center" />
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>
