@@ -1,4 +1,3 @@
-using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.Pages;
@@ -144,7 +143,8 @@ public partial class SaioHasieraViewModel : ObservableObject
                     await _saioaGordetzeZerbitzua.GordeAsync(erabiltzailea).ConfigureAwait(true);
                     await MainThread.InvokeOnMainThreadAsync(async () =>
                     {
-                        await Toast.Make("Saioa ondo hasi da.").Show().ConfigureAwait(true);
+                        await BokadilloErakustzailea.SaiatuErakutsiAsync("Saioa ondo hasi da.", _logger)
+                            .ConfigureAwait(true);
                     }).ConfigureAwait(true);
                     await _nabigazioNagusia.JoanAppShelleraAsync().ConfigureAwait(true);
                     break;
