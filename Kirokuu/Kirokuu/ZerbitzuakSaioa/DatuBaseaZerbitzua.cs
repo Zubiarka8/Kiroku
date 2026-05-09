@@ -230,6 +230,7 @@ public sealed partial class DatuBaseaZerbitzua
             await SortuSqliteTaulaAsync<GastuLerroa>("GastuLerroak").ConfigureAwait(false);
             await SortuSqliteTaulaAsync<AuditoretzaLoga>("AuditoretzaLoga").ConfigureAwait(false);
             await SortuSqliteTaulaAsync<DiruSarrera>("DiruSarrerak").ConfigureAwait(false);
+            await BermatuSqliteAuditoretzaLogaDiruSarreraIdAsync().ConfigureAwait(false);
 #if DEBUG
                     await AdministratzaileLehenarenSeedGarapeneanAsync().ConfigureAwait(false);
                     await AdministratzaileProbakoDatuakSQLiteAsync().ConfigureAwait(false);
@@ -335,6 +336,82 @@ public sealed partial class DatuBaseaZerbitzua
         await KenduSqliteNanIndizeBakarraAsync().ConfigureAwait(false);
         _logger.LogDebug("SQLite Erabiltzaileak eskema egiaztatzea amaitu da.");
         GarapenLogaDebug("SQLite Erabiltzaileak eskema egiaztatzea amaitu da.");
+    }
+
+    private async Task BermatuSqliteAuditoretzaLogaDiruSarreraIdAsync()
+    {
+        var zutabeak = await _sqliteKonexioa!.QueryAsync<SqliteZutabea>("PRAGMA table_info('AuditoretzaLoga')").ConfigureAwait(false);
+        var izenak = zutabeak
+            .Select(zutabea => zutabea.Izena)
+            .Where(izena => !string.IsNullOrWhiteSpace(izena))
+            .ToHashSet(StringComparer.OrdinalIgnoreCase);
+
+        if (!izenak.Contains("DiruSarreraId"))
+        {
+            await _sqliteKonexioa.ExecuteAsync(
+                    "ALTER TABLE AuditoretzaLoga ADD COLUMN DiruSarreraId INTEGER REFERENCES DiruSarrerak(SarreraId)")
+                .ConfigureAwait(false);
+            _logger.LogWarning("SQLite AuditoretzaLoga: DiruSarreraId zutabea gehitu da.");
+            izenak.Add("DiruSarreraId");
+        }
+
+        if (!izenak.Contains("EntitateId"))
+            return;
+
+        await _sqliteKonexioa.ExecuteAsync(
+                """
+                UPDATE AuditoretzaLoga SET DiruSarreraId = CAST(EntitateId AS INTEGER)
+                WHERE Ekintza IN (?, ?)
+                """,
+                AuditoretzaEkintzaDiruSarreraOnartu,
+                AuditoretzaEkintzaDiruSarreraUkatu)
+            .ConfigureAwait(false);
+
+        try
+        {
+            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE AuditoretzaLoga DROP COLUMN EntitateId").ConfigureAwait(false);
+            _logger.LogWarning("SQLite AuditoretzaLoga: EntitateId zutabea kendu da.");
+        }
+        catch (SQLiteException ex)
+        {
+            _logger.LogWarning(ex, "SQLite AuditoretzaLoga: DROP COLUMN huts; taula berreraikitzen.");
+            await BerreraikiSqliteAuditoretzaLogaEntitateIdGabeAsync().ConfigureAwait(false);
+        }
+    }
+
+    private async Task BerreraikiSqliteAuditoretzaLogaEntitateIdGabeAsync()
+    {
+        await _sqliteKonexioa!.ExecuteAsync("DROP TABLE IF EXISTS AuditoretzaLoga_migr").ConfigureAwait(false);
+
+        await _sqliteKonexioa.ExecuteAsync(
+                """
+                CREATE TABLE AuditoretzaLoga_migr (
+                    LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                    DiruSarreraId INTEGER REFERENCES DiruSarrerak(SarreraId),
+                    ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
+                    Ekintza TEXT NOT NULL DEFAULT '',
+                    DataOrdua TEXT NOT NULL DEFAULT '',
+                    Deskribapena TEXT NOT NULL DEFAULT '',
+                    IP_Helbidea TEXT NOT NULL DEFAULT ''
+                );
+                """)
+            .ConfigureAwait(false);
+
+        await _sqliteKonexioa.ExecuteAsync(
+                """
+                INSERT INTO AuditoretzaLoga_migr (LogId, DiruSarreraId, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea)
+                SELECT LogId,
+                       COALESCE(DiruSarreraId,
+                         CASE WHEN Ekintza IN (?, ?) THEN CAST(EntitateId AS INTEGER) ELSE NULL END),
+                       ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea
+                FROM AuditoretzaLoga;
+                """,
+                AuditoretzaEkintzaDiruSarreraOnartu,
+                AuditoretzaEkintzaDiruSarreraUkatu)
+            .ConfigureAwait(false);
+
+        await _sqliteKonexioa.ExecuteAsync("DROP TABLE AuditoretzaLoga").ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync("ALTER TABLE AuditoretzaLoga_migr RENAME TO AuditoretzaLoga").ConfigureAwait(false);
     }
 
     private async Task BermatuSqliteBidaiaTxostenaAdminOharraAsync()
