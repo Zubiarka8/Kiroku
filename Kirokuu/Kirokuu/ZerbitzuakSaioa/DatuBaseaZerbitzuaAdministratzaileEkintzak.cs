@@ -1,4 +1,7 @@
 using System.Globalization;
+using System.Net;
+using System.Net.NetworkInformation;
+using System.Net.Sockets;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
 using Kirokuu.Zerbitzuak;
@@ -645,7 +648,7 @@ public sealed partial class DatuBaseaZerbitzua
             Ekintza = ekintza,
             DataOrdua = DateTime.UtcNow,
             Deskribapena = deskribapena,
-            IpHelbidea = string.Empty
+            IpHelbidea = LortuGailuIpHelbidea()
         };
 
         if (_urrunTursoModua)
@@ -673,6 +676,42 @@ public sealed partial class DatuBaseaZerbitzua
         {
             await _sqliteKonexioa!.InsertAsync(loga).ConfigureAwait(false);
         }
+    }
+
+    private string LortuGailuIpHelbidea()
+    {
+        try
+        {
+            foreach (var interfazea in NetworkInterface.GetAllNetworkInterfaces())
+            {
+                if (interfazea.OperationalStatus != OperationalStatus.Up)
+                    continue;
+
+                if (interfazea.NetworkInterfaceType == NetworkInterfaceType.Loopback)
+                    continue;
+
+                foreach (var helbidea in interfazea.GetIPProperties().UnicastAddresses)
+                {
+                    if (helbidea.Address.AddressFamily != AddressFamily.InterNetwork)
+                        continue;
+
+                    if (IPAddress.IsLoopback(helbidea.Address))
+                        continue;
+
+                    return helbidea.Address.ToString();
+                }
+            }
+        }
+        catch (NetworkInformationException ex)
+        {
+            _logger.LogDebug(ex, "AuditoretzaLoga: ezin izan da gailuaren IP helbidea eskuratu.");
+        }
+        catch (SocketException ex)
+        {
+            _logger.LogDebug(ex, "AuditoretzaLoga: socket errorea IP helbidea eskuratzean.");
+        }
+
+        return string.Empty;
     }
 
     private static BidaiaTxostena? MapeatuBidaiaTxostenaLehena(TursoHttpExekuzioarenEmaitza emaitza)
