@@ -145,9 +145,16 @@ public partial class TxartelBerriaViewModel : ObservableObject
 
         zenbatekoa = Math.Round(zenbatekoa, 2, MidpointRounding.AwayFromZero);
 
-        if (string.IsNullOrWhiteSpace(Deskribapena))
+        var deskribapenaGarbia = Deskribapena.Trim();
+        if (deskribapenaGarbia.Length < 3)
         {
-            ErroreMezua = "Deskribapena ezin da hutsik egon.";
+            ErroreMezua = "Deskribapena gutxienez 3 karaktere izan behar ditu.";
+            return;
+        }
+
+        if (HautatutakoData.Date > DateTime.Today)
+        {
+            ErroreMezua = "Ezin da etorkizuneko data bat aukeratu.";
             return;
         }
 
@@ -197,7 +204,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 LangileDNI = langileDni,
                 Saila = string.Empty,
                 Helmuga = kategoriaIzena,
-                BidaiaHelburua = Deskribapena.Trim(),
+                BidaiaHelburua = deskribapenaGarbia,
                 HasieraData = dataTestua,
                 AmaieraData = dataTestua,
                 PertsonaKopurua = 1,
@@ -218,7 +225,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 ZenbatekoaGuztira = zenbatekoa,
                 Kilometroak = 0,
                 TicketArgazkia = ticketArgazkiaUrl,
-                Oharrak = Deskribapena.Trim(),
+                Oharrak = deskribapenaGarbia,
                 KontzeptuId = HautatutakoKategoriaIndizea + 1
             };
 

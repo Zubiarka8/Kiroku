@@ -116,9 +116,29 @@ public partial class ErregistroViewModel : ObservableObject
             return;
         }
 
-        if (!Posta.Contains('@', StringComparison.Ordinal))
+        if (!ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Izena, 2, 80) ||
+            !ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Abizena, 2, 80) ||
+            !ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Abizena2, 2, 80))
         {
-            ErroreMezua = "Posta baliogabea da.";
+            ErroreMezua = "Izen edo abizenak ez dira zuzenak (letrak eta tarteak soilik, 2–80 karaktere).";
+            return;
+        }
+
+        if (!ErabiltzaileDatuenBalidazioLaguntzailea.NanEdoIfzBaliozkoa(Dni))
+        {
+            ErroreMezua = "NAN / IFZ zenbakia ez da zuzena (8 zenbaki + letra, edo X/Y/Z + 7 zenbaki + letra).";
+            return;
+        }
+
+        if (!ErabiltzaileDatuenBalidazioLaguntzailea.KargoaTestuaBaliozkoa(Kargoa, 2, 120))
+        {
+            ErroreMezua = "Kargoa 2 eta 120 karaktere artean egon behar da.";
+            return;
+        }
+
+        if (!ErabiltzaileDatuenBalidazioLaguntzailea.PostaBaliozkoa(Posta))
+        {
+            ErroreMezua = "Posta helbidearen formatua ez da zuzena.";
             return;
         }
 
