@@ -312,7 +312,7 @@ public sealed partial class DatuBaseaZerbitzua
                 ? await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false)
                 : await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(egoeraIragazkia.Trim())).ConfigureAwait(false);
 
-            return MapeatuTxostenOnarpenLaburrak(emaitza);
+            return MapeatuTxostenOnarpenLaburrak(emaitza, egoeraIragazkia);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -400,7 +400,7 @@ public sealed partial class DatuBaseaZerbitzua
                 ? await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false)
                 : await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(egoeraIragazkia.Trim())).ConfigureAwait(false);
 
-            return MapeatuDiruSarreraOnarpenLaburrak(emaitza);
+            return MapeatuDiruSarreraOnarpenLaburrak(emaitza, egoeraIragazkia);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -738,14 +738,17 @@ public sealed partial class DatuBaseaZerbitzua
         return zerrenda;
     }
 
-    private static IReadOnlyList<TxostenOnarpenLaburpena> MapeatuTxostenOnarpenLaburrak(TursoHttpExekuzioarenEmaitza emaitza)
+    private static IReadOnlyList<TxostenOnarpenLaburpena> MapeatuTxostenOnarpenLaburrak(
+        TursoHttpExekuzioarenEmaitza emaitza,
+        string? egoeraIragazkia)
     {
         var zutabeak = emaitza.ZutabeIzenak;
         var zerrenda = new List<TxostenOnarpenLaburpena>();
+        var egoeraBerretsia = string.IsNullOrWhiteSpace(egoeraIragazkia) ? null : egoeraIragazkia.Trim();
         foreach (var lerroa in emaitza.LerroTestuBalioak)
         {
             var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
-            zerrenda.Add(new TxostenOnarpenLaburpena
+            var laburpena = new TxostenOnarpenLaburpena
             {
                 TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
                 ErabiltzaileId = IrakurriMapaOsoa(mapa, "ErabiltzaileId"),
@@ -753,20 +756,26 @@ public sealed partial class DatuBaseaZerbitzua
                 Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
                 Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
                 GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0)
-            });
+            };
+            if (egoeraBerretsia is not null)
+                laburpena.Egoera = egoeraBerretsia;
+            zerrenda.Add(laburpena);
         }
 
         return zerrenda;
     }
 
-    private static IReadOnlyList<DiruSarreraOnarpenLaburpena> MapeatuDiruSarreraOnarpenLaburrak(TursoHttpExekuzioarenEmaitza emaitza)
+    private static IReadOnlyList<DiruSarreraOnarpenLaburpena> MapeatuDiruSarreraOnarpenLaburrak(
+        TursoHttpExekuzioarenEmaitza emaitza,
+        string? egoeraIragazkia)
     {
         var zutabeak = emaitza.ZutabeIzenak;
         var zerrenda = new List<DiruSarreraOnarpenLaburpena>();
+        var egoeraBerretsia = string.IsNullOrWhiteSpace(egoeraIragazkia) ? null : egoeraIragazkia.Trim();
         foreach (var lerroa in emaitza.LerroTestuBalioak)
         {
             var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
-            zerrenda.Add(new DiruSarreraOnarpenLaburpena
+            var laburpena = new DiruSarreraOnarpenLaburpena
             {
                 SarreraId = IrakurriMapaOsoaLehenetsia(mapa, "SarreraId", 0),
                 ErabiltzaileId = IrakurriMapaOsoa(mapa, "ErabiltzaileId"),
@@ -775,7 +784,10 @@ public sealed partial class DatuBaseaZerbitzua
                 Deskribapena = IrakurriMapaTestuaLehenetsia(mapa, "Deskribapena"),
                 DataTestua = IrakurriMapaTestuaLehenetsia(mapa, "DataTestua"),
                 Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera")
-            });
+            };
+            if (egoeraBerretsia is not null)
+                laburpena.Egoera = egoeraBerretsia;
+            zerrenda.Add(laburpena);
         }
 
         return zerrenda;

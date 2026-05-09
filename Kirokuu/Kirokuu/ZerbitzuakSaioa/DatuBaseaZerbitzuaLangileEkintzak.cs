@@ -54,7 +54,7 @@ public sealed partial class DatuBaseaZerbitzua
                 ORDER BY b.SorkuntzaData DESC;
                 """;
             var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(erabiltzaileId)).ConfigureAwait(false);
-            return MapeatuTxostenOnarpenLaburrak(emaitza);
+            return MapeatuTxostenOnarpenLaburrak(emaitza, null);
         }, cancellationToken).ConfigureAwait(false);
     }
 

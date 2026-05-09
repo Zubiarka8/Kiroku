@@ -329,7 +329,34 @@ public sealed class TursoHttpsPipelineEgikaritzailea : ITursoSqlEgikaritzailea, 
         if (string.Equals(mota, "blob", StringComparison.OrdinalIgnoreCase))
             return gelaxka["base64"]?.GetValue<string>() ?? string.Empty;
 
-        return gelaxka["value"]?.GetValue<string>() ?? string.Empty;
+        return TursoJsonGelaxkaBalioaTestuGisa(gelaxka["value"]);
+    }
+
+    private static string TursoJsonGelaxkaBalioaTestuGisa(JsonNode? balioNodoa)
+    {
+        if (balioNodoa is null)
+            return string.Empty;
+
+        if (balioNodoa is JsonValue jv)
+        {
+            if (jv.TryGetValue<string>(out var testua))
+                return testua;
+            if (jv.TryGetValue<bool>(out var boo))
+                return boo ? "1" : "0";
+            if (jv.TryGetValue<long>(out var lu))
+                return lu.ToString(CultureInfo.InvariantCulture);
+            if (jv.TryGetValue<int>(out var zi))
+                return zi.ToString(CultureInfo.InvariantCulture);
+            if (jv.TryGetValue<decimal>(out var de))
+                return de.ToString(CultureInfo.InvariantCulture);
+            if (jv.TryGetValue<double>(out var bi))
+                return bi.ToString(CultureInfo.InvariantCulture);
+            if (jv.TryGetValue<float>(out var fl))
+                return fl.ToString(CultureInfo.InvariantCulture);
+            return jv.ToJsonString().Trim('"');
+        }
+
+        return balioNodoa.ToJsonString();
     }
 
     private static long JasotakoOsoaInklinatuta(JsonNode? nodo)
