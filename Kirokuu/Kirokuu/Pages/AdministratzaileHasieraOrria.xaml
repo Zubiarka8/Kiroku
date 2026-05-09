@@ -2,18 +2,126 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+             xmlns:measure="clr-namespace:LiveChartsCore.Measure;assembly=LiveChartsCore"
              x:Class="Kirokuu.Pages.AdministratzaileHasieraOrria"
              x:DataType="vm:AdministratzaileHasieraViewModel"
              Title="Hasiera">
 
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing"
+                                        Command="{Binding AgertzenDeneanCommand}" />
+    </ContentPage.Behaviors>
+
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
-            <Label Text="{Binding TestuOrokorra}"
+            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
+                               IsVisible="{Binding IsKargatzean}"
+                               HorizontalOptions="Center" />
+
+            <Label Text="{Binding LaburpenBurua}"
                    Style="{StaticResource Headline}"
                    HorizontalTextAlignment="Center" />
+
             <Label Text="{Binding ErroreMezua}"
                    TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
                    HorizontalTextAlignment="Center" />
+
+            <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
+                <Border Grid.Column="0" Padding="12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Langileak"
+                               FontSize="12"
+                               TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                        <Label Text="{Binding LangileKopuruTestua}"
+                               FontSize="16"
+                               FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Padding="12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Onartutako gastuak (org.)"
+                               FontSize="12"
+                               TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                        <Label Text="{Binding OnartutakoGastuenTestua}"
+                               FontSize="16"
+                               FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="2" Padding="12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Zain (org.)"
+                               FontSize="12"
+                               TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                        <Label Text="{Binding ZainTxartelenTestua}"
+                               FontSize="16"
+                               FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <Label Text="Azken 6 hilabeteetako onartutako gastua (org.)"
+                   FontAttributes="Bold"
+                   Margin="0,8,0,0" />
+            <lvc:CartesianChart HeightRequest="260"
+                                Series="{Binding HilabetekoGastuSerieak}"
+                                XAxes="{Binding HilabetekoXArdatzak}" />
+
+            <VerticalStackLayout Spacing="4" Margin="0,8,0,0">
+                <Label Text="Onartutako gastua kategoriaren arabera (org.)"
+                       FontAttributes="Bold" />
+                <Label Text="Organizazio osoko onartutako txartelen gastua kategoriaka banatuta (handienak lehenean; gehienez 8)."
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light=#616161, Dark=#BDBDBD}" />
+            </VerticalStackLayout>
+
+            <Label Text="Oraindik ez dago erakusteko daturik onartutako gasturik kategoriaka (organizazioan)."
+                   IsVisible="{Binding ErakutsiKategoriaHutsikMezua}"
+                   FontSize="13"
+                   Margin="0,4,0,0"
+                   TextColor="{AppThemeBinding Light=#757575, Dark=#9E9E9E}" />
+
+            <Border Padding="14"
+                    IsVisible="{Binding ErakutsiKategoriaBakarra}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Kategoria bakarra"
+                           FontAttributes="Bold"
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                    <Label Text="{Binding KategoriaBakarXehetasuna}"
+                           FontSize="15" />
+                </VerticalStackLayout>
+            </Border>
+
+            <lvc:PieChart IsVisible="{Binding ErakutsiKategoriaPieGrafikoa}"
+                          HeightRequest="{OnIdiom Phone=400, Default=360}"
+                          Series="{Binding KategoriaGastuSerieak}"
+                          LegendTextSize="12"
+                          TooltipTextSize="12"
+                          InitialRotation="-90">
+                <lvc:PieChart.LegendPosition>
+                    <OnIdiom x:TypeArguments="measure:LegendPosition">
+                        <OnIdiom.Phone>Bottom</OnIdiom.Phone>
+                        <OnIdiom.Tablet>Right</OnIdiom.Tablet>
+                        <OnIdiom.Desktop>Right</OnIdiom.Desktop>
+                    </OnIdiom>
+                </lvc:PieChart.LegendPosition>
+            </lvc:PieChart>
+
+            <lvc:CartesianChart IsVisible="{Binding ErakutsiKategoriaBarraGrafikoa}"
+                                HeightRequest="{OnIdiom Phone=340, Default=300}"
+                                Series="{Binding KategoriaBarraSerieak}"
+                                XAxes="{Binding KategoriaBarraXArdatzak}"
+                                YAxes="{Binding KategoriaBarraYArdatzak}" />
+
+            <Label Text="Txartelak egoeraren arabera (org.)"
+                   FontAttributes="Bold"
+                   Margin="0,8,0,0" />
+            <lvc:CartesianChart HeightRequest="260"
+                                Series="{Binding EgoeraSerieak}"
+                                XAxes="{Binding EgoeraXArdatzak}"
+                                YAxes="{Binding EgoeraYArdatzak}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

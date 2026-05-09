@@ -5,6 +5,7 @@ using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Debug;
+using SkiaSharp.Views.Maui.Controls.Hosting;
 
 namespace Kirokuu;
 
@@ -60,6 +61,7 @@ public static class MauiProgram
 
         var builder = MauiApp.CreateBuilder();
         builder
+            .UseSkiaSharp()
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
             .ConfigureFonts(fonts =>
