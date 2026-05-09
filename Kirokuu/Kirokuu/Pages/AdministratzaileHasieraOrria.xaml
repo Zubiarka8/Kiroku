@@ -25,35 +25,34 @@
                    HorizontalTextAlignment="Center" />
 
             <Label Text="{Binding ErroreMezua}"
-                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-                   HorizontalTextAlignment="Center" />
+                   Style="{StaticResource ErroreEtiketaEstiloa}" />
 
             <Grid ColumnDefinitions="*,*,*" ColumnSpacing="8">
-                <Border Grid.Column="0" Padding="12">
+                <Border Grid.Column="0" Style="{StaticResource TxartelTxartelaEstiloa}" Padding="12">
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Langileak"
                                FontSize="12"
-                               TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                               Style="{StaticResource TestuTxartelBuruaEstiloa}" />
                         <Label Text="{Binding LangileKopuruTestua}"
                                FontSize="16"
                                FontAttributes="Bold" />
                     </VerticalStackLayout>
                 </Border>
-                <Border Grid.Column="1" Padding="12">
+                <Border Grid.Column="1" Style="{StaticResource TxartelTxartelaEstiloa}" Padding="12">
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Onartutako gastuak (org.)"
                                FontSize="12"
-                               TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                               Style="{StaticResource TestuTxartelBuruaEstiloa}" />
                         <Label Text="{Binding OnartutakoGastuenTestua}"
                                FontSize="16"
                                FontAttributes="Bold" />
                     </VerticalStackLayout>
                 </Border>
-                <Border Grid.Column="2" Padding="12">
+                <Border Grid.Column="2" Style="{StaticResource TxartelTxartelaEstiloa}" Padding="12">
                     <VerticalStackLayout Spacing="4">
                         <Label Text="Zain (org.)"
                                FontSize="12"
-                               TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                               Style="{StaticResource TestuTxartelBuruaEstiloa}" />
                         <Label Text="{Binding ZainTxartelenTestua}"
                                FontSize="16"
                                FontAttributes="Bold" />
@@ -62,7 +61,7 @@
             </Grid>
 
             <Label Text="Azken 6 hilabeteetako onartutako gastua (org.)"
-                   FontAttributes="Bold"
+                   Style="{StaticResource TituluAtalaEstiloa}"
                    Margin="0,8,0,0" />
             <lvc:CartesianChart HeightRequest="260"
                                 Series="{Binding HilabetekoGastuSerieak}"
@@ -70,25 +69,26 @@
 
             <VerticalStackLayout Spacing="4" Margin="0,8,0,0">
                 <Label Text="Onartutako gastua kategoriaren arabera (org.)"
-                       FontAttributes="Bold" />
+                       Style="{StaticResource TituluAtalaEstiloa}" />
                 <Label Text="Organizazio osoko onartutako txartelen gastua kategoriaka banatuta (handienak lehenean; gehienez 8)."
                        FontSize="12"
-                       TextColor="{AppThemeBinding Light=#616161, Dark=#BDBDBD}" />
+                       TextColor="{AppThemeBinding Light={StaticResource GrafikoEtiketaArgia}, Dark={StaticResource GrafikoEtiketaIluna}}" />
             </VerticalStackLayout>
 
             <Label Text="Oraindik ez dago erakusteko daturik onartutako gasturik kategoriaka (organizazioan)."
                    IsVisible="{Binding ErakutsiKategoriaHutsikMezua}"
                    FontSize="13"
                    Margin="0,4,0,0"
-                   TextColor="{AppThemeBinding Light=#757575, Dark=#9E9E9E}" />
+                   TextColor="{AppThemeBinding Light={StaticResource GrafikoBigarrenEtiketaArgia}, Dark={StaticResource GrafikoBigarrenEtiketaIluna}}" />
 
-            <Border Padding="14"
+            <Border Style="{StaticResource TxartelTxartelaEstiloa}"
+                    Padding="14"
                     IsVisible="{Binding ErakutsiKategoriaBakarra}">
                 <VerticalStackLayout Spacing="6">
                     <Label Text="Kategoria bakarra"
                            FontAttributes="Bold"
                            FontSize="13"
-                           TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                           Style="{StaticResource TestuTxartelBuruaEstiloa}" />
                     <Label Text="{Binding KategoriaBakarXehetasuna}"
                            FontSize="15" />
                 </VerticalStackLayout>
@@ -116,7 +116,7 @@
                                 YAxes="{Binding KategoriaBarraYArdatzak}" />
 
             <Label Text="Txartelak egoeraren arabera (org.)"
-                   FontAttributes="Bold"
+                   Style="{StaticResource TituluAtalaEstiloa}"
                    Margin="0,8,0,0" />
             <lvc:CartesianChart HeightRequest="260"
                                 Series="{Binding EgoeraSerieak}"

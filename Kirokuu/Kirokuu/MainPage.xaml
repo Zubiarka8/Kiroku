@@ -25,8 +25,7 @@
 
             <Label
                 Text="{Binding XehetasunMezua}"
-                FontSize="14"
-                TextColor="{AppThemeBinding Light=#555555, Dark=#BBBBBB}"
+                Style="{StaticResource TestuBigarrenMailaEstiloa}"
                 HorizontalOptions="Center"
                 HorizontalTextAlignment="Center" />
         </VerticalStackLayout>

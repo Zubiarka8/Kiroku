@@ -46,4 +46,10 @@ public sealed class Erabiltzailea
     [NotNull]
     public string Pasahitza { get; set; } = string.Empty;
 
+    [Column("SaioHasieraSaiakerak")]
+    public int SaioHasieraSaiakerak { get; set; }
+
+    [Column("SaioaBlokeoaAmaieraUtc")]
+    public string? SaioaBlokeoaAmaieraUtc { get; set; }
+
 }

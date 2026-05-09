@@ -419,8 +419,8 @@
         <Setter Property="Shell.UnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray200}}" />
         <Setter Property="Shell.NavBarHasShadow" Value="False" />
         <Setter Property="Shell.TabBarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Black}}" />
-        <Setter Property="Shell.TabBarForegroundColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
-        <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
+        <Setter Property="Shell.TabBarForegroundColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="Shell.TabBarTitleColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
         <Setter Property="Shell.TabBarUnselectedColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource Gray200}}" />
     </Style>
 
@@ -432,9 +432,144 @@
 
     <Style TargetType="TabbedPage">
         <Setter Property="BarBackgroundColor" Value="{AppThemeBinding Light={StaticResource White}, Dark={StaticResource Gray950}}" />
-        <Setter Property="BarTextColor" Value="{AppThemeBinding Light={StaticResource Magenta}, Dark={StaticResource White}}" />
+        <Setter Property="BarTextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
         <Setter Property="UnselectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray950}}" />
         <Setter Property="SelectedTabColor" Value="{AppThemeBinding Light={StaticResource Gray950}, Dark={StaticResource Gray200}}" />
+    </Style>
+
+    <Style x:Key="ErroreEtiketaEstiloa" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource ErroreaAurreaArgia}, Dark={StaticResource ErroreaAurreaIluna}}" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="TestuBigarrenMailaEstiloa" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
+        <Setter Property="FontSize" Value="14" />
+    </Style>
+
+    <Style x:Key="TestuTxartelBuruaEstiloa" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TestuTxartelBuruaArgia}, Dark={StaticResource TestuTxartelBuruaIluna}}" />
+        <Setter Property="FontSize" Value="13" />
+    </Style>
+
+    <Style x:Key="TestuHutsikEstiloa" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TestuHutsikArgia}, Dark={StaticResource TestuHutsikIluna}}" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="TituluAtalaEstiloa" TargetType="Label">
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="FontSize" Value="16" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Black}, Dark={StaticResource White}}" />
+    </Style>
+
+    <Style x:Key="TxartelTxartelaEstiloa" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource MugaTxartelaArgia}, Dark={StaticResource MugaTxartelaIluna}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AzalaTxartelaArgia}, Dark={StaticResource AzalaTxartelaIluna}}" />
+        <Setter Property="Padding" Value="12" />
+    </Style>
+
+    <Style x:Key="KanpainGoiburuaEstiloa" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 8" />
+        <Setter Property="Padding" Value="8,6" />
+    </Style>
+
+    <Style x:Key="BotoiBigarrenMailakoaEstiloa" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="Padding" Value="14,10" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
+    </Style>
+
+    <Style x:Key="BotoiArriskuEstiloa" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
+        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="MinimumHeightRequest" Value="36" />
+    </Style>
+
+    <Style x:Key="BotoiSaioItxiEstiloa" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource ErroreaAurreaArgia}, Dark={StaticResource ErroreaAurreaIluna}}" />
+        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="CornerRadius" Value="10" />
+        <Setter Property="MinimumHeightRequest" Value="44" />
+    </Style>
+
+    <Style x:Key="ArrakastaMezuEstiloa" TargetType="Label">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TestuBerdeaArrakastaArgia}, Dark={StaticResource TestuBerdeaArrakastaIluna}}" />
+    </Style>
+
+    <Style x:Key="EstekaBotoiEstiloa" TargetType="Button">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}" />
+    </Style>
+
+    <Style x:Key="EremuEtiketaEstiloa" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource EremuEtiketaArgia}, Dark={StaticResource EremuEtiketaIluna}}" />
+    </Style>
+
+    <Style x:Key="OharraKutxaEstiloa" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 10" />
+        <Setter Property="Padding" Value="14" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource OharraAtzekoArgia}, Dark={StaticResource OharraAtzekoIluna}}" />
+    </Style>
+
+    <Style x:Key="EgoeraEtiketaTestuaEstiloa" TargetType="Label">
+        <Setter Property="TextColor" Value="{StaticResource White}" />
+        <Setter Property="FontSize" Value="11" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="HorizontalTextAlignment" Value="Center" />
+    </Style>
+
+    <Style x:Key="IkonoHandiaEstiloa" TargetType="Label">
+        <Setter Property="FontFamily" Value="MaterialIcons" />
+        <Setter Property="FontSize" Value="40" />
+        <Setter Property="HorizontalOptions" Value="Center" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray400}, Dark={StaticResource Gray500}}" />
+        <Setter Property="Margin" Value="0,24,0,8" />
+    </Style>
+
+    <Style x:Key="IkonoMarkaEstiloa" TargetType="Label" BasedOn="{StaticResource IkonoHandiaEstiloa}">
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="FontSize" Value="56" />
+    </Style>
+
+    <Style x:Key="SarreraEremukoAzalaEstiloa" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 12" />
+        <Setter Property="Padding" Value="12,8" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray950}}" />
+    </Style>
+
+    <Style x:Key="SaioSarreraEremuaEstiloa" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+        <Setter Property="Padding" Value="2,0,4,0" />
+        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource MugaTxartelaArgia}, Dark={StaticResource MugaTxartelaIluna}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AzalaTxartelaArgia}, Dark={StaticResource AzalaTxartelaIluna}}" />
+    </Style>
+
+    <Style x:Key="SaioSarreraEntryEstiloa" TargetType="Entry">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Margin" Value="12,12,4,12" />
+        <Setter Property="MinimumHeightRequest" Value="48" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <Style x:Key="SaioIkonoLaguntzaTeklaEstiloa" TargetType="ImageButton">
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="Padding" Value="10" />
+        <Setter Property="WidthRequest" Value="48" />
+        <Setter Property="HeightRequest" Value="48" />
+        <Setter Property="CornerRadius" Value="24" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="Aspect" Value="AspectFit" />
     </Style>
 
 </ResourceDictionary>

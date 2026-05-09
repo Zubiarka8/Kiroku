@@ -40,6 +40,7 @@
                 <Button Grid.Column="1"
                         Text="@"
                         Command="{Binding TxertaturikArobaCommand}"
+                        Style="{StaticResource BotoiBigarrenMailakoaEstiloa}"
                         FontSize="16"
                         Padding="12,0"
                         WidthRequest="48"
@@ -78,8 +79,7 @@
             </Grid>
 
             <Label Text="{Binding ErroreMezua}"
-                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-                   HorizontalTextAlignment="Center" />
+                   Style="{StaticResource ErroreEtiketaEstiloa}" />
 
             <Button Text="Sortu langilea"
                     Command="{Binding GordeCommand}"

@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Kirokuu.Pages.TxartelBerriaOrria"
              x:DataType="vm:TxartelBerriaViewModel"
@@ -20,8 +21,7 @@
                                HorizontalOptions="Center" />
 
             <Label Text="{Binding ErroreMezua}"
-                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-                   HorizontalTextAlignment="Center"
+                   Style="{StaticResource ErroreEtiketaEstiloa}"
                    IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
 
             <VerticalStackLayout Spacing="4">
@@ -66,18 +66,23 @@
                 <Label Text="Ticket argazkia (aukerakoa)" FontAttributes="Bold" />
                 <Button Text="Argazkia hautatu"
                         Command="{Binding HautatuArgazkiaCommand}"
-                        BackgroundColor="{AppThemeBinding Light=#E0E0E0, Dark=#424242}"
-                        TextColor="{AppThemeBinding Light=#333, Dark=#EEE}"
-                        HorizontalOptions="Start"
-                        Padding="12,8" />
+                        Style="{StaticResource BotoiBigarrenMailakoaEstiloa}"
+                        HorizontalOptions="Start">
+                    <Button.ImageSource>
+                        <FontImageSource FontFamily="MaterialIcons"
+                                         Glyph="{x:Static kiro:IkonoFontIturria.ArgazkiaIkonoGlifoa}"
+                                         Size="20"
+                                         Color="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+                    </Button.ImageSource>
+                </Button>
                 <Image Source="{Binding LokalArgazkiBidea}"
                        IsVisible="{Binding ArgazkiHautatua}"
                        HeightRequest="160"
                        Aspect="AspectFit"
                        HorizontalOptions="Start" />
-                <Label Text="✓ Argazkia hautatuta"
+                <Label Text="Argazkia hautatuta"
                        IsVisible="{Binding ArgazkiHautatua}"
-                       TextColor="#388E3C"
+                       Style="{StaticResource ArrakastaMezuEstiloa}"
                        FontSize="13" />
             </VerticalStackLayout>
 
@@ -85,8 +90,7 @@
                 <Button Grid.Column="0"
                         Text="Ezeztatu"
                         Command="{Binding EzeztatuCommand}"
-                        BackgroundColor="Transparent"
-                        TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
+                        Style="{StaticResource BotoiBigarrenMailakoaEstiloa}" />
                 <Button Grid.Column="1"
                         Text="Gorde"
                         Command="{Binding GordeCommand}"

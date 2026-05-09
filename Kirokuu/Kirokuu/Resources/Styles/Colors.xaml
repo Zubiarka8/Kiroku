@@ -42,4 +42,50 @@
     <SolidColorBrush x:Key="Gray600Brush" Color="{StaticResource Gray600}"/>
     <SolidColorBrush x:Key="Gray900Brush" Color="{StaticResource Gray900}"/>
     <SolidColorBrush x:Key="Gray950Brush" Color="{StaticResource Gray950}"/>
+
+    <Color x:Key="ErroreaAurreaArgia">#B00020</Color>
+    <Color x:Key="ErroreaAurreaIluna">#FF8A80</Color>
+
+    <Color x:Key="EgoeraZainAtzekoa">#FFA000</Color>
+    <Color x:Key="EgoeraOnartuaAtzekoa">#388E3C</Color>
+    <Color x:Key="EgoeraUkatuaAtzekoa">#C62828</Color>
+    <Color x:Key="EgoeraEzeztatuaAtzekoa">#757575</Color>
+
+    <Color x:Key="TestuBigarrenMailaArgia">#555555</Color>
+    <Color x:Key="TestuBigarrenMailaIluna">#AAAAAA</Color>
+    <Color x:Key="EremuEtiketaArgia">#777777</Color>
+    <Color x:Key="EremuEtiketaIluna">#AAAAAA</Color>
+    <Color x:Key="TestuTxartelBuruaArgia">#424242</Color>
+    <Color x:Key="TestuTxartelBuruaIluna">#E0E0E0</Color>
+    <Color x:Key="TestuHutsikArgia">#999999</Color>
+    <Color x:Key="TestuHutsikIluna">#666666</Color>
+    <Color x:Key="TestuBerdeaArrakastaArgia">#2E7D32</Color>
+    <Color x:Key="TestuBerdeaArrakastaIluna">#81C784</Color>
+
+    <Color x:Key="EstekaNagusiaArgia">#1565C0</Color>
+    <Color x:Key="EstekaNagusiaIluna">#90CAF9</Color>
+
+    <Color x:Key="OharraAtzekoArgia">#FFF8E1</Color>
+    <Color x:Key="OharraAtzekoIluna">#3E3000</Color>
+    <Color x:Key="OharraTestuArgia">#F57F17</Color>
+    <Color x:Key="OharraTestuIluna">#FFD54F</Color>
+
+    <Color x:Key="MugaArinaArgia">#E0E0E0</Color>
+    <Color x:Key="MugaArinaIluna">#444444</Color>
+
+    <Color x:Key="SuperficieBigarrenMailakoArgia">#E0E0E0</Color>
+    <Color x:Key="SuperficieBigarrenMailakoIluna">#424242</Color>
+    <Color x:Key="TestuSuperficieBigarrenArgia">#333333</Color>
+    <Color x:Key="TestuSuperficieBigarrenIluna">#EEEEEE</Color>
+
+    <Color x:Key="GrafikoEtiketaArgia">#616161</Color>
+    <Color x:Key="GrafikoEtiketaIluna">#BDBDBD</Color>
+    <Color x:Key="GrafikoBigarrenEtiketaArgia">#757575</Color>
+    <Color x:Key="GrafikoBigarrenEtiketaIluna">#9E9E9E</Color>
+
+    <Color x:Key="AzalaTxartelaArgia">#FFFFFF</Color>
+    <Color x:Key="AzalaTxartelaIluna">#2C2C2C</Color>
+    <Color x:Key="MugaTxartelaArgia">#E8E8E8</Color>
+    <Color x:Key="MugaTxartelaIluna">#404040</Color>
+
 </ResourceDictionary>

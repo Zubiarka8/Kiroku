@@ -57,6 +57,7 @@
                         Grid.Column="1"
                         Text="@"
                         Command="{Binding TxertaturikArobaCommand}"
+                        Style="{StaticResource BotoiBigarrenMailakoaEstiloa}"
                         FontSize="16"
                         Padding="12,0"
                         WidthRequest="48"
@@ -110,8 +111,7 @@
             </VerticalStackLayout>
 
             <Label Text="{Binding ErroreMezua}"
-                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-                   HorizontalTextAlignment="Center" />
+                   Style="{StaticResource ErroreEtiketaEstiloa}" />
 
             <BoxView HeightRequest="1"
                      BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
@@ -157,7 +157,7 @@
             <VerticalStackLayout Spacing="8"
                                  IsVisible="{Binding PasahitzaEgiaztatuta}">
                 <Label Text="Pasahitza egiaztatu da. Sartu pasahitz berria:"
-                       TextColor="#2E7D32" />
+                       Style="{StaticResource ArrakastaMezuEstiloa}" />
 
                 <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4" VerticalOptions="Center">
                     <Entry x:Name="PasahitzaBerriaSarrera"
@@ -208,8 +208,7 @@
             </VerticalStackLayout>
 
             <Label Text="{Binding PasahitzaErroreMezua}"
-                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-                   HorizontalTextAlignment="Center"
+                   Style="{StaticResource ErroreEtiketaEstiloa}"
                    IsVisible="{Binding PasahitzaErroreDago}" />
 
             <BoxView HeightRequest="1"
@@ -219,7 +218,7 @@
             <Button x:Name="SaioaItxiTekla"
                     Text="Saioa itxi"
                     Command="{Binding SaioaItxiCommand}"
-                    BackgroundColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
+                    Style="{StaticResource BotoiSaioItxiEstiloa}"
                     SemanticProperties.Hint="Saioa itxi eta hasierara itzuli" />
 
         </VerticalStackLayout>

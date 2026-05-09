@@ -2,6 +2,7 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Kirokuu.Pages.SaioHasieraOrria"
              x:DataType="vm:SaioHasieraViewModel"
@@ -13,10 +14,14 @@
     </ContentPage.Behaviors>
 
     <ScrollView>
-        <VerticalStackLayout Padding="24" Spacing="16">
+        <VerticalStackLayout Padding="24" Spacing="20">
             <ActivityIndicator IsRunning="{Binding IsKargatzean}"
                                IsVisible="{Binding IsKargatzean}"
                                HorizontalOptions="Center" />
+
+            <Label Style="{StaticResource IkonoMarkaEstiloa}"
+                   Text="{x:Static kiro:IkonoFontIturria.SaioHasieraIkonoGlifoa}"
+                   SemanticProperties.Description="Saio hasiera" />
 
             <Label Text="Kirokuu"
                    Style="{StaticResource Headline}"
@@ -26,59 +31,73 @@
                    Style="{StaticResource SubHeadline}"
                    HorizontalOptions="Center" />
 
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                <Entry x:Name="PostaSarrera"
-                       Grid.Column="0"
-                       Text="{Binding Posta}"
-                       Placeholder="Posta"
-                       Keyboard="Email"
-                       SemanticProperties.Hint="Posta elektronikoa" />
-                <Button Grid.Column="1"
-                        Text="@"
-                        Command="{Binding TxertaturikArobaCommand}"
-                        FontSize="16"
-                        Padding="12,0"
-                        WidthRequest="48"
-                        HeightRequest="44"
-                        VerticalOptions="Center" />
-            </Grid>
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Posta elektronikoa"
+                       Style="{StaticResource EremuEtiketaEstiloa}" />
+                <Border Style="{StaticResource SaioSarreraEremuaEstiloa}">
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="0"
+                          VerticalOptions="Center">
+                        <Entry x:Name="PostaSarrera"
+                               Grid.Column="0"
+                               Style="{StaticResource SaioSarreraEntryEstiloa}"
+                               Text="{Binding Posta}"
+                               Placeholder="izena@adibidea.eus"
+                               Keyboard="Email"
+                               SemanticProperties.Hint="Posta elektronikoa" />
+                        <ImageButton Grid.Column="1"
+                                     Command="{Binding TxertaturikArobaCommand}"
+                                     Style="{StaticResource SaioIkonoLaguntzaTeklaEstiloa}"
+                                     SemanticProperties.Hint="Txertatu @ ikurra"
+                                     SemanticProperties.Description="Txertatu @ ikurra">
+                            <ImageButton.Source>
+                                <FontImageSource FontFamily="{x:Static kiro:IkonoFontIturria.MaterialIconsFamilia}"
+                                                 Glyph="{x:Static kiro:IkonoFontIturria.PostaArrobaIkonoGlifoa}"
+                                                 Size="22"
+                                                 Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+                            </ImageButton.Source>
+                        </ImageButton>
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
 
-            <Grid ColumnDefinitions="*,Auto"
-                  ColumnSpacing="4"
-                  VerticalOptions="Center">
-                <Entry x:Name="PasahitzaSarrera"
-                       Grid.Column="0"
-                       Text="{Binding Pasahitza}"
-                       Placeholder="Pasahitza"
-                       IsPassword="{Binding PasahitzaMaskaratuta}"
-                       SemanticProperties.Hint="Pasahitza" />
-                <ImageButton x:Name="PasahitzaBegiTekla"
-                             Grid.Column="1"
-                             Source="{Binding PasahitzaBegiarenIrudiarenIzena}"
-                             Command="{Binding AlderantzikatuPasahitzaMaskaCommand}"
-                             BackgroundColor="Transparent"
-                             BorderWidth="0"
-                             Padding="8"
-                             WidthRequest="44"
-                             HeightRequest="44"
-                             VerticalOptions="Center"
-                             Aspect="AspectFit"
-                             SemanticProperties.Description="{Binding PasahitzaBegiarenDeskribapena}" />
-            </Grid>
+            <VerticalStackLayout Spacing="6">
+                <Label Text="Pasahitza"
+                       Style="{StaticResource EremuEtiketaEstiloa}" />
+                <Border Style="{StaticResource SaioSarreraEremuaEstiloa}">
+                    <Grid ColumnDefinitions="*,Auto"
+                          ColumnSpacing="0"
+                          VerticalOptions="Center">
+                        <Entry x:Name="PasahitzaSarrera"
+                               Grid.Column="0"
+                               Style="{StaticResource SaioSarreraEntryEstiloa}"
+                               Text="{Binding Pasahitza}"
+                               Placeholder="Pasahitza"
+                               IsPassword="{Binding PasahitzaMaskaratuta}"
+                               SemanticProperties.Hint="Pasahitza" />
+                        <ImageButton x:Name="PasahitzaBegiTekla"
+                                     Grid.Column="1"
+                                     Source="{Binding PasahitzaBegiarenIrudiarenIzena}"
+                                     Command="{Binding AlderantzikatuPasahitzaMaskaCommand}"
+                                     Style="{StaticResource SaioIkonoLaguntzaTeklaEstiloa}"
+                                     SemanticProperties.Description="{Binding PasahitzaBegiarenDeskribapena}" />
+                    </Grid>
+                </Border>
+            </VerticalStackLayout>
 
             <Label Text="{Binding ErroreMezua}"
-                   TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-                   HorizontalTextAlignment="Center" />
+                   Style="{StaticResource ErroreEtiketaEstiloa}"
+                   IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
 
             <Button x:Name="SaioaHasiTekla"
                     Text="Sartu"
-                    Command="{Binding SaioaHasiCommand}" />
+                    Command="{Binding SaioaHasiCommand}"
+                    Margin="0,8,0,0" />
 
             <Button x:Name="ErregistroJoanTekla"
                     Text="Kontua sortu"
                     Command="{Binding JoanErregistoraCommand}"
-                    BackgroundColor="{AppThemeBinding Light={StaticResource Gray200}, Dark={StaticResource Gray600}}"
-                    TextColor="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+                    Style="{StaticResource BotoiBigarrenMailakoaEstiloa}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

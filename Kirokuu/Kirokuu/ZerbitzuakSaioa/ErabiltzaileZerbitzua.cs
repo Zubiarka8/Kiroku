@@ -9,7 +9,9 @@ namespace Kirokuu.ZerbitzuakSaioa;
 
 public sealed class ErabiltzaileZerbitzua
 {
-    public const int Gehienezko = 5;
+    public const int HutsSaioSaiakeraGehienezkoa = 5;
+
+    public const int SaioBlokeoaIraupenaMinutuak = 15;
 
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
     private readonly PasahitzaZerbitzua _pasahitzaZerbitzua;
@@ -53,6 +55,8 @@ public sealed class ErabiltzaileZerbitzua
             Aktiboa = 1
         };
         EzarriSektoreaEtaKargoarenBalioak(erabiltzailea, sektorearenIdentifikatzailea, kargoarenIdentifikatzailea);
+        erabiltzailea.SaioHasieraSaiakerak = 0;
+        erabiltzailea.SaioaBlokeoaAmaieraUtc = null;
 
         try
         {
@@ -65,7 +69,7 @@ public sealed class ErabiltzaileZerbitzua
         }
     }
 
-    public async Task<(SaioHasieraEmaitzaMota Mota, Erabiltzailea? Erabiltzailea)> SaioaHasiAsync(
+    public async Task<(SaioHasieraEmaitzaMota Mota, Erabiltzailea? Erabiltzailea, TimeSpan? SaioBlokeoaGeratzen)> SaioaHasiAsync(
         string posta,
         string pasahitza,
         CancellationToken cancellationToken = default)
@@ -73,20 +77,77 @@ public sealed class ErabiltzaileZerbitzua
         var postaNormalizatua = NormalizatuPosta(posta);
         var pasahitzaGarbia = pasahitza.Trim();
         if (string.IsNullOrEmpty(pasahitzaGarbia))
-            return (SaioHasieraEmaitzaMota.PasahitzaOkerra, null);
+            return (SaioHasieraEmaitzaMota.PasahitzaOkerra, null, null);
 
         var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaPostazAsync(postaNormalizatua, cancellationToken).ConfigureAwait(false);
         if (erabiltzailea is null)
-            return (SaioHasieraEmaitzaMota.EzDaExistitzen, null);
+            return (SaioHasieraEmaitzaMota.EzDaExistitzen, null, null);
+
+        var orain = DateTime.UtcNow;
+        if (SaiatuIrakurriBlokeoaAmaieraUtc(erabiltzailea.SaioaBlokeoaAmaieraUtc, out var blokeoaAmaieraUtc))
+        {
+            if (orain >= blokeoaAmaieraUtc)
+            {
+                erabiltzailea.SaioaBlokeoaAmaieraUtc = null;
+                erabiltzailea.SaioHasieraSaiakerak = 0;
+                await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
+            }
+            else
+            {
+                var geratzen = blokeoaAmaieraUtc - orain;
+                return (SaioHasieraEmaitzaMota.SaioDenborazBlokeatuta, null,
+                    geratzen > TimeSpan.Zero ? geratzen : TimeSpan.Zero);
+            }
+        }
 
         var zuzena = _pasahitzaZerbitzua.EgiaztatuGordetakoKatearekin(pasahitzaGarbia, erabiltzailea.Pasahitza);
         if (!zuzena)
-            return (SaioHasieraEmaitzaMota.PasahitzaOkerra, null);
+        {
+            erabiltzailea.SaioHasieraSaiakerak++;
+            if (erabiltzailea.SaioHasieraSaiakerak >= HutsSaioSaiakeraGehienezkoa)
+            {
+                var amaiera = orain.AddMinutes(SaioBlokeoaIraupenaMinutuak);
+                erabiltzailea.SaioaBlokeoaAmaieraUtc = amaiera.ToString("o", CultureInfo.InvariantCulture);
+                erabiltzailea.SaioHasieraSaiakerak = 0;
+                await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
+                return (SaioHasieraEmaitzaMota.SaioDenborazBlokeatuta, null,
+                    TimeSpan.FromMinutes(SaioBlokeoaIraupenaMinutuak));
+            }
+
+            await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
+            return (SaioHasieraEmaitzaMota.PasahitzaOkerra, null, null);
+        }
+
+        erabiltzailea.SaioHasieraSaiakerak = 0;
+        erabiltzailea.SaioaBlokeoaAmaieraUtc = null;
+        await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
 
         if (erabiltzailea.Aktiboa == 0)
-            return (SaioHasieraEmaitzaMota.KontuaDesaktibatuta, null);
+            return (SaioHasieraEmaitzaMota.KontuaDesaktibatuta, null, null);
 
-        return (SaioHasieraEmaitzaMota.Ongi, erabiltzailea);
+        return (SaioHasieraEmaitzaMota.Ongi, erabiltzailea, null);
+    }
+
+    private static bool SaiatuIrakurriBlokeoaAmaieraUtc(string? iso, out DateTime amaieraUtc)
+    {
+        amaieraUtc = default;
+        if (string.IsNullOrWhiteSpace(iso))
+            return false;
+
+        if (!DateTime.TryParse(
+                iso,
+                CultureInfo.InvariantCulture,
+                DateTimeStyles.RoundtripKind | DateTimeStyles.AllowWhiteSpaces,
+                out var data))
+            return false;
+
+        amaieraUtc = data.Kind switch
+        {
+            DateTimeKind.Utc => data,
+            DateTimeKind.Local => data.ToUniversalTime(),
+            _ => DateTime.SpecifyKind(data, DateTimeKind.Utc)
+        };
+        return true;
     }
 
     public async Task AdministratzaileakEguneratuErabiltzaileProfilaAsync(
@@ -168,6 +229,8 @@ public sealed class ErabiltzaileZerbitzua
 
         var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitzaGarbia);
         erabiltzailea.Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
+        erabiltzailea.SaioHasieraSaiakerak = 0;
+        erabiltzailea.SaioaBlokeoaAmaieraUtc = null;
         await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
     }
 
@@ -200,6 +263,8 @@ public sealed class ErabiltzaileZerbitzua
 
         var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitzaBerria.Trim());
         erabiltzailea.Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
+        erabiltzailea.SaioHasieraSaiakerak = 0;
+        erabiltzailea.SaioaBlokeoaAmaieraUtc = null;
         await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
         return true;
     }

@@ -6,5 +6,6 @@ public enum SaioHasieraEmaitzaMota
     EzDaExistitzen,
     PasahitzaOkerra,
     KontuaBlokeatuta,
+    SaioDenborazBlokeatuta,
     KontuaDesaktibatuta
 }

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuEreduak;
+using Kirokuu.Pages;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
@@ -101,6 +102,15 @@ public partial class TxartelKanbanViewModel : ObservableObject
         {
             IsKargatzean = false;
         }
+    }
+
+    [RelayCommand]
+    private async Task IkusiXehetasunaAsync(TxostenOnarpenLaburpena txartela)
+    {
+        if (txartela is null)
+            return;
+        await Shell.Current.GoToAsync(
+            $"{nameof(LangileaTxartelaXehetasunOrria)}?TxostenId={txartela.TxostenId}").ConfigureAwait(true);
     }
 
     [RelayCommand]

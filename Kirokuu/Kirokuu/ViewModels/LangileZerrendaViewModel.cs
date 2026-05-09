@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuEreduak;
@@ -8,6 +9,7 @@ using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Controls;
 using SQLite;
+using System.Globalization;
 using System.Net.Http;
 
 namespace Kirokuu.ViewModels;
@@ -17,6 +19,8 @@ public partial class LangileZerrendaViewModel : ObservableObject
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
     private readonly ErabiltzaileZerbitzua _erabiltzaileZerbitzua;
     private readonly ILogger<LangileZerrendaViewModel> _logger;
+
+    private readonly List<ErabiltzaileLaburpena> _langileIturburuZerrenda = new();
 
     public LangileZerrendaViewModel(
         AutorizazioZerbitzua autorizazioZerbitzua,
@@ -37,7 +41,47 @@ public partial class LangileZerrendaViewModel : ObservableObject
     [ObservableProperty]
     private string _hutsaMezua = string.Empty;
 
+    [ObservableProperty]
+    private string _bilaketaTestua = string.Empty;
+
     public ObservableCollection<ErabiltzaileLaburpena> Langileak { get; } = new();
+
+    partial void OnBilaketaTestuaChanged(string value)
+    {
+        EzarriIkuspegiaBilaketarekin();
+    }
+
+    private void EzarriIkuspegiaBilaketarekin()
+    {
+        Langileak.Clear();
+        var hitza = BilaketaTestua.Trim();
+
+        IEnumerable<ErabiltzaileLaburpena> hautatuak = _langileIturburuZerrenda;
+        if (hitza.Length > 0)
+        {
+            var kultura = StringComparison.OrdinalIgnoreCase;
+            hautatuak = _langileIturburuZerrenda.Where(l =>
+                (l.Izena.Contains(hitza, kultura)) ||
+                (l.Abizena.Contains(hitza, kultura)) ||
+                (l.Posta.Contains(hitza, kultura)) ||
+                l.Id.ToString(CultureInfo.InvariantCulture).Contains(hitza, kultura));
+        }
+
+        foreach (var lerroa in hautatuak)
+            Langileak.Add(lerroa);
+
+        EguneratuHutsaMezua();
+    }
+
+    private void EguneratuHutsaMezua()
+    {
+        if (_langileIturburuZerrenda.Count == 0)
+            HutsaMezua = "Oraindik ez dago langilerik erregistratuta.";
+        else if (Langileak.Count == 0)
+            HutsaMezua = "Ez dago emaitzarik bilaketarekin.";
+        else
+            HutsaMezua = string.Empty;
+    }
 
     [RelayCommand]
     private async Task AgertzenDeneanAsync()
@@ -45,6 +89,7 @@ public partial class LangileZerrendaViewModel : ObservableObject
         ErroreMezua = null;
         HutsaMezua = string.Empty;
         Langileak.Clear();
+        _langileIturburuZerrenda.Clear();
 
         try
         {
@@ -57,10 +102,9 @@ public partial class LangileZerrendaViewModel : ObservableObject
 
             var zerrenda = await _erabiltzaileZerbitzua.EskuratuLangileenLaburpenakAsync().ConfigureAwait(true);
             foreach (var lerroa in zerrenda)
-                Langileak.Add(lerroa);
+                _langileIturburuZerrenda.Add(lerroa);
 
-            if (Langileak.Count == 0)
-                HutsaMezua = "Oraindik ez dago langilerik erregistratuta.";
+            EzarriIkuspegiaBilaketarekin();
         }
         catch (TursoExekuzioSalbuespena libEx)
         {

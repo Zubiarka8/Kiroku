@@ -4,6 +4,7 @@
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
              xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:kiro="clr-namespace:Kirokuu"
              x:Class="Kirokuu.Pages.LangileZerrendaOrria"
              x:Name="LangileZerrendaOrriOrokorra"
              x:DataType="vm:LangileZerrendaViewModel"
@@ -21,7 +22,7 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="0" RowSpacing="0">
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="0" RowSpacing="0">
         <ActivityIndicator Grid.Row="0"
                            IsRunning="{Binding IsKargatzean}"
                            IsVisible="{Binding IsKargatzean}"
@@ -30,22 +31,30 @@
 
         <Label Grid.Row="1"
                Text="{Binding ErroreMezua}"
-               TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-               Margin="16,8"
-               HorizontalTextAlignment="Center" />
+               Style="{StaticResource ErroreEtiketaEstiloa}"
+               Margin="16,8" />
 
-        <CollectionView Grid.Row="2"
+        <SearchBar x:Name="LangileenBilaketa"
+                   Grid.Row="2"
+                   Placeholder="Bilatu izen, abizen edo posta..."
+                   Text="{Binding BilaketaTestua, Mode=TwoWay}"
+                   Margin="8,0" />
+
+        <CollectionView Grid.Row="3"
                         ItemsSource="{Binding Langileak}"
                         Margin="8,0">
             <CollectionView.EmptyView>
-                <Label Text="{Binding HutsaMezua}"
-                       Padding="24"
-                       HorizontalTextAlignment="Center"
-                       VerticalOptions="Center" />
+                <VerticalStackLayout Padding="24" Spacing="12" VerticalOptions="Center">
+                    <Label Style="{StaticResource IkonoHandiaEstiloa}"
+                           Text="{x:Static kiro:IkonoFontIturria.HutsikIkonoGlifoa}" />
+                    <Label Text="{Binding HutsaMezua}"
+                           HorizontalTextAlignment="Center"
+                           Style="{StaticResource TestuBigarrenMailaEstiloa}" />
+                </VerticalStackLayout>
             </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="datu:ErabiltzaileLaburpena">
-                    <Border Padding="12,8" Margin="4,2">
+                    <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="12,8" Margin="6,4">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer
                                 Command="{Binding Source={x:Reference LangileZerrendaOrriOrokorra}, Path=BindingContext.IrekiXehetasunaCommand}"
@@ -58,10 +67,10 @@
                             </HorizontalStackLayout>
                             <Label Text="{Binding Posta}"
                                    FontSize="13"
-                                   TextColor="{AppThemeBinding Light=#555555, Dark=#BBBBBB}" />
+                                   Style="{StaticResource TestuBigarrenMailaEstiloa}" />
                             <Label Text="{Binding AktiboTestua}"
                                    FontSize="12"
-                                   TextColor="{AppThemeBinding Light=#666666, Dark=#AAAAAA}" />
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>

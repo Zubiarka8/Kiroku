@@ -14,7 +14,7 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="8" RowSpacing="8">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="12,8" RowSpacing="10">
 
         <ActivityIndicator Grid.Row="0"
                            IsRunning="{Binding IsKargatzean}"
@@ -23,39 +23,49 @@
 
         <Label Grid.Row="1"
                Text="{Binding ErroreMezua}"
-               TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
-               HorizontalTextAlignment="Center"
+               Style="{StaticResource ErroreEtiketaEstiloa}"
                IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
 
-        <ScrollView Grid.Row="2">
-            <Grid ColumnDefinitions="*,*,*,*" ColumnSpacing="6">
+        <ScrollView Grid.Row="2"
+                    Orientation="{OnIdiom Phone=Horizontal, Default=Vertical}">
+            <Grid MinimumWidthRequest="{OnIdiom Phone=640, Default=0}"
+                  ColumnDefinitions="*,*,*,*"
+                  ColumnSpacing="8"
+                  Padding="{OnIdiom Phone='0,0,16,0', Default='0'}">
 
-                <!-- Zain -->
-                <VerticalStackLayout Grid.Column="0" Spacing="6">
-                    <Border BackgroundColor="#FFA000" Padding="6,4" StrokeShape="RoundRectangle 6">
-                        <Label Text="Zain" TextColor="White" FontAttributes="Bold"
-                               HorizontalTextAlignment="Center" FontSize="13" />
+                <VerticalStackLayout Grid.Column="0" Spacing="8">
+                    <Border Style="{StaticResource KanpainGoiburuaEstiloa}"
+                            BackgroundColor="{StaticResource EgoeraZainAtzekoa}">
+                        <Label Text="Zain"
+                               Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
+                               FontSize="13"
+                               HorizontalTextAlignment="Center" />
                     </Border>
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding ZainZerrenda}" Spacing="6">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding ZainZerrenda}" Spacing="8">
                         <BindableLayout.EmptyView>
-                            <Label Text="—" HorizontalTextAlignment="Center"
-                                   TextColor="{AppThemeBinding Light=#999, Dark=#666}" />
+                            <Label Text="—"
+                                   Style="{StaticResource TestuHutsikEstiloa}"
+                                   HorizontalTextAlignment="Center" />
                         </BindableLayout.EmptyView>
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
-                                <Border Padding="8" StrokeShape="RoundRectangle 8">
-                                    <VerticalStackLayout Spacing="2">
+                                <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={x:Reference TxartelKanbanOrriaErreferentzia}, Path=BindingContext.IkusiXehetasunaCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <VerticalStackLayout Spacing="4">
                                         <Label Text="{Binding Helmuga}" FontAttributes="Bold" FontSize="13" />
                                         <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
                                                FontSize="12"
-                                               TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
+                                               TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
                                         <Button Text="Ezeztatu"
                                                 Command="{Binding Source={x:Reference TxartelKanbanOrriaErreferentzia}, Path=BindingContext.EzeztatuTxartelaCommand}"
                                                 CommandParameter="{Binding .}"
-                                                BackgroundColor="#757575"
-                                                TextColor="White"
+                                                Style="{StaticResource BotoiArriskuEstiloa}"
                                                 FontSize="11"
-                                                HeightRequest="32"
+                                                HeightRequest="34"
                                                 Padding="8,0"
                                                 Margin="0,4,0,0" />
                                     </VerticalStackLayout>
@@ -65,25 +75,33 @@
                     </VerticalStackLayout>
                 </VerticalStackLayout>
 
-                <!-- Onartua -->
-                <VerticalStackLayout Grid.Column="1" Spacing="6">
-                    <Border BackgroundColor="#388E3C" Padding="6,4" StrokeShape="RoundRectangle 6">
-                        <Label Text="Onartua" TextColor="White" FontAttributes="Bold"
-                               HorizontalTextAlignment="Center" FontSize="13" />
+                <VerticalStackLayout Grid.Column="1" Spacing="8">
+                    <Border Style="{StaticResource KanpainGoiburuaEstiloa}"
+                            BackgroundColor="{StaticResource EgoeraOnartuaAtzekoa}">
+                        <Label Text="Onartua"
+                               Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
+                               FontSize="13"
+                               HorizontalTextAlignment="Center" />
                     </Border>
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding OnartuaZerrenda}" Spacing="6">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding OnartuaZerrenda}" Spacing="8">
                         <BindableLayout.EmptyView>
-                            <Label Text="—" HorizontalTextAlignment="Center"
-                                   TextColor="{AppThemeBinding Light=#999, Dark=#666}" />
+                            <Label Text="—"
+                                   Style="{StaticResource TestuHutsikEstiloa}"
+                                   HorizontalTextAlignment="Center" />
                         </BindableLayout.EmptyView>
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
-                                <Border Padding="8" StrokeShape="RoundRectangle 8">
-                                    <VerticalStackLayout Spacing="2">
+                                <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={x:Reference TxartelKanbanOrriaErreferentzia}, Path=BindingContext.IkusiXehetasunaCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <VerticalStackLayout Spacing="4">
                                         <Label Text="{Binding Helmuga}" FontAttributes="Bold" FontSize="13" />
                                         <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
                                                FontSize="12"
-                                               TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
+                                               TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>
@@ -91,25 +109,33 @@
                     </VerticalStackLayout>
                 </VerticalStackLayout>
 
-                <!-- Ukatua -->
-                <VerticalStackLayout Grid.Column="2" Spacing="6">
-                    <Border BackgroundColor="#C62828" Padding="6,4" StrokeShape="RoundRectangle 6">
-                        <Label Text="Ukatua" TextColor="White" FontAttributes="Bold"
-                               HorizontalTextAlignment="Center" FontSize="13" />
+                <VerticalStackLayout Grid.Column="2" Spacing="8">
+                    <Border Style="{StaticResource KanpainGoiburuaEstiloa}"
+                            BackgroundColor="{StaticResource EgoeraUkatuaAtzekoa}">
+                        <Label Text="Ukatua"
+                               Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
+                               FontSize="13"
+                               HorizontalTextAlignment="Center" />
                     </Border>
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding UkatuaZerrenda}" Spacing="6">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding UkatuaZerrenda}" Spacing="8">
                         <BindableLayout.EmptyView>
-                            <Label Text="—" HorizontalTextAlignment="Center"
-                                   TextColor="{AppThemeBinding Light=#999, Dark=#666}" />
+                            <Label Text="—"
+                                   Style="{StaticResource TestuHutsikEstiloa}"
+                                   HorizontalTextAlignment="Center" />
                         </BindableLayout.EmptyView>
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
-                                <Border Padding="8" StrokeShape="RoundRectangle 8">
-                                    <VerticalStackLayout Spacing="2">
+                                <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={x:Reference TxartelKanbanOrriaErreferentzia}, Path=BindingContext.IkusiXehetasunaCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <VerticalStackLayout Spacing="4">
                                         <Label Text="{Binding Helmuga}" FontAttributes="Bold" FontSize="13" />
                                         <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
                                                FontSize="12"
-                                               TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
+                                               TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>
@@ -117,25 +143,33 @@
                     </VerticalStackLayout>
                 </VerticalStackLayout>
 
-                <!-- Ezeztatua -->
-                <VerticalStackLayout Grid.Column="3" Spacing="6">
-                    <Border BackgroundColor="#757575" Padding="6,4" StrokeShape="RoundRectangle 6">
-                        <Label Text="Ezeztatua" TextColor="White" FontAttributes="Bold"
-                               HorizontalTextAlignment="Center" FontSize="13" />
+                <VerticalStackLayout Grid.Column="3" Spacing="8">
+                    <Border Style="{StaticResource KanpainGoiburuaEstiloa}"
+                            BackgroundColor="{StaticResource EgoeraEzeztatuaAtzekoa}">
+                        <Label Text="Ezeztatua"
+                               Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
+                               FontSize="13"
+                               HorizontalTextAlignment="Center" />
                     </Border>
-                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding EzeztatuaZerrenda}" Spacing="6">
+                    <VerticalStackLayout BindableLayout.ItemsSource="{Binding EzeztatuaZerrenda}" Spacing="8">
                         <BindableLayout.EmptyView>
-                            <Label Text="—" HorizontalTextAlignment="Center"
-                                   TextColor="{AppThemeBinding Light=#999, Dark=#666}" />
+                            <Label Text="—"
+                                   Style="{StaticResource TestuHutsikEstiloa}"
+                                   HorizontalTextAlignment="Center" />
                         </BindableLayout.EmptyView>
                         <BindableLayout.ItemTemplate>
                             <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
-                                <Border Padding="8" StrokeShape="RoundRectangle 8">
-                                    <VerticalStackLayout Spacing="2">
+                                <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="10">
+                                    <Border.GestureRecognizers>
+                                        <TapGestureRecognizer
+                                            Command="{Binding Source={x:Reference TxartelKanbanOrriaErreferentzia}, Path=BindingContext.IkusiXehetasunaCommand}"
+                                            CommandParameter="{Binding .}" />
+                                    </Border.GestureRecognizers>
+                                    <VerticalStackLayout Spacing="4">
                                         <Label Text="{Binding Helmuga}" FontAttributes="Bold" FontSize="13" />
                                         <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
                                                FontSize="12"
-                                               TextColor="{AppThemeBinding Light=#555, Dark=#AAA}" />
+                                               TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
                                     </VerticalStackLayout>
                                 </Border>
                             </DataTemplate>

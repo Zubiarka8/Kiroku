@@ -392,9 +392,16 @@ public partial class EzarpenakViewModel : ObservableObject
         try
         {
             PasahitzaEkintza = true;
-            var (mota, _) = await _erabiltzaileZerbitzua.SaioaHasiAsync(Posta, PasahitzaZaharra).ConfigureAwait(true);
+            var (mota, _, blokeoaGeratzen) = await _erabiltzaileZerbitzua.SaioaHasiAsync(Posta, PasahitzaZaharra).ConfigureAwait(true);
             if (mota == SaioHasieraEmaitzaMota.Ongi)
                 PasahitzaEgiaztatuta = true;
+            else if (mota == SaioHasieraEmaitzaMota.SaioDenborazBlokeatuta)
+            {
+                var geratzen = blokeoaGeratzen ?? TimeSpan.FromMinutes(ErabiltzaileZerbitzua.SaioBlokeoaIraupenaMinutuak);
+                var minutuak = Math.Max(1, (int)Math.Ceiling(geratzen.TotalMinutes));
+                PasahitzaErroreMezua =
+                    $"Saio askotan okerrak direla eta, kontua blokeatu egin da {minutuak} minutu arte.";
+            }
             else
                 PasahitzaErroreMezua = "Pasahitza okerra da. Saiatu berriro.";
         }

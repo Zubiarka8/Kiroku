@@ -139,7 +139,7 @@ public partial class SaioHasieraViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
-            var (mota, erabiltzailea) = await _erabiltzaileZerbitzua.SaioaHasiAsync(Posta, Pasahitza).ConfigureAwait(true);
+            var (mota, erabiltzailea, blokeoaGeratzen) = await _erabiltzaileZerbitzua.SaioaHasiAsync(Posta, Pasahitza).ConfigureAwait(true);
             switch (mota)
             {
                 case SaioHasieraEmaitzaMota.Ongi when erabiltzailea is not null:
@@ -160,6 +160,14 @@ public partial class SaioHasieraViewModel : ObservableObject
                 case SaioHasieraEmaitzaMota.KontuaBlokeatuta:
                     ErroreMezua = "Kontua blokeatuta dago. Jarri harremanetan administratzailearekin.";
                     break;
+                case SaioHasieraEmaitzaMota.SaioDenborazBlokeatuta:
+                    {
+                        var geratzen = blokeoaGeratzen ?? TimeSpan.FromMinutes(ErabiltzaileZerbitzua.SaioBlokeoaIraupenaMinutuak);
+                        var minutuak = Math.Max(1, (int)Math.Ceiling(geratzen.TotalMinutes));
+                        ErroreMezua =
+                            $"Saio askotan okerrak direla eta, kontua blokeatu egin da {minutuak} minutu arte.";
+                        break;
+                    }
                 case SaioHasieraEmaitzaMota.KontuaDesaktibatuta:
                     ErroreMezua = "Kontua desaktibatuta dago. Jarri harremanetan administratzailearekin.";
                     break;
