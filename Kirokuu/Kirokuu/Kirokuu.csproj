@@ -66,6 +66,18 @@
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.2" />
+		<!-- sqlite-net-pcl-ek SQLitePCLRaw.bundle_green ekartzen du; nativeak bakarra e_sqlcipher izan dadin. -->
+		<PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.2">
+			<IncludeAssets>none</IncludeAssets>
+			<ExcludeAssets>all</ExcludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
+		<PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.2">
+			<IncludeAssets>none</IncludeAssets>
+			<ExcludeAssets>all</ExcludeAssets>
+			<PrivateAssets>all</PrivateAssets>
+		</PackageReference>
 	</ItemGroup>
 
 	<ItemGroup>

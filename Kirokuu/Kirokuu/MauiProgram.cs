@@ -6,6 +6,7 @@ using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Debug;
 using SkiaSharp.Views.Maui.Controls.Hosting;
+using SQLitePCL;
 
 namespace Kirokuu;
 
@@ -13,6 +14,8 @@ public static class MauiProgram
 {
     public static MauiApp CreateMauiApp()
     {
+        Batteries_V2.Init();
+
         var dotEnvKargatua = InguruneKargatzailea.KargatuDotEnv();
         if (!InguruneKargatzailea.TursoAldagaiNagusiakDaude())
         {

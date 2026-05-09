@@ -3,6 +3,7 @@ using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
 using Kirokuu.Zerbitzuak;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Storage;
 using SQLite;
 
 namespace Kirokuu.ZerbitzuakSaioa;
@@ -13,7 +14,8 @@ public sealed partial class DatuBaseaZerbitzua
     private const string LibsqlKateHutsarenOrdezkoa = "\u2060";
 
     private readonly bool _urrunTursoModua;
-    private readonly SQLiteAsyncConnection? _sqliteKonexioa;
+    private SQLiteAsyncConnection? _sqliteKonexioa;
+    private readonly string? _sqliteDatuBaseBidea;
     private readonly string? _tursoHttpsUrl;
     private readonly string? _tursoAuthToken;
     private readonly SemaphoreSlim _tursoLanSarraila = new(1, 1);
@@ -41,9 +43,8 @@ public sealed partial class DatuBaseaZerbitzua
         else
         {
             _urrunTursoModua = false;
-            var bidea = Path.Combine(FileSystem.AppDataDirectory, "kiroku_lokala.db3");
-            _sqliteKonexioa = new SQLiteAsyncConnection(bidea);
-            _logger.LogInformation("Datu-basea: SQLite lokala ({Bidea}).", bidea);
+            _sqliteDatuBaseBidea = Path.Combine(FileSystem.AppDataDirectory, "kiroku_lokala.db3");
+            _logger.LogInformation("Datu-basea: SQLite lokala SQLCipher-rekin ({Bidea}).", _sqliteDatuBaseBidea);
         }
 
 #if DEBUG
@@ -200,6 +201,64 @@ public sealed partial class DatuBaseaZerbitzua
         return zerrenda;
     }
 
+    private async Task BermatSqliteKonexioaSortutaAsync()
+    {
+        if (_sqliteKonexioa != null || _urrunTursoModua)
+            return;
+
+        var bidea = _sqliteDatuBaseBidea ?? throw new InvalidOperationException("SQLite bidea ez dago konfiguratuta.");
+
+        var flags = SQLiteOpenFlags.Create | SQLiteOpenFlags.ReadWrite | SQLiteOpenFlags.FullMutex;
+        var gordetakoHex = await SecureStorage.GetAsync(DatuBaseaZifraketaLaguntzailea.GakoarenBiltegiGakoa).ConfigureAwait(false);
+
+        if (!string.IsNullOrEmpty(gordetakoHex))
+        {
+            byte[] gakoByteak;
+            try
+            {
+                gakoByteak = Convert.FromHexString(gordetakoHex);
+            }
+            catch (FormatException ex)
+            {
+                _logger.LogError(ex, "SQLCipher gakoaren hex balioa baliogabea.");
+                throw new InvalidOperationException("Datu-basearen zifraketa-gakoa hondatuta dago.", ex);
+            }
+
+            if (gakoByteak.Length != 32)
+                throw new InvalidOperationException("Datu-basearen zifraketa-gakoaren luzera ez da zuzena.");
+
+            var cs = new SQLiteConnectionString(bidea, flags, storeDateTimeAsTicks: true, key: gakoByteak);
+            _sqliteKonexioa = new SQLiteAsyncConnection(cs);
+            await EgiaztatuSqliteKonexioaAsync().ConfigureAwait(false);
+            return;
+        }
+
+        if (File.Exists(bidea))
+        {
+            var lauCs = new SQLiteConnectionString(bidea, flags, storeDateTimeAsTicks: true, key: null);
+            _sqliteKonexioa = new SQLiteAsyncConnection(lauCs);
+            await EgiaztatuSqliteKonexioaAsync().ConfigureAwait(false);
+
+            var berria = DatuBaseaZifraketaLaguntzailea.SortuZufakoGakoByteak();
+            await _sqliteKonexioa.ReKeyAsync(berria).ConfigureAwait(false);
+            await SecureStorage.SetAsync(DatuBaseaZifraketaLaguntzailea.GakoarenBiltegiGakoa, Convert.ToHexString(berria)).ConfigureAwait(false);
+            _logger.LogInformation("SQLite datu-base zaharra (testu laua) zifratu da.");
+            return;
+        }
+
+        var sortutakoGakoa = DatuBaseaZifraketaLaguntzailea.SortuZufakoGakoByteak();
+        await SecureStorage.SetAsync(DatuBaseaZifraketaLaguntzailea.GakoarenBiltegiGakoa, Convert.ToHexString(sortutakoGakoa)).ConfigureAwait(false);
+
+        var zifratuCs = new SQLiteConnectionString(bidea, flags, storeDateTimeAsTicks: true, key: sortutakoGakoa);
+        _sqliteKonexioa = new SQLiteAsyncConnection(zifratuCs);
+        await EgiaztatuSqliteKonexioaAsync().ConfigureAwait(false);
+    }
+
+    private async Task EgiaztatuSqliteKonexioaAsync()
+    {
+        await _sqliteKonexioa!.ExecuteScalarAsync<int>("SELECT 1").ConfigureAwait(false);
+    }
+
     private async Task HasieratuBarneanAsync()
     {
         try
@@ -220,6 +279,8 @@ public sealed partial class DatuBaseaZerbitzua
                 }, CancellationToken.None).ConfigureAwait(false);
                 return;
             }
+
+            await BermatSqliteKonexioaSortutaAsync().ConfigureAwait(false);
 
             await SortuSqliteTaulaAsync<Erabiltzailea>("Erabiltzaileak").ConfigureAwait(false);
             await BermatuSqliteErabiltzaileEskemaAsync().ConfigureAwait(false);
