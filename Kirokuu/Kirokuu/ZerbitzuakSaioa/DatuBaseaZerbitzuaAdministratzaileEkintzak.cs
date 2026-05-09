@@ -118,6 +118,12 @@ public sealed partial class DatuBaseaZerbitzua
 
         await bezeroa.ExekutatuAsync(gastuKontzeptuakSql, cancellationToken).ConfigureAwait(false);
 
+        await SaiatuTursoAlterEtIgnoratuAsync(
+                bezeroa,
+                "ALTER TABLE GastuKontzeptuak ADD COLUMN IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken)
+            .ConfigureAwait(false);
+
         const string gastuKontzeptuakSeedSql = """
             INSERT OR IGNORE INTO GastuKontzeptuak
               (KategoriaId, Izena, Deskribapena, IbilgailuaBeharrezkoa, Estatusa, GastuKontzeptuId)
