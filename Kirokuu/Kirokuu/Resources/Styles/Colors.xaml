@@ -88,4 +88,9 @@
     <Color x:Key="MugaTxartelaArgia">#E8E8E8</Color>
     <Color x:Key="MugaTxartelaIluna">#404040</Color>
 
+    <Color x:Key="MugimenduTxartelaAzalaArgia">#E8E6EC</Color>
+    <Color x:Key="MugimenduTxartelaAzalaIluna">#3A3A3A</Color>
+    <Color x:Key="MugimenduTxartelaMugaArgia">#D0CDD8</Color>
+    <Color x:Key="MugimenduTxartelaMugaIluna">#525252</Color>
+
 </ResourceDictionary>

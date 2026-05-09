@@ -52,4 +52,6 @@ public static class IkonoFontIturria
     public static string PostaArrobaIkonoGlifoa => "\ue0e6";
 
     public static string LasterEdukiaIkonoGlifoa => "\ue88b";
+
+    public static string ChevronEskuinaIkonoGlifoa => "\ue5cc";
 }

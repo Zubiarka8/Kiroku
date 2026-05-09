@@ -572,4 +572,22 @@
         <Setter Property="Aspect" Value="AspectFit" />
     </Style>
 
+    <Style x:Key="MugimenduSakatagarriTxartelaEstiloa" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource MugimenduTxartelaMugaArgia}, Dark={StaticResource MugimenduTxartelaMugaIluna}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource MugimenduTxartelaAzalaArgia}, Dark={StaticResource MugimenduTxartelaAzalaIluna}}" />
+        <Setter Property="Padding" Value="12,10" />
+    </Style>
+
+    <Style x:Key="MugimenduChevronEtiketaEstiloa" TargetType="Label">
+        <Setter Property="FontFamily" Value="MaterialIcons" />
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+        <Setter Property="Opacity" Value="0.85" />
+        <Setter Property="InputTransparent" Value="True" />
+    </Style>
+
 </ResourceDictionary>

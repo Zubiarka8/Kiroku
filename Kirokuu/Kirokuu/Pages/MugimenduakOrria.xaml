@@ -15,7 +15,7 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,*" Padding="8" RowSpacing="8">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="10" RowSpacing="10">
         <ActivityIndicator Grid.Row="0"
                            IsRunning="{Binding IsKargatzean}"
                            IsVisible="{Binding IsKargatzean}"
@@ -39,30 +39,39 @@
             </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
-                    <Grid Margin="4,2"
-                          MinimumHeightRequest="52">
+                    <Grid Margin="2,5"
+                          MinimumHeightRequest="56">
                         <Grid.GestureRecognizers>
                             <TapGestureRecognizer NumberOfTapsRequired="1"
                                                   Command="{Binding Source={x:Reference MugimenduakOrriaErreferentzia}, Path=BindingContext.IrekiTxostenXehetasunaCommand}"
                                                   CommandParameter="{Binding .}" />
                         </Grid.GestureRecognizers>
-                        <Border Style="{StaticResource TxartelTxartelaEstiloa}"
-                                Padding="12"
+                        <Border Style="{StaticResource MugimenduSakatagarriTxartelaEstiloa}"
                                 InputTransparent="True">
-                            <VerticalStackLayout Spacing="4" InputTransparent="True">
-                                <Label InputTransparent="True"
-                                       Text="{Binding Helmuga}"
-                                       FontAttributes="Bold" />
-                                <Label InputTransparent="True"
-                                       Text="{Binding LangileTestua}"
-                                       FontSize="13" />
-                                <Label InputTransparent="True"
-                                       Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='Guztira: {0:N2} €'}"
-                                       FontSize="13" />
-                                <Label InputTransparent="True"
-                                       Text="{Binding Egoera}"
-                                       FontSize="12" />
-                            </VerticalStackLayout>
+                            <Grid ColumnDefinitions="*,Auto"
+                                  ColumnSpacing="8"
+                                  InputTransparent="True">
+                                <VerticalStackLayout Grid.Column="0"
+                                                     Spacing="4"
+                                                     InputTransparent="True">
+                                    <Label InputTransparent="True"
+                                           Text="{Binding Helmuga}"
+                                           FontAttributes="Bold" />
+                                    <Label InputTransparent="True"
+                                           Text="{Binding LangileTestua}"
+                                           FontSize="13" />
+                                    <Label InputTransparent="True"
+                                           Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='Guztira: {0:N2} €'}"
+                                           FontSize="13" />
+                                    <Label InputTransparent="True"
+                                           Text="{Binding Egoera}"
+                                           FontSize="12" />
+                                </VerticalStackLayout>
+                                <Label Grid.Column="1"
+                                       Style="{StaticResource MugimenduChevronEtiketaEstiloa}"
+                                       Text="{x:Static kiro:IkonoFontIturria.ChevronEskuinaIkonoGlifoa}"
+                                       SemanticProperties.Description="Xehetasunak" />
+                            </Grid>
                         </Border>
                     </Grid>
                 </DataTemplate>
