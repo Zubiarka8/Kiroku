@@ -62,6 +62,9 @@ public partial class SaioHasieraViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void TxertaturikAroba() => Posta += "@";
+
+    [RelayCommand]
     private void AlderantzikatuPasahitzaMaska() => PasahitzaMaskaratuta = !PasahitzaMaskaratuta;
 
     [RelayCommand]

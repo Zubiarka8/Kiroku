@@ -20,7 +20,7 @@ public partial class DiruSarreraOnarpenXehetasunViewModel : ObservableObject
     private readonly SaioaGordetzeZerbitzua _saioaGordetzeZerbitzua;
     private readonly ILogger<DiruSarreraOnarpenXehetasunViewModel> _logger;
 
-    private string _sarreraIdGordeta = string.Empty;
+    private int _sarreraIdGordeta;
 
     public DiruSarreraOnarpenXehetasunViewModel(
         AutorizazioZerbitzua autorizazioZerbitzua,
@@ -42,7 +42,10 @@ public partial class DiruSarreraOnarpenXehetasunViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(value))
             return;
 
-        _sarreraIdGordeta = Uri.UnescapeDataString(value.Trim());
+        if (!int.TryParse(Uri.UnescapeDataString(value.Trim()), out var id) || id <= 0)
+            return;
+
+        _sarreraIdGordeta = id;
         _ = KargatuAsync();
     }
 
@@ -76,7 +79,7 @@ public partial class DiruSarreraOnarpenXehetasunViewModel : ObservableObject
     private async Task KargatuAsync()
     {
         ErroreMezua = null;
-        if (string.IsNullOrWhiteSpace(_sarreraIdGordeta))
+        if (_sarreraIdGordeta <= 0)
             return;
 
         try
@@ -165,7 +168,7 @@ public partial class DiruSarreraOnarpenXehetasunViewModel : ObservableObject
     private async Task OnartuAsync()
     {
         ErroreMezua = null;
-        if (string.IsNullOrWhiteSpace(_sarreraIdGordeta))
+        if (_sarreraIdGordeta <= 0)
             return;
 
         try
@@ -226,7 +229,7 @@ public partial class DiruSarreraOnarpenXehetasunViewModel : ObservableObject
     private async Task UkatuAsync()
     {
         ErroreMezua = null;
-        if (string.IsNullOrWhiteSpace(_sarreraIdGordeta))
+        if (_sarreraIdGordeta <= 0)
             return;
 
         try

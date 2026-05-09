@@ -9,4 +9,8 @@ public interface ITursoSqlEgikaritzailea
         string sql,
         CancellationToken cancellationToken,
         params object?[] argumentuak);
+
+    Task<IReadOnlyList<TursoHttpExekuzioarenEmaitza>> ExekutatuBatchAsync(
+        IReadOnlyList<(string Sql, object?[] Argumentuak)> statements,
+        CancellationToken cancellationToken);
 }

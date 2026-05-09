@@ -80,6 +80,40 @@ public sealed class TursoHttpsPipelineEgikaritzailea : ITursoSqlEgikaritzailea, 
         return ParsatuPipelineErantzuna(testua);
     }
 
+    public async Task<IReadOnlyList<TursoHttpExekuzioarenEmaitza>> ExekutatuBatchAsync(
+        IReadOnlyList<(string Sql, object?[] Argumentuak)> statements,
+        CancellationToken cancellationToken)
+    {
+        ObjectDisposedException.ThrowIf(_askatuta, this);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        var eskaerak = new JsonArray();
+        foreach (var (sql, args) in statements)
+            eskaerak.Add(new JsonObject { ["type"] = "execute", ["stmt"] = SortuStmtNodoa(sql, args) });
+        eskaerak.Add(new JsonObject { ["type"] = "close" });
+        var gorputza = new JsonObject { ["requests"] = eskaerak }.ToJsonString(JsonAukerak);
+
+        using var eskaera = new HttpRequestMessage(HttpMethod.Post, _pipelineUri)
+        {
+            Content = new StringContent(gorputza, Encoding.UTF8, "application/json")
+        };
+        eskaera.Headers.Authorization = new AuthenticationHeaderValue("Bearer", _token);
+
+        using var erantzuna = await _http.SendAsync(eskaera, cancellationToken).ConfigureAwait(false);
+        var testua = await erantzuna.Content.ReadAsStringAsync(cancellationToken).ConfigureAwait(false);
+
+        if (!erantzuna.IsSuccessStatusCode)
+        {
+            _logatzaile?.LogWarning(
+                "Turso HTTPS pipeline HTTP {Estado}: {Ale}", (int)erantzuna.StatusCode,
+                HarrapatuLaburrena(testua, 480));
+            throw new TursoExekuzioSalbuespena(
+                $"Turso HTTPS pipeline errorea ({(int)erantzuna.StatusCode}): {HarrapatuLaburrena(testua, 800)}.");
+        }
+
+        return ParsatuBatchPipelineErantzuna(testua);
+    }
+
     public void Dispose()
     {
         if (_askatuta)
@@ -170,19 +204,19 @@ public sealed class TursoHttpsPipelineEgikaritzailea : ITursoSqlEgikaritzailea, 
                 return new JsonObject
                 {
                     ["type"] = "float",
-                    ["value"] = f.ToString(CultureInfo.InvariantCulture)
+                    ["value"] = JsonValue.Create((double)f)
                 };
             case double dou:
                 return new JsonObject
                 {
                     ["type"] = "float",
-                    ["value"] = dou.ToString(CultureInfo.InvariantCulture)
+                    ["value"] = JsonValue.Create(dou)
                 };
             case decimal dek:
                 return new JsonObject
                 {
                     ["type"] = "float",
-                    ["value"] = ((double)dek).ToString(CultureInfo.InvariantCulture)
+                    ["value"] = JsonValue.Create((double)dek)
                 };
             case bool bo:
                 return new JsonObject
@@ -326,6 +360,36 @@ public sealed class TursoHttpsPipelineEgikaritzailea : ITursoSqlEgikaritzailea, 
         {
             return 0;
         }
+    }
+
+    private IReadOnlyList<TursoHttpExekuzioarenEmaitza> ParsatuBatchPipelineErantzuna(string json)
+    {
+        var erroreaLaburra = TryGetTursoAkatsMezua(json);
+        if (erroreaLaburra is not null)
+            throw new TursoExekuzioSalbuespena(erroreaLaburra);
+
+        var nodo = JsonNode.Parse(json);
+        var emaitzak = nodo?["results"] as JsonArray
+            ?? throw new TursoExekuzioSalbuespena("Turso erantzunan 'results' falta da.");
+
+        var zerrenda = new List<TursoHttpExekuzioarenEmaitza>();
+        foreach (var sarrera in emaitzak)
+        {
+            if (sarrera is null) continue;
+            var mota = sarrera["type"]?.GetValue<string>();
+            if (string.Equals(mota, "error", StringComparison.OrdinalIgnoreCase))
+            {
+                var akats = sarrera["error"]?.ToJsonString(JsonAukerak) ?? sarrera.ToJsonString(JsonAukerak);
+                throw new TursoExekuzioSalbuespena($"Turso pipeline errorea: {akats}");
+            }
+            if (!string.Equals(mota, "ok", StringComparison.OrdinalIgnoreCase)) continue;
+            var erantzuna = sarrera["response"];
+            if (!string.Equals(erantzuna?["type"]?.GetValue<string>(), "execute", StringComparison.OrdinalIgnoreCase)) continue;
+            var emaitza = erantzuna?["result"];
+            if (emaitza is null) continue;
+            zerrenda.Add(SortuTursoHttpErantzunan(emaitza));
+        }
+        return zerrenda;
     }
 
     private static string? TryGetTursoAkatsMezua(string json)

@@ -89,6 +89,10 @@ public static class MauiProgram
         builder.Services.AddTransient<AdministratzaileHasieraViewModel>();
         builder.Services.AddTransient<ErabiltzaileBerriaViewModel>();
         builder.Services.AddTransient<ErabiltzaileXehetasunViewModel>();
+        builder.Services.AddTransient<NireTxartelakViewModel>();
+        builder.Services.AddTransient<TxartelBerriaViewModel>();
+        builder.Services.AddTransient<TxartelKanbanViewModel>();
+        builder.Services.AddTransient<LangileaTxartelaXehetasunViewModel>();
         builder.Services.AddTransient<MugimenduakViewModel>();
         builder.Services.AddTransient<TxostenOnarpenXehetasunViewModel>();
         builder.Services.AddTransient<DiruSarreraOnarpenXehetasunViewModel>();
@@ -96,6 +100,10 @@ public static class MauiProgram
         builder.Services.AddTransient<SaioHasieraOrria>();
         builder.Services.AddTransient<ErregistroOrria>();
         builder.Services.AddTransient<HasieraOrria>();
+        builder.Services.AddTransient<NireTxartelakOrria>();
+        builder.Services.AddTransient<TxartelBerriaOrria>();
+        builder.Services.AddTransient<TxartelKanbanOrria>();
+        builder.Services.AddTransient<LangileaTxartelaXehetasunOrria>();
         builder.Services.AddTransient<LasterEdukiaOrria>();
         builder.Services.AddTransient<EzarpenakOrria>();
         builder.Services.AddTransient<LangileZerrendaOrria>();

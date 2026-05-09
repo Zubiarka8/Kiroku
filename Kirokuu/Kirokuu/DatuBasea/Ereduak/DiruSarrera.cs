@@ -5,9 +5,9 @@ namespace Kirokuu.DatuBasea.Ereduak;
 [Table("DiruSarrerak")]
 public sealed class DiruSarrera
 {
-    [PrimaryKey]
+    [PrimaryKey, AutoIncrement]
     [Column("SarreraId")]
-    public string SarreraId { get; set; } = string.Empty;
+    public int SarreraId { get; set; }
 
     [Column("ErabiltzaileId")]
     public int ErabiltzaileId { get; set; }

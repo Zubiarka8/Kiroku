@@ -5,12 +5,12 @@ namespace Kirokuu.DatuBasea.Ereduak;
 [Table("GastuLerroak")]
 public sealed class GastuLerroa
 {
-    [PrimaryKey]
+    [PrimaryKey, AutoIncrement]
     [Column("GastuId")]
-    public string GastuId { get; set; } = string.Empty;
+    public int GastuId { get; set; }
 
     [Column("TxostenId")]
-    public string TxostenId { get; set; } = string.Empty;
+    public int TxostenId { get; set; }
 
     [Column("KategoriaId")]
     public int KategoriaId { get; set; }
@@ -27,7 +27,7 @@ public sealed class GastuLerroa
     public double Kilometroak { get; set; }
 
     [NotNull]
-    [Column("TicketArgazkia")]
+    [Column("TicketArgazkiBidea")]
     public string TicketArgazkia { get; set; } = string.Empty;
 
     [NotNull]

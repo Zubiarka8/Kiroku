@@ -21,7 +21,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     private readonly SaioaGordetzeZerbitzua _saioaGordetzeZerbitzua;
     private readonly ILogger<TxostenOnarpenXehetasunViewModel> _logger;
 
-    private string _txostenIdGordeta = string.Empty;
+    private int _txostenIdGordeta;
 
     public TxostenOnarpenXehetasunViewModel(
         AutorizazioZerbitzua autorizazioZerbitzua,
@@ -43,7 +43,10 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(value))
             return;
 
-        _txostenIdGordeta = Uri.UnescapeDataString(value.Trim());
+        if (!int.TryParse(Uri.UnescapeDataString(value.Trim()), out var id) || id <= 0)
+            return;
+
+        _txostenIdGordeta = id;
         _ = KargatuAsync();
     }
 
@@ -77,7 +80,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     {
         ErroreMezua = null;
         GastuLerroak.Clear();
-        if (string.IsNullOrWhiteSpace(_txostenIdGordeta))
+        if (_txostenIdGordeta <= 0)
             return;
 
         try
@@ -174,7 +177,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     private async Task OnartuAsync()
     {
         ErroreMezua = null;
-        if (string.IsNullOrWhiteSpace(_txostenIdGordeta))
+        if (_txostenIdGordeta <= 0)
             return;
 
         try
@@ -235,7 +238,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     private async Task UkatuAsync()
     {
         ErroreMezua = null;
-        if (string.IsNullOrWhiteSpace(_txostenIdGordeta))
+        if (_txostenIdGordeta <= 0)
             return;
 
         try
