@@ -9,8 +9,8 @@ public sealed class AuditoretzaLoga
     [Column("LogId")]
     public int LogId { get; set; }
 
-    [NotNull]
-    public string EntitateId { get; set; } = string.Empty;
+    [Column("DiruSarreraId")]
+    public int? DiruSarreraId { get; set; }
 
     [Column("ErabiltzaileId")]
     public int ErabiltzaileId { get; set; }

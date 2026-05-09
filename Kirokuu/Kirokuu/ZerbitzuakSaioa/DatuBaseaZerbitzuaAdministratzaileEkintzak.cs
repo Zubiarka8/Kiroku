@@ -26,9 +26,46 @@ public sealed partial class DatuBaseaZerbitzua
                 return true;
             if (m.Contains("already exists", StringComparison.OrdinalIgnoreCase))
                 return true;
+            if (m.Contains("no such column", StringComparison.OrdinalIgnoreCase) &&
+                m.Contains("EntitateId", StringComparison.OrdinalIgnoreCase))
+                return true;
         }
 
         return false;
+    }
+
+    private async Task MigratuTursoAuditoretzaLogaDiruSarreraIdAsync(
+        ITursoSqlEgikaritzailea bezeroa,
+        CancellationToken cancellationToken)
+    {
+        await SaiatuTursoAlterEtIgnoratuAsync(
+                bezeroa,
+                "ALTER TABLE AuditoretzaLoga ADD COLUMN DiruSarreraId INTEGER REFERENCES DiruSarrerak(SarreraId)",
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        try
+        {
+            await bezeroa.ExekutatuAsync(
+                    """
+                    UPDATE AuditoretzaLoga SET DiruSarreraId = CAST(EntitateId AS INTEGER)
+                    WHERE Ekintza IN (?, ?)
+                    """,
+                    cancellationToken,
+                    AuditoretzaEkintzaDiruSarreraOnartu,
+                    AuditoretzaEkintzaDiruSarreraUkatu)
+                .ConfigureAwait(false);
+        }
+        catch (Exception ex) when (ex.Message.Contains("no such column", StringComparison.OrdinalIgnoreCase))
+        {
+            _logger.LogDebug(ex, "Turso AuditoretzaLoga: EntitateId ez dago (migratuta edo eskema berria).");
+        }
+
+        await SaiatuTursoAlterEtIgnoratuAsync(
+                bezeroa,
+                "ALTER TABLE AuditoretzaLoga DROP COLUMN EntitateId",
+                cancellationToken)
+            .ConfigureAwait(false);
     }
 
     private async Task SaiatuTursoAlterEtIgnoratuAsync(ITursoSqlEgikaritzailea bezeroa, string sql, CancellationToken cancellationToken)
@@ -95,7 +132,7 @@ public sealed partial class DatuBaseaZerbitzua
         const string auditSql = """
             CREATE TABLE IF NOT EXISTS AuditoretzaLoga (
                 LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                EntitateId TEXT NOT NULL DEFAULT '',
+                DiruSarreraId INTEGER REFERENCES DiruSarrerak(SarreraId),
                 ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
                 Ekintza TEXT NOT NULL DEFAULT '',
                 DataOrdua TEXT NOT NULL DEFAULT '',
@@ -142,8 +179,10 @@ public sealed partial class DatuBaseaZerbitzua
 
         await bezeroa.ExekutatuAsync(bidaiaSql, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(gastuLerroSql, cancellationToken).ConfigureAwait(false);
-        await bezeroa.ExekutatuAsync(auditSql, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(diruSarreraSql, cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync(auditSql, cancellationToken).ConfigureAwait(false);
+
+        await MigratuTursoAuditoretzaLogaDiruSarreraIdAsync(bezeroa, cancellationToken).ConfigureAwait(false);
 
         await SaiatuTursoAlterEtIgnoratuAsync(
                 bezeroa,
@@ -543,7 +582,7 @@ public sealed partial class DatuBaseaZerbitzua
             ? AuditoretzaEkintzaTxostenaOnartu
             : AuditoretzaEkintzaTxostenaUkatu;
         var deskribapena = $"{txostenId} · {egoeraBerria}";
-        await IdazkiAuditoretzaLogaAsync(txostenId.ToString(CultureInfo.InvariantCulture), ekintza, deskribapena, administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
+        await IdazkiAuditoretzaLogaAsync(null, ekintza, deskribapena, administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task EguneratuDiruSarreraEgoeraAdministratzaileAsync(
@@ -589,11 +628,11 @@ public sealed partial class DatuBaseaZerbitzua
             ? AuditoretzaEkintzaDiruSarreraOnartu
             : AuditoretzaEkintzaDiruSarreraUkatu;
         var deskribapena = $"{sarreraId} · {egoeraBerria}";
-        await IdazkiAuditoretzaLogaAsync(sarreraId.ToString(CultureInfo.InvariantCulture), ekintza, deskribapena, administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
+        await IdazkiAuditoretzaLogaAsync(sarreraId, ekintza, deskribapena, administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task IdazkiAuditoretzaLogaAsync(
-        string entitateId,
+        int? diruSarreraId,
         string ekintza,
         string deskribapena,
         int administratzaileErabiltzaileId,
@@ -601,7 +640,7 @@ public sealed partial class DatuBaseaZerbitzua
     {
         var loga = new AuditoretzaLoga
         {
-            EntitateId = entitateId,
+            DiruSarreraId = diruSarreraId,
             ErabiltzaileId = administratzaileErabiltzaileId,
             Ekintza = ekintza,
             DataOrdua = DateTime.UtcNow,
@@ -614,13 +653,13 @@ public sealed partial class DatuBaseaZerbitzua
             await ExekutatuTursoanAsync(async bezeroa =>
             {
                 const string sql = """
-                    INSERT INTO AuditoretzaLoga (EntitateId, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea)
+                    INSERT INTO AuditoretzaLoga (DiruSarreraId, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea)
                     VALUES (?, ?, ?, ?, ?, ?);
                     """;
                 await bezeroa.ExekutatuAsync(
                         sql,
                         cancellationToken,
-                        LibsqlLoturaNormalizatua(loga.EntitateId),
+                        LibsqlLoturaNormalizatua(loga.DiruSarreraId),
                         LibsqlLoturaNormalizatua(loga.ErabiltzaileId),
                         LibsqlLoturaNormalizatua(loga.Ekintza),
                         LibsqlLoturaNormalizatua(loga.DataOrdua.ToString("o", CultureInfo.InvariantCulture)),
