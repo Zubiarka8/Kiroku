@@ -34,6 +34,12 @@ public sealed class SaioaGordetzeZerbitzua
         return (izena, abizena ?? string.Empty);
     }
 
+    public async Task EguneratuIzenAbizenakSaioanAsync(string izena, string abizena)
+    {
+        await SecureStorage.SetAsync(GakoIzena, izena).ConfigureAwait(false);
+        await SecureStorage.SetAsync(GakoAbizena, abizena).ConfigureAwait(false);
+    }
+
     public Task<string?> IrakurriErabiltzaileIdTestuaAsync() =>
         SecureStorage.GetAsync(GakoErabiltzaileId);
 

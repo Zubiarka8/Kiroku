@@ -120,6 +120,37 @@ public sealed class ErabiltzaileZerbitzua
         }
     }
 
+    public async Task NorberarenProfilaEguneratuAsync(
+        int erabiltzaileId,
+        string izena,
+        string abizena,
+        string abizena2,
+        string dni,
+        string posta,
+        string kargoa,
+        CancellationToken cancellationToken = default)
+    {
+        var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Erabiltzailea ez da aurkitu.");
+
+        erabiltzailea.Izena = izena.Trim();
+        erabiltzailea.Abizena = abizena.Trim();
+        erabiltzailea.Abizena2 = abizena2.Trim();
+        erabiltzailea.DNI = dni.Trim();
+        erabiltzailea.Posta = NormalizatuPosta(posta);
+        erabiltzailea.Kargoa = kargoa.Trim();
+
+        try
+        {
+            await _datuBaseaZerbitzua.EguneratuErabiltzaileaAsync(erabiltzailea, cancellationToken).ConfigureAwait(false);
+        }
+        catch (SQLiteException sqlEx) when (sqlEx.Result == SQLite3.Result.Constraint)
+        {
+            _logger.LogWarning(sqlEx, "Norberaren profila: murrizketa.");
+            throw;
+        }
+    }
+
     public async Task AdministratzaileakBerrezarriPasahitzaLangilearentzatAsync(
         int erabiltzaileId,
         string pasahitzaBerria,

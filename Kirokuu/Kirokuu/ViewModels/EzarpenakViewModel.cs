@@ -69,6 +69,8 @@ public partial class EzarpenakViewModel : ObservableObject
     [ObservableProperty] private string? _pasahitzaErroreMezua;
     [ObservableProperty] private bool _pasahitzaErroreDago;
 
+    [ObservableProperty] private bool _profilaGordetzen;
+
     partial void OnPasahitzaZaharraMaskaratutaChanged(bool value)
     {
         PasahitzaZaharraBegiIzena = value ? "begia_irekita" : "begia_itxita";
@@ -89,6 +91,9 @@ public partial class EzarpenakViewModel : ObservableObject
 
     partial void OnPasahitzaErroreMezuaChanged(string? value) =>
         PasahitzaErroreDago = !string.IsNullOrEmpty(value);
+
+    [RelayCommand]
+    private void TxertaturikAroba() => Posta += "@";
 
     [RelayCommand]
     private void AlderantzikatuPasahitzaZaharraMaska() => PasahitzaZaharraMaskaratuta = !PasahitzaZaharraMaskaratuta;
@@ -182,6 +187,136 @@ public partial class EzarpenakViewModel : ObservableObject
         finally
         {
             IsKargatzean = false;
+        }
+    }
+
+    [RelayCommand]
+    private async Task ProfilaGordeAsync()
+    {
+        ErroreMezua = null;
+
+        if (_erabiltzaileId is null)
+        {
+            ErroreMezua = "Saioa ez da aurkitu. Hasi saioa berriro.";
+            return;
+        }
+
+        if (string.IsNullOrWhiteSpace(Izena) || string.IsNullOrWhiteSpace(Abizena) ||
+            string.IsNullOrWhiteSpace(Abizena2) || string.IsNullOrWhiteSpace(DNI) ||
+            string.IsNullOrWhiteSpace(Kargoa) || string.IsNullOrWhiteSpace(Posta))
+        {
+            ErroreMezua = "Eremu bat edo gehiago hutsik daude. Bete beharrezko eremuak.";
+            return;
+        }
+
+        if (!ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Izena, 2, 80) ||
+            !ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Abizena, 2, 80) ||
+            !ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Abizena2, 2, 80))
+        {
+            ErroreMezua = "Izen edo abizenak ez dira zuzenak (letrak eta tarteak soilik, 2–80 karaktere).";
+            return;
+        }
+
+        if (!ErabiltzaileDatuenBalidazioLaguntzailea.NanEdoIfzBaliozkoa(DNI))
+        {
+            ErroreMezua = "NAN / IFZ zenbakia ez da zuzena (8 zenbaki + letra, edo X/Y/Z + 7 zenbaki + letra).";
+            return;
+        }
+
+        if (!ErabiltzaileDatuenBalidazioLaguntzailea.KargoaTestuaBaliozkoa(Kargoa, 2, 120))
+        {
+            ErroreMezua = "Kargoa 2 eta 120 karaktere artean egon behar da.";
+            return;
+        }
+
+        if (!ErabiltzaileDatuenBalidazioLaguntzailea.PostaBaliozkoa(Posta))
+        {
+            ErroreMezua = "Posta helbidearen formatua ez da zuzena.";
+            return;
+        }
+
+        try
+        {
+            ProfilaGordetzen = true;
+            await _erabiltzaileZerbitzua.NorberarenProfilaEguneratuAsync(
+                    _erabiltzaileId.Value,
+                    Izena,
+                    Abizena,
+                    Abizena2,
+                    DNI,
+                    Posta,
+                    Kargoa)
+                .ConfigureAwait(true);
+
+            await _saioaGordetzeZerbitzua.EguneratuIzenAbizenakSaioanAsync(Izena.Trim(), Abizena.Trim())
+                .ConfigureAwait(true);
+
+            var freskoa = await _erabiltzaileZerbitzua.EskuratuErabiltzaileaIdzAsync(_erabiltzaileId.Value).ConfigureAwait(true);
+            if (freskoa is not null)
+            {
+                Izena = freskoa.Izena;
+                Abizena = freskoa.Abizena;
+                Abizena2 = freskoa.Abizena2;
+                DNI = freskoa.DNI;
+                Posta = freskoa.Posta;
+                Kargoa = freskoa.Kargoa;
+            }
+
+            await BokadilloErakustzailea.SaiatuErakutsiAsync("Profila eguneratu da.", _logger).ConfigureAwait(true);
+        }
+        catch (ErabiltzaileMurrizketaSalbuespena murEx)
+        {
+            ErroreMezua = "Posta edo DNI bikoiztua.";
+            _logger.LogWarning(murEx, "Ezarpenak: profila murrizketa.");
+        }
+        catch (SQLiteException sqlEx) when (sqlEx.Result == SQLite3.Result.Constraint)
+        {
+            ErroreMezua = "Datu bikoiztua: posta edo DNI jadanik erabilita.";
+            _logger.LogWarning(sqlEx, "Ezarpenak: profila SQLite murrizketa.");
+        }
+        catch (SQLiteException sqlEx)
+        {
+            ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
+            _logger.LogError(sqlEx, "Ezarpenak: profila SQLite errorea.");
+        }
+        catch (TursoExekuzioSalbuespena libEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
+                ?? "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
+            _logger.LogError(libEx, "Ezarpenak: profila Turso errorea.");
+        }
+        catch (KeyNotFoundException knfEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
+            _logger.LogError(knfEx, "Ezarpenak: profila mapa errorea.");
+        }
+        catch (FormatException fmtEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
+            _logger.LogError(fmtEx, "Ezarpenak: profila formatu errorea.");
+        }
+        catch (HttpRequestException httpEx)
+        {
+            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
+            _logger.LogError(httpEx, "Ezarpenak: profila sare errorea.");
+        }
+        catch (InvalidOperationException opEx)
+        {
+            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
+            _logger.LogError(opEx, "Ezarpenak: profila eragiketa baliogabea.");
+        }
+        catch (TaskCanceledException)
+        {
+            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
+        }
+        catch (Exception ex)
+        {
+            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
+            _logger.LogError(ex, "Ezarpenak: profila ustekabeko errorea.");
+        }
+        finally
+        {
+            ProfilaGordetzen = false;
         }
     }
 

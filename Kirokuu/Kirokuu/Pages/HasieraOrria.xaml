@@ -3,6 +3,8 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
+             xmlns:measure="clr-namespace:LiveChartsCore.Measure;assembly=LiveChartsCore"
              x:Class="Kirokuu.Pages.HasieraOrria"
              x:DataType="vm:HasieraViewModel"
              Title="Hasiera">
@@ -27,6 +29,91 @@
             <Label Text="{Binding ErroreMezua}"
                    TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
                    HorizontalTextAlignment="Center" />
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
+                <Border Grid.Column="0" Padding="14">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Onartutako gastuak (guztira)"
+                               FontSize="13"
+                               TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                        <Label Text="{Binding OnartutakoGastuenTestua}"
+                               FontSize="18"
+                               FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Border>
+                <Border Grid.Column="1" Padding="14">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Txartelak zain"
+                               FontSize="13"
+                               TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                        <Label Text="{Binding ZainTxartelenTestua}"
+                               FontSize="18"
+                               FontAttributes="Bold" />
+                    </VerticalStackLayout>
+                </Border>
+            </Grid>
+
+            <Label Text="Azken 6 hilabeteetako onartutako gastua"
+                   FontAttributes="Bold"
+                   Margin="0,8,0,0" />
+            <lvc:CartesianChart HeightRequest="260"
+                                Series="{Binding HilabetekoGastuSerieak}"
+                                XAxes="{Binding HilabetekoXArdatzak}" />
+
+            <VerticalStackLayout Spacing="4" Margin="0,8,0,0">
+                <Label Text="Onartutako gastua kategoriaren arabera"
+                       FontAttributes="Bold" />
+                <Label Text="Zure onartutako txartelen gastua kategoriaka banatuta (handienak lehenean; gehienez 8)."
+                       FontSize="12"
+                       TextColor="{AppThemeBinding Light=#616161, Dark=#BDBDBD}" />
+            </VerticalStackLayout>
+
+            <Label Text="Oraindik ez dago erakusteko daturik onartutako gasturik kategoriaka."
+                   IsVisible="{Binding ErakutsiKategoriaHutsikMezua}"
+                   FontSize="13"
+                   Margin="0,4,0,0"
+                   TextColor="{AppThemeBinding Light=#757575, Dark=#9E9E9E}" />
+
+            <Border Padding="14"
+                    IsVisible="{Binding ErakutsiKategoriaBakarra}">
+                <VerticalStackLayout Spacing="6">
+                    <Label Text="Kategoria bakarra"
+                           FontAttributes="Bold"
+                           FontSize="13"
+                           TextColor="{AppThemeBinding Light=#424242, Dark=#E0E0E0}" />
+                    <Label Text="{Binding KategoriaBakarXehetasuna}"
+                           FontSize="15" />
+                </VerticalStackLayout>
+            </Border>
+
+            <lvc:PieChart IsVisible="{Binding ErakutsiKategoriaPieGrafikoa}"
+                          HeightRequest="{OnIdiom Phone=400, Default=360}"
+                          Series="{Binding KategoriaGastuSerieak}"
+                          LegendTextSize="12"
+                          TooltipTextSize="12"
+                          InitialRotation="-90">
+                <lvc:PieChart.LegendPosition>
+                    <OnIdiom x:TypeArguments="measure:LegendPosition">
+                        <OnIdiom.Phone>Bottom</OnIdiom.Phone>
+                        <OnIdiom.Tablet>Right</OnIdiom.Tablet>
+                        <OnIdiom.Desktop>Right</OnIdiom.Desktop>
+                    </OnIdiom>
+                </lvc:PieChart.LegendPosition>
+            </lvc:PieChart>
+
+            <lvc:CartesianChart IsVisible="{Binding ErakutsiKategoriaBarraGrafikoa}"
+                                HeightRequest="{OnIdiom Phone=340, Default=300}"
+                                Series="{Binding KategoriaBarraSerieak}"
+                                XAxes="{Binding KategoriaBarraXArdatzak}"
+                                YAxes="{Binding KategoriaBarraYArdatzak}" />
+
+            <Label Text="Nire txartelak egoeraren arabera"
+                   FontAttributes="Bold"
+                   Margin="0,8,0,0" />
+            <lvc:CartesianChart HeightRequest="260"
+                                Series="{Binding EgoeraSerieak}"
+                                XAxes="{Binding EgoeraXArdatzak}"
+                                YAxes="{Binding EgoeraYArdatzak}" />
         </VerticalStackLayout>
     </ScrollView>
 </ContentPage>

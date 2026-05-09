@@ -26,35 +26,57 @@
             <Label Text="Nire kontua"
                    Style="{StaticResource Headline}" />
 
-            <VerticalStackLayout Spacing="4">
-                <Label Text="Izena" FontAttributes="Bold" />
-                <Label Text="{Binding Izena}" />
-            </VerticalStackLayout>
+            <Label Text="Izena" FontAttributes="Bold" />
+            <Entry x:Name="IzenaSarrera"
+                   Text="{Binding Izena}"
+                   Placeholder="Izena" />
 
-            <VerticalStackLayout Spacing="4">
-                <Label Text="Lehen abizena" FontAttributes="Bold" />
-                <Label Text="{Binding Abizena}" />
-            </VerticalStackLayout>
+            <Label Text="Lehen abizena" FontAttributes="Bold" />
+            <Entry x:Name="LehenAbizenaSarrera"
+                   Text="{Binding Abizena}"
+                   Placeholder="Lehen abizena" />
 
-            <VerticalStackLayout Spacing="4">
-                <Label Text="Bigarren abizena" FontAttributes="Bold" />
-                <Label Text="{Binding Abizena2}" />
-            </VerticalStackLayout>
+            <Label Text="Bigarren abizena" FontAttributes="Bold" />
+            <Entry x:Name="BigarrenAbizenaSarrera"
+                   Text="{Binding Abizena2}"
+                   Placeholder="Bigarren abizena" />
 
-            <VerticalStackLayout Spacing="4">
-                <Label Text="NAN / IFZ" FontAttributes="Bold" />
-                <Label Text="{Binding DNI}" />
-            </VerticalStackLayout>
+            <Label Text="NAN / IFZ" FontAttributes="Bold" />
+            <Entry x:Name="NanIfzSarrera"
+                   Text="{Binding DNI}"
+                   Placeholder="NAN / IFZ" />
 
-            <VerticalStackLayout Spacing="4">
-                <Label Text="Posta elektronikoa" FontAttributes="Bold" />
-                <Label Text="{Binding Posta}" />
-            </VerticalStackLayout>
+            <Label Text="Posta elektronikoa" FontAttributes="Bold" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                <Entry x:Name="PostaSarrera"
+                       Grid.Column="0"
+                       Text="{Binding Posta}"
+                       Placeholder="Posta elektronikoa"
+                       Keyboard="Email" />
+                <Button x:Name="PostaArrobaTekla"
+                        Grid.Column="1"
+                        Text="@"
+                        Command="{Binding TxertaturikArobaCommand}"
+                        FontSize="16"
+                        Padding="12,0"
+                        WidthRequest="48"
+                        HeightRequest="44"
+                        VerticalOptions="Center" />
+            </Grid>
 
-            <VerticalStackLayout Spacing="4">
-                <Label Text="Kargoa" FontAttributes="Bold" />
-                <Label Text="{Binding Kargoa}" />
-            </VerticalStackLayout>
+            <Label Text="Kargoa" FontAttributes="Bold" />
+            <Entry x:Name="KargoaSarrera"
+                   Text="{Binding Kargoa}"
+                   Placeholder="Kargoa" />
+
+            <Button x:Name="ProfilaGordeTekla"
+                    Text="Gorde profila"
+                    Command="{Binding ProfilaGordeCommand}"
+                    IsEnabled="{Binding ProfilaGordetzen, Converter={StaticResource InvertedBoolConverter}}" />
+
+            <ActivityIndicator IsRunning="{Binding ProfilaGordetzen}"
+                               IsVisible="{Binding ProfilaGordetzen}"
+                               HorizontalOptions="Center" />
 
             <VerticalStackLayout Spacing="4">
                 <Label Text="Rola" FontAttributes="Bold" />
