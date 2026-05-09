@@ -5,6 +5,7 @@ using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Debug;
+using Plugin.Maui.Audio;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using SQLitePCL;
 
@@ -67,6 +68,7 @@ public static class MauiProgram
             .UseSkiaSharp()
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
+            .AddAudio()
             .ConfigureFonts(fonts =>
             {
                 fonts.AddFont("OpenSans-Regular.ttf", "OpenSansRegular");
@@ -101,6 +103,8 @@ public static class MauiProgram
         builder.Services.AddTransient<LangileaTxartelaXehetasunViewModel>();
         builder.Services.AddTransient<MugimenduakViewModel>();
         builder.Services.AddTransient<TxostenOnarpenXehetasunViewModel>();
+        builder.Services.AddTransient<AplikazioIrekitzeViewModel>();
+        builder.Services.AddTransient<AplikazioIrekitzeOrria>();
         builder.Services.AddTransient<SaioHasieraOrria>();
         builder.Services.AddTransient<ErregistroOrria>();
         builder.Services.AddTransient<HasieraOrria>();

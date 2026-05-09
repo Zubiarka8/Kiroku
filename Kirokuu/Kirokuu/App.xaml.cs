@@ -15,7 +15,7 @@ public partial class App : Application
 
     protected override Window CreateWindow(IActivationState? activationState)
     {
-        var saioHasiera = _services.GetRequiredService<SaioHasieraOrria>();
-        return new Window(new NavigationPage(saioHasiera));
+        var aplikazioIrekitze = _services.GetRequiredService<AplikazioIrekitzeOrria>();
+        return new Window(new NavigationPage(aplikazioIrekitze));
     }
 }

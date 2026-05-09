@@ -19,9 +19,13 @@
                                IsVisible="{Binding IsKargatzean}"
                                HorizontalOptions="Center" />
 
-            <Label Style="{StaticResource IkonoMarkaEstiloa}"
-                   Text="{x:Static kiro:IkonoFontIturria.SaioHasieraIkonoGlifoa}"
-                   SemanticProperties.Description="Saio hasiera" />
+            <Image x:Name="SaioHasieraLogoa"
+                   Source="kiroku_logo.webp"
+                   Aspect="AspectFit"
+                   HeightRequest="132"
+                   WidthRequest="132"
+                   HorizontalOptions="Center"
+                   SemanticProperties.Description="Kirokuu aplikazioaren logoa" />
 
             <Label Text="Kirokuu"
                    Style="{StaticResource Headline}"
