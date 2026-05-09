@@ -10,6 +10,7 @@ public partial class App : Application
     public App(IServiceProvider services)
     {
         _services = services ?? throw new ArgumentNullException(nameof(services));
+        JakinarazpenMauiZerbitzuErreferentzia.ZerbitzuHornitzailea = services;
         InitializeComponent();
     }
 

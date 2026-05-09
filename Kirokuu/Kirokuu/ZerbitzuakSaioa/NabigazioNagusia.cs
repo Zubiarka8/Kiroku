@@ -6,10 +6,14 @@ namespace Kirokuu.ZerbitzuakSaioa;
 public sealed class NabigazioNagusia : INabigazioNagusia
 {
     private readonly IServiceProvider _zerbitzuHornitzailea;
+    private readonly JakinarazpenAdministratzaileTokeneraZerbitzua _jakinarazpenAdministratzaileTokeneraZerbitzua;
 
-    public NabigazioNagusia(IServiceProvider zerbitzuHornitzailea)
+    public NabigazioNagusia(
+        IServiceProvider zerbitzuHornitzailea,
+        JakinarazpenAdministratzaileTokeneraZerbitzua jakinarazpenAdministratzaileTokeneraZerbitzua)
     {
         _zerbitzuHornitzailea = zerbitzuHornitzailea ?? throw new ArgumentNullException(nameof(zerbitzuHornitzailea));
+        _jakinarazpenAdministratzaileTokeneraZerbitzua = jakinarazpenAdministratzaileTokeneraZerbitzua ?? throw new ArgumentNullException(nameof(jakinarazpenAdministratzaileTokeneraZerbitzua));
     }
 
     public Task JoanAppShelleraAsync(CancellationToken cancellationToken = default) =>
@@ -19,6 +23,10 @@ public sealed class NabigazioNagusia : INabigazioNagusia
             var shell = _zerbitzuHornitzailea.GetRequiredService<AppShell>();
             var eraikitzailea = _zerbitzuHornitzailea.GetRequiredService<ShellFitxaEraikitzailea>();
             await eraikitzailea.KargatuAsync(shell, cancellationToken).ConfigureAwait(true);
+
+            await _jakinarazpenAdministratzaileTokeneraZerbitzua
+                .SaiatuErregistratuAdministratzaileTaldeaAsync(cancellationToken)
+                .ConfigureAwait(true);
 
             var leihoa = Application.Current?.Windows.FirstOrDefault();
             if (leihoa is null)

@@ -52,4 +52,7 @@ public sealed class Erabiltzailea
     [Column("SaioaBlokeoaAmaieraUtc")]
     public string? SaioaBlokeoaAmaieraUtc { get; set; }
 
+    [Column("JakinarazpenTokena")]
+    public string? JakinarazpenTokena { get; set; }
+
 }

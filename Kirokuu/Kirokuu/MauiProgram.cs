@@ -64,6 +64,9 @@ public static class MauiProgram
 #endif
 
         var builder = MauiApp.CreateBuilder();
+#if ANDROID
+        builder.ErantsiJakinarazpenFirebaseAndroid();
+#endif
         builder
             .UseSkiaSharp()
             .UseMauiApp<App>()
@@ -86,6 +89,8 @@ public static class MauiProgram
         builder.Services.AddSingleton<BerrespenLeihoZerbitzua>();
         builder.Services.AddSingleton<ShellFitxaEraikitzailea>();
         builder.Services.AddSingleton<INabigazioNagusia, NabigazioNagusia>();
+        builder.Services.AddHttpClient<TxostenBerriarenJakinarazpenBidaltzailea>();
+        builder.Services.AddSingleton<JakinarazpenAdministratzaileTokeneraZerbitzua>();
 
         builder.Services.AddTransient<MainPageViewModel>();
         builder.Services.AddTransient<MainPage>();

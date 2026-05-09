@@ -16,6 +16,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
     private readonly ArgazkiIgotzeZerbitzua _argazkiIgotzeZerbitzua;
+    private readonly TxostenBerriarenJakinarazpenBidaltzailea _txostenBerriarenJakinarazpenBidaltzailea;
     private readonly ILogger<TxartelBerriaViewModel> _logger;
     private bool _zenbatekoaEguneratzen;
 
@@ -42,11 +43,13 @@ public partial class TxartelBerriaViewModel : ObservableObject
         DatuBaseaZerbitzua datuBaseaZerbitzua,
         AutorizazioZerbitzua autorizazioZerbitzua,
         ArgazkiIgotzeZerbitzua argazkiIgotzeZerbitzua,
+        TxostenBerriarenJakinarazpenBidaltzailea txostenBerriarenJakinarazpenBidaltzailea,
         ILogger<TxartelBerriaViewModel> logger)
     {
         _datuBaseaZerbitzua = datuBaseaZerbitzua ?? throw new ArgumentNullException(nameof(datuBaseaZerbitzua));
         _autorizazioZerbitzua = autorizazioZerbitzua ?? throw new ArgumentNullException(nameof(autorizazioZerbitzua));
         _argazkiIgotzeZerbitzua = argazkiIgotzeZerbitzua ?? throw new ArgumentNullException(nameof(argazkiIgotzeZerbitzua));
+        _txostenBerriarenJakinarazpenBidaltzailea = txostenBerriarenJakinarazpenBidaltzailea ?? throw new ArgumentNullException(nameof(txostenBerriarenJakinarazpenBidaltzailea));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
 
@@ -298,6 +301,21 @@ public partial class TxartelBerriaViewModel : ObservableObject
             await _datuBaseaZerbitzua
                 .TxertatuBidaiaTxostenaEtaGastuLerroa(txostena, gastuLerroa)
                 .ConfigureAwait(true);
+
+            if (!await _autorizazioZerbitzua.DaNagusikoEstadistikaSarbideaAsync().ConfigureAwait(true))
+            {
+                var izenOsoa = $"{erabiltzailea?.Izena} {erabiltzailea?.Abizena}".Trim();
+                if (string.IsNullOrWhiteSpace(izenOsoa))
+                    izenOsoa = "Langilea";
+
+                await _txostenBerriarenJakinarazpenBidaltzailea
+                    .SaiatuBidaliTxostenBerriaSortuDelaAsync(
+                        erabiltzaileId.Value,
+                        izenOsoa,
+                        kategoriaIzena,
+                        deskribapenaGarbia)
+                    .ConfigureAwait(true);
+            }
 
             await Toast.Make("Gastua ondo gorde da.").Show().ConfigureAwait(true);
             await Shell.Current.GoToAsync("..").ConfigureAwait(true);
