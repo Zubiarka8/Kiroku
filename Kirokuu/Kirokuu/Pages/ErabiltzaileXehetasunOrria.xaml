@@ -30,7 +30,17 @@
                         HeightRequest="44"
                         VerticalOptions="Center" />
             </Grid>
-            <Entry Text="{Binding Kargoa}" Placeholder="Kargoa" />
+            <Label Text="Sektorea" FontAttributes="Bold" />
+            <Picker ItemsSource="{Binding SektoreenAukerak}"
+                    ItemDisplayBinding="{Binding Etiketa}"
+                    SelectedItem="{Binding HautatutakoSektorea}"
+                    Title="Aukeratu sektorea" />
+
+            <Label Text="Kargoa" FontAttributes="Bold" />
+            <Picker ItemsSource="{Binding KargoenAukerak}"
+                    ItemDisplayBinding="{Binding Etiketa}"
+                    SelectedItem="{Binding HautatutakoKargoa}"
+                    Title="Aukeratu kargoa" />
 
             <HorizontalStackLayout Spacing="12">
                 <Label Text="Aktibo" VerticalOptions="Center" />

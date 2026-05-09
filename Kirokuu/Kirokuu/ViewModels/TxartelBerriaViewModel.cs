@@ -19,6 +19,8 @@ public partial class TxartelBerriaViewModel : ObservableObject
     private readonly ILogger<TxartelBerriaViewModel> _logger;
     private bool _zenbatekoaEguneratzen;
 
+    private Dictionary<int, int> _ibilgailuaBeharDuKategoriaIdz = new();
+
     public static DateTime GaurkoData => DateTime.Today;
 
     public static IReadOnlyList<string> KategoriaIzenak { get; } = new[]
@@ -33,6 +35,8 @@ public partial class TxartelBerriaViewModel : ObservableObject
         "Materialak",
         "Bestelakoa"
     };
+
+    public static IReadOnlyList<string> GarraioAukerenTestuak => GarraioBideaBalioak.AukeraEstadioak;
 
     public TxartelBerriaViewModel(
         DatuBaseaZerbitzua datuBaseaZerbitzua,
@@ -70,6 +74,27 @@ public partial class TxartelBerriaViewModel : ObservableObject
     [ObservableProperty]
     private bool _argazkiHautatua;
 
+    [ObservableProperty]
+    private bool _ibilgailuaAukeraketaIkagarri;
+
+    [ObservableProperty]
+    private int _hautatutakoGarraioIndizea = -1;
+
+    partial void OnHautatutakoKategoriaIndizeaChanged(int value)
+    {
+        HautatutakoGarraioIndizea = -1;
+        EguneratuIbilgailuaAukeraketaIkagarri();
+    }
+
+    private void EguneratuIbilgailuaAukeraketaIkagarri()
+    {
+        var kategoriaId = HautatutakoKategoriaIndizea + 1;
+        if (_ibilgailuaBeharDuKategoriaIdz.TryGetValue(kategoriaId, out var bandera))
+            IbilgailuaAukeraketaIkagarri = bandera != 0;
+        else
+            IbilgailuaAukeraketaIkagarri = false;
+    }
+
     partial void OnZenbatekoaTestuaChanged(string value)
     {
         if (_zenbatekoaEguneratzen || string.IsNullOrEmpty(value))
@@ -91,7 +116,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void AgertzenDenean()
+    private async Task AgertzenDeneanAsync()
     {
         ErroreMezua = null;
         HautatutakoKategoriaIndizea = 0;
@@ -100,6 +125,33 @@ public partial class TxartelBerriaViewModel : ObservableObject
         Deskribapena = string.Empty;
         LokalArgazkiBidea = null;
         ArgazkiHautatua = false;
+        HautatutakoGarraioIndizea = -1;
+        IbilgailuaAukeraketaIkagarri = false;
+        _ibilgailuaBeharDuKategoriaIdz = new Dictionary<int, int>();
+
+        try
+        {
+            var kontzeptuak = await _datuBaseaZerbitzua.ZerrendatuGastuKontzeptuakAsync().ConfigureAwait(true);
+            foreach (var k in kontzeptuak)
+                _ibilgailuaBeharDuKategoriaIdz[k.KategoriaId] = k.IbilgailuaBeharDu;
+            EguneratuIbilgailuaAukeraketaIkagarri();
+        }
+        catch (TursoExekuzioSalbuespena libEx)
+        {
+            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
+                ?? "Datu-base errorea: ezin izan dira kategoriak kargatu.";
+            _logger.LogError(libEx, "TxartelBerria: kategoriak kargatzean Turso errorea.");
+        }
+        catch (SQLiteException sqlEx)
+        {
+            ErroreMezua = "Datu-base errorea: ezin izan dira kategoriak kargatu.";
+            _logger.LogError(sqlEx, "TxartelBerria: kategoriak kargatzean SQLite errorea.");
+        }
+        catch (Exception ex)
+        {
+            ErroreMezua = "Ustekabeko errorea gertatu da. Saiatu berriro.";
+            _logger.LogError(ex, "TxartelBerria: kategoriak kargatzean errorea.");
+        }
     }
 
     [RelayCommand]
@@ -156,6 +208,16 @@ public partial class TxartelBerriaViewModel : ObservableObject
         {
             ErroreMezua = "Ezin da etorkizuneko data bat aukeratu.";
             return;
+        }
+
+        if (IbilgailuaAukeraketaIkagarri)
+        {
+            var aukeraKopurua = GarraioBideaBalioak.AukeraEstadioak.Count;
+            if (HautatutakoGarraioIndizea < 0 || HautatutakoGarraioIndizea >= aukeraKopurua)
+            {
+                ErroreMezua = "Hautatu garraio modua: enpresako ibilgailua edo garraio publikoa.";
+                return;
+            }
         }
 
         try
@@ -217,11 +279,15 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 DataAprobazioa = string.Empty
             };
 
+            var garraioTestua = IbilgailuaAukeraketaIkagarri
+                ? GarraioBideaBalioak.AukeraEstadioak[HautatutakoGarraioIndizea]
+                : string.Empty;
+
             var gastuLerroa = new GastuLerroa
             {
                 KategoriaId = HautatutakoKategoriaIndizea + 1,
                 GastuData = dataTestua,
-                GarraioBidea = string.Empty,
+                GarraioBidea = garraioTestua,
                 ZenbatekoaGuztira = zenbatekoa,
                 Kilometroak = 0,
                 TicketArgazkia = ticketArgazkiaUrl,

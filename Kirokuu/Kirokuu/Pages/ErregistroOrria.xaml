@@ -46,10 +46,19 @@
                    Placeholder="DNI / NAN"
                    SemanticProperties.Hint="DNI edo NAN" />
 
-            <Entry x:Name="KargoaSarrera"
-                   Text="{Binding Kargoa}"
-                   Placeholder="Kargoa"
-                   SemanticProperties.Hint="Kargoa" />
+            <Label Text="Sektorea" FontAttributes="Bold" />
+            <Picker x:Name="SektoreaErregistroHautapena"
+                    ItemsSource="{Binding SektoreenAukerak}"
+                    ItemDisplayBinding="{Binding Etiketa}"
+                    SelectedItem="{Binding HautatutakoSektorea}"
+                    Title="Aukeratu sektorea" />
+
+            <Label Text="Kargoa" FontAttributes="Bold" />
+            <Picker x:Name="KargoaErregistroHautapena"
+                    ItemsSource="{Binding KargoenAukerak}"
+                    ItemDisplayBinding="{Binding Etiketa}"
+                    SelectedItem="{Binding HautatutakoKargoa}"
+                    Title="Aukeratu kargoa" />
 
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
                 <Entry x:Name="PostaErregistroSarrera"

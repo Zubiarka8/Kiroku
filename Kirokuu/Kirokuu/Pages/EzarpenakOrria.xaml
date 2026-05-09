@@ -64,10 +64,31 @@
                         VerticalOptions="Center" />
             </Grid>
 
-            <Label Text="Kargoa" FontAttributes="Bold" />
-            <Entry x:Name="KargoaSarrera"
-                   Text="{Binding Kargoa}"
-                   Placeholder="Kargoa" />
+            <VerticalStackLayout Spacing="8"
+                                 IsVisible="{Binding ErakutsiSektoreaKargoHautapenak}">
+                <Label Text="Sektorea" FontAttributes="Bold" />
+                <Picker x:Name="SektoreaHautapena"
+                        ItemsSource="{Binding SektoreenAukerak}"
+                        ItemDisplayBinding="{Binding Etiketa}"
+                        SelectedItem="{Binding HautatutakoSektorea}"
+                        Title="Aukeratu sektorea" />
+
+                <Label Text="Kargoa" FontAttributes="Bold" />
+                <Picker x:Name="KargoaHautapena"
+                        ItemsSource="{Binding KargoenAukerak}"
+                        ItemDisplayBinding="{Binding Etiketa}"
+                        SelectedItem="{Binding HautatutakoKargoa}"
+                        Title="Aukeratu kargoa" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="8"
+                                 IsVisible="{Binding ErakutsiSektoreaKargoHautapenak, Converter={StaticResource InvertedBoolConverter}}">
+                <Label Text="Sektorea" FontAttributes="Bold" />
+                <Label Text="{Binding FinkatutakoSektorearenEtiketa}" />
+
+                <Label Text="Kargoa" FontAttributes="Bold" />
+                <Label Text="{Binding FinkatutakoKargoarenEtiketa}" />
+            </VerticalStackLayout>
 
             <Button x:Name="ProfilaGordeTekla"
                     Text="Gorde profila"

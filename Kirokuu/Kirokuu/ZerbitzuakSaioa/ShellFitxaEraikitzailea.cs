@@ -21,17 +21,24 @@ public sealed class ShellFitxaEraikitzailea
         ArgumentNullException.ThrowIfNull(shell);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var adminDa = await _autorizazioZerbitzua.DaAdministratzaileaAsync(cancellationToken).ConfigureAwait(true);
+        var administratzaileOsoaDa =
+            await _autorizazioZerbitzua.DaAdministratzaileaAsync(cancellationToken).ConfigureAwait(true);
+        var zuzendariNagusiaDa =
+            await _autorizazioZerbitzua.DaZuzendariNagusiaAsync(cancellationToken).ConfigureAwait(true);
 
         shell.Items.Clear();
         var tabBar = new TabBar();
 
-        if (adminDa)
+        if (administratzaileOsoaDa)
         {
             tabBar.Items.Add(SortuAdministratzaileOrria<AdministratzaileHasieraOrria>("Hasiera"));
             tabBar.Items.Add(SortuAdministratzaileOrria<LangileZerrendaOrria>("Erabiltzaileak"));
             tabBar.Items.Add(SortuAdministratzaileOrria<MugimenduakOrria>("Mugimenduak"));
-            tabBar.Items.Add(SortuAdministratzaileOrria<DiruEskaerakInformeaOrria>("Informea"));
+            tabBar.Items.Add(SortuEzarpenak());
+        }
+        else if (zuzendariNagusiaDa)
+        {
+            tabBar.Items.Add(SortuAdministratzaileOrria<AdministratzaileHasieraOrria>("Hasiera"));
             tabBar.Items.Add(SortuEzarpenak());
         }
         else

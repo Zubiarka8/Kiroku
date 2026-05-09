@@ -26,11 +26,33 @@ public sealed class AutorizazioZerbitzua
     public async Task<bool> DaAdministratzaileaAsync(CancellationToken cancellationToken = default)
     {
         cancellationToken.ThrowIfCancellationRequested();
+        var rola = await EskuratuOraingoRolaAsync(cancellationToken).ConfigureAwait(false);
+        return rola == (int)ErabiltzaileRola.Administratzailea;
+    }
+
+    public async Task<bool> DaZuzendariNagusiaAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var rola = await EskuratuOraingoRolaAsync(cancellationToken).ConfigureAwait(false);
+        return rola == (int)ErabiltzaileRola.ZuzendariNagusia;
+    }
+
+    public async Task<bool> DaNagusikoEstadistikaSarbideaAsync(CancellationToken cancellationToken = default)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
+        var rola = await EskuratuOraingoRolaAsync(cancellationToken).ConfigureAwait(false);
+        return rola == (int)ErabiltzaileRola.Administratzailea ||
+               rola == (int)ErabiltzaileRola.ZuzendariNagusia;
+    }
+
+    private async Task<int?> EskuratuOraingoRolaAsync(CancellationToken cancellationToken)
+    {
+        cancellationToken.ThrowIfCancellationRequested();
         var rolaTestua = await _saioaGordetzeZerbitzua.IrakurriRolaTestuaAsync().ConfigureAwait(false);
         if (string.IsNullOrWhiteSpace(rolaTestua) ||
             !int.TryParse(rolaTestua, NumberStyles.Integer, CultureInfo.InvariantCulture, out var rolaZenb))
-            return false;
+            return null;
 
-        return rolaZenb == (int)ErabiltzaileRola.Administratzailea;
+        return rolaZenb;
     }
 }

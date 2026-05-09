@@ -77,12 +77,20 @@ public partial class LangileaTxartelaXehetasunViewModel : ObservableObject
     [ObservableProperty]
     private bool _argazkiDago;
 
+    [ObservableProperty]
+    private string _garraioBideaTestua = string.Empty;
+
+    [ObservableProperty]
+    private bool _garraioBideaIkagarri;
+
     public ObservableCollection<GastuLerroa> GastuLerroak { get; } = new();
 
     private async Task KargatuAsync()
     {
         ErroreMezua = null;
         GastuLerroak.Clear();
+        GarraioBideaTestua = string.Empty;
+        GarraioBideaIkagarri = false;
         if (_txostenIdGordeta <= 0)
             return;
 
@@ -132,6 +140,11 @@ public partial class LangileaTxartelaXehetasunViewModel : ObservableObject
                     argazkia = lerroa.TicketArgazkia;
                 if (string.IsNullOrWhiteSpace(Deskribapena) && !string.IsNullOrWhiteSpace(lerroa.Oharrak))
                     Deskribapena = lerroa.Oharrak;
+                if (!GarraioBideaIkagarri && !string.IsNullOrWhiteSpace(lerroa.GarraioBidea))
+                {
+                    GarraioBideaTestua = lerroa.GarraioBidea.Trim();
+                    GarraioBideaIkagarri = true;
+                }
             }
 
             GastuenGuztira = guztira;

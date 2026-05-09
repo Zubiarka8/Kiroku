@@ -1,16 +1,21 @@
+using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using Kirokuu.DatuEreduak;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.ApplicationModel;
 using SQLite;
+using System.Linq;
 using System.Net.Http;
 
 namespace Kirokuu.ViewModels;
 
 public partial class ErabiltzaileBerriaViewModel : ObservableObject
 {
+    private bool _barneratzen;
+
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
     private readonly ErabiltzaileZerbitzua _erabiltzaileZerbitzua;
     private readonly ILogger<ErabiltzaileBerriaViewModel> _logger;
@@ -23,6 +28,38 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
         _autorizazioZerbitzua = autorizazioZerbitzua ?? throw new ArgumentNullException(nameof(autorizazioZerbitzua));
         _erabiltzaileZerbitzua = erabiltzaileZerbitzua ?? throw new ArgumentNullException(nameof(erabiltzaileZerbitzua));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+
+        foreach (var s in SektoreaKargoarenHiztegia.SortuSektoreenZerrenda())
+            SektoreenAukerak.Add(s);
+
+        _barneratzen = true;
+        try
+        {
+            HautatutakoSektorea = SektoreenAukerak.FirstOrDefault();
+            SektoreaKargoHautapenLaguntzailea.BeteKargoenZerrenda(KargoenAukerak, HautatutakoSektorea);
+            HautatutakoKargoa = KargoenAukerak.FirstOrDefault();
+        }
+        finally
+        {
+            _barneratzen = false;
+        }
+    }
+
+    public ObservableCollection<HautapenElementua> SektoreenAukerak { get; } = new();
+
+    public ObservableCollection<HautapenElementua> KargoenAukerak { get; } = new();
+
+    [ObservableProperty] private HautapenElementua? _hautatutakoSektorea;
+
+    [ObservableProperty] private HautapenElementua? _hautatutakoKargoa;
+
+    partial void OnHautatutakoSektoreaChanged(HautapenElementua? value)
+    {
+        if (_barneratzen)
+            return;
+
+        SektoreaKargoHautapenLaguntzailea.BeteKargoenZerrenda(KargoenAukerak, value);
+        HautatutakoKargoa = KargoenAukerak.FirstOrDefault();
     }
 
     [ObservableProperty] private string _izena = string.Empty;
@@ -32,8 +69,6 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
     [ObservableProperty] private string _abizena2 = string.Empty;
 
     [ObservableProperty] private string _dni = string.Empty;
-
-    [ObservableProperty] private string _kargoa = string.Empty;
 
     [ObservableProperty] private string _posta = string.Empty;
 
@@ -90,7 +125,8 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
 
         if (string.IsNullOrWhiteSpace(Izena) || string.IsNullOrWhiteSpace(Abizena) ||
             string.IsNullOrWhiteSpace(Abizena2) || string.IsNullOrWhiteSpace(Dni) ||
-            string.IsNullOrWhiteSpace(Kargoa) || string.IsNullOrWhiteSpace(Posta) ||
+            HautatutakoSektorea is null || HautatutakoKargoa is null ||
+            string.IsNullOrWhiteSpace(Posta) ||
             string.IsNullOrWhiteSpace(Pasahitza) || string.IsNullOrWhiteSpace(PasahitzaBerretsi))
         {
             ErroreMezua = "Eremu bat edo gehiago hutsik daude. Bete beharrezko eremuak.";
@@ -111,9 +147,10 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
             return;
         }
 
-        if (!ErabiltzaileDatuenBalidazioLaguntzailea.KargoaTestuaBaliozkoa(Kargoa, 2, 120))
+        if (!SektoreaKargoarenHiztegia.SektoreaEtaKargoarenIdentifikatzaileakBaliozkoa(
+                HautatutakoSektorea.Identifikatzailea, HautatutakoKargoa.Identifikatzailea))
         {
-            ErroreMezua = "Kargoa 2 eta 120 karaktere artean egon behar da.";
+            ErroreMezua = "Hautatu sektore eta kargo baliodunak.";
             return;
         }
 
@@ -143,7 +180,8 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
                     Abizena,
                     Abizena2,
                     Dni,
-                    Kargoa,
+                    HautatutakoSektorea.Identifikatzailea,
+                    HautatutakoKargoa.Identifikatzailea,
                     Posta,
                     Pasahitza)
                 .ConfigureAwait(true);

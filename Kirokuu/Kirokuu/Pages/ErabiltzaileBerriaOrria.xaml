@@ -20,7 +20,18 @@
             <Entry Text="{Binding Abizena}" Placeholder="Abizena" />
             <Entry Text="{Binding Abizena2}" Placeholder="Bigarren abizena" />
             <Entry Text="{Binding Dni}" Placeholder="DNI / NAN" />
-            <Entry Text="{Binding Kargoa}" Placeholder="Kargoa" />
+
+            <Label Text="Sektorea" FontAttributes="Bold" />
+            <Picker ItemsSource="{Binding SektoreenAukerak}"
+                    ItemDisplayBinding="{Binding Etiketa}"
+                    SelectedItem="{Binding HautatutakoSektorea}"
+                    Title="Aukeratu sektorea" />
+
+            <Label Text="Kargoa" FontAttributes="Bold" />
+            <Picker ItemsSource="{Binding KargoenAukerak}"
+                    ItemDisplayBinding="{Binding Etiketa}"
+                    SelectedItem="{Binding HautatutakoKargoa}"
+                    Title="Aukeratu kargoa" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
                 <Entry Grid.Column="0"
                        Text="{Binding Posta}"

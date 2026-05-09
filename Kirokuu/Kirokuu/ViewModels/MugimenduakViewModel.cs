@@ -36,19 +36,36 @@ public partial class MugimenduakViewModel : ObservableObject
     [ObservableProperty]
     private string? _erroreMezua;
 
-    [ObservableProperty]
-    private bool _gastuAtalaNagusia = true;
-
     public ObservableCollection<TxostenOnarpenLaburpena> TxostenZainak { get; } = new();
 
-    public ObservableCollection<DiruSarreraOnarpenLaburpena> DiruSarreraZainak { get; } = new();
+    [RelayCommand]
+    private async Task IrekiTxostenXehetasunaAsync(TxostenOnarpenLaburpena? laburpena)
+    {
+        if (laburpena is null || laburpena.TxostenId <= 0)
+            return;
+
+        _logger.LogInformation("Mugimenduak: txosten xehetasuna, id={TxostenId}", laburpena.TxostenId);
+
+        try
+        {
+            await MainThread.InvokeOnMainThreadAsync(async () =>
+            {
+                await Shell.Current
+                    .GoToAsync($"{nameof(TxostenOnarpenXehetasunOrria)}?TxostenId={laburpena.TxostenId}")
+                    .ConfigureAwait(true);
+            }).ConfigureAwait(true);
+        }
+        catch (Exception ex)
+        {
+            _logger.LogError(ex, "Mugimenduak: txosten xehetasunera nabigazio errorea.");
+        }
+    }
 
     [RelayCommand]
     private async Task AgertzenDeneanAsync()
     {
         ErroreMezua = null;
         TxostenZainak.Clear();
-        DiruSarreraZainak.Clear();
 
         try
         {
@@ -62,10 +79,6 @@ public partial class MugimenduakViewModel : ObservableObject
             var txostenak = await _datuBaseaZerbitzua.ZerrendatuTxostenOnarpenLaburrakAsync(TxostenEgoera.Zain).ConfigureAwait(true);
             foreach (var t in txostenak)
                 TxostenZainak.Add(t);
-
-            var sarrerak = await _datuBaseaZerbitzua.ZerrendatuDiruSarreraOnarpenLaburrakAsync(TxostenEgoera.Zain).ConfigureAwait(true);
-            foreach (var s in sarrerak)
-                DiruSarreraZainak.Add(s);
         }
         catch (TursoExekuzioSalbuespena libEx)
         {
@@ -111,33 +124,5 @@ public partial class MugimenduakViewModel : ObservableObject
         {
             IsKargatzean = false;
         }
-    }
-
-    [RelayCommand]
-    private void HautatuGastuAtala() => GastuAtalaNagusia = true;
-
-    [RelayCommand]
-    private void HautatuDiruSarreraAtala() => GastuAtalaNagusia = false;
-
-    [RelayCommand]
-    private async Task IrekiTxostenXehetasunaAsync(TxostenOnarpenLaburpena? laburpena)
-    {
-        if (laburpena is null || laburpena.TxostenId <= 0)
-            return;
-
-        await Shell.Current
-            .GoToAsync($"{nameof(TxostenOnarpenXehetasunOrria)}?TxostenId={laburpena.TxostenId}")
-            .ConfigureAwait(true);
-    }
-
-    [RelayCommand]
-    private async Task IrekiDiruSarreraXehetasunaAsync(DiruSarreraOnarpenLaburpena? laburpena)
-    {
-        if (laburpena is null || laburpena.SarreraId <= 0)
-            return;
-
-        await Shell.Current
-            .GoToAsync($"{nameof(DiruSarreraOnarpenXehetasunOrria)}?SarreraId={laburpena.SarreraId}")
-            .ConfigureAwait(true);
     }
 }

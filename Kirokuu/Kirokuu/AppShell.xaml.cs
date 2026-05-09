@@ -11,7 +11,6 @@ public partial class AppShell : Shell
         Routing.RegisterRoute(nameof(ErabiltzaileBerriaOrria), typeof(ErabiltzaileBerriaOrria));
         Routing.RegisterRoute(nameof(ErabiltzaileXehetasunOrria), typeof(ErabiltzaileXehetasunOrria));
         Routing.RegisterRoute(nameof(TxostenOnarpenXehetasunOrria), typeof(TxostenOnarpenXehetasunOrria));
-        Routing.RegisterRoute(nameof(DiruSarreraOnarpenXehetasunOrria), typeof(DiruSarreraOnarpenXehetasunOrria));
         Routing.RegisterRoute(nameof(LangileaTxartelaXehetasunOrria), typeof(LangileaTxartelaXehetasunOrria));
     }
 }

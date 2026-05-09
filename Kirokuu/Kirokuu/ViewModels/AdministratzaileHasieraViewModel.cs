@@ -40,13 +40,16 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
     };
 
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
+    private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
     private readonly ILogger<AdministratzaileHasieraViewModel> _logger;
 
     public AdministratzaileHasieraViewModel(
         DatuBaseaZerbitzua datuBaseaZerbitzua,
+        AutorizazioZerbitzua autorizazioZerbitzua,
         ILogger<AdministratzaileHasieraViewModel> logger)
     {
         _datuBaseaZerbitzua = datuBaseaZerbitzua ?? throw new ArgumentNullException(nameof(datuBaseaZerbitzua));
+        _autorizazioZerbitzua = autorizazioZerbitzua ?? throw new ArgumentNullException(nameof(autorizazioZerbitzua));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
         EraikiGrafikoLehenetsiak();
     }
@@ -118,6 +121,13 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
+
+            if (!await _autorizazioZerbitzua.DaNagusikoEstadistikaSarbideaAsync().ConfigureAwait(true))
+            {
+                ErroreMezua = "Ez duzu baimenik atal honetan.";
+                EraikiGrafikoLehenetsiak();
+                return;
+            }
 
             var langileak = await _datuBaseaZerbitzua.ZerrendatuLangileLaburpenakAsync().ConfigureAwait(true);
             LangileKopuruTestua = langileak.Count.ToString(KulturaZenbakietarako);

@@ -72,6 +72,17 @@
                     <BoxView HeightRequest="1"
                              Color="{AppThemeBinding Light=#E0E0E0, Dark=#444}" />
 
+                    <VerticalStackLayout Spacing="2"
+                                         IsVisible="{Binding GarraioBideaIkagarri}">
+                        <Label Text="Garraioa" FontSize="12"
+                               TextColor="{AppThemeBinding Light=#777, Dark=#AAA}" />
+                        <Label Text="{Binding GarraioBideaTestua}" FontSize="14" />
+                    </VerticalStackLayout>
+
+                    <BoxView HeightRequest="1"
+                             Color="{AppThemeBinding Light=#E0E0E0, Dark=#444}"
+                             IsVisible="{Binding GarraioBideaIkagarri}" />
+
                     <VerticalStackLayout Spacing="2">
                         <Label Text="Deskribapena" FontSize="12"
                                TextColor="{AppThemeBinding Light=#777, Dark=#AAA}" />

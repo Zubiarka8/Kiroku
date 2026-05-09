@@ -1,6 +1,7 @@
 using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
+using Kirokuu.Zerbitzuak;
 using Microsoft.Extensions.Logging;
 using SQLite;
 
@@ -29,7 +30,8 @@ public sealed class ErabiltzaileZerbitzua
         string abizena,
         string abizena2,
         string dni,
-        string kargoa,
+        int sektorearenIdentifikatzailea,
+        int kargoarenIdentifikatzailea,
         string posta,
         string pasahitza,
         CancellationToken cancellationToken = default)
@@ -45,12 +47,12 @@ public sealed class ErabiltzaileZerbitzua
             Abizena2 = abizena2.Trim(),
             DNI = dni.Trim(),
             Posta = NormalizatuPosta(posta),
-            Kargoa = kargoa.Trim(),
             SorkuntzaData = orain,
             Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash),
             Rola = (int)ErabiltzaileRola.Langilea,
             Aktiboa = 1
         };
+        EzarriSektoreaEtaKargoarenBalioak(erabiltzailea, sektorearenIdentifikatzailea, kargoarenIdentifikatzailea);
 
         try
         {
@@ -94,7 +96,8 @@ public sealed class ErabiltzaileZerbitzua
         string abizena2,
         string dni,
         string posta,
-        string kargoa,
+        int sektorearenIdentifikatzailea,
+        int kargoarenIdentifikatzailea,
         int aktiboa,
         CancellationToken cancellationToken = default)
     {
@@ -106,7 +109,7 @@ public sealed class ErabiltzaileZerbitzua
         erabiltzailea.Abizena2 = abizena2.Trim();
         erabiltzailea.DNI = dni.Trim();
         erabiltzailea.Posta = NormalizatuPosta(posta);
-        erabiltzailea.Kargoa = kargoa.Trim();
+        EzarriSektoreaEtaKargoarenBalioak(erabiltzailea, sektorearenIdentifikatzailea, kargoarenIdentifikatzailea);
         erabiltzailea.Aktiboa = aktiboa == 0 ? 0 : 1;
 
         try
@@ -127,7 +130,8 @@ public sealed class ErabiltzaileZerbitzua
         string abizena2,
         string dni,
         string posta,
-        string kargoa,
+        int sektorearenIdentifikatzailea,
+        int kargoarenIdentifikatzailea,
         CancellationToken cancellationToken = default)
     {
         var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false)
@@ -138,7 +142,7 @@ public sealed class ErabiltzaileZerbitzua
         erabiltzailea.Abizena2 = abizena2.Trim();
         erabiltzailea.DNI = dni.Trim();
         erabiltzailea.Posta = NormalizatuPosta(posta);
-        erabiltzailea.Kargoa = kargoa.Trim();
+        EzarriSektoreaEtaKargoarenBalioak(erabiltzailea, sektorearenIdentifikatzailea, kargoarenIdentifikatzailea);
 
         try
         {
@@ -207,4 +211,14 @@ public sealed class ErabiltzaileZerbitzua
     }
 
     private static string NormalizatuPosta(string posta) => posta.Trim().ToLowerInvariant();
+
+    private static void EzarriSektoreaEtaKargoarenBalioak(
+        Erabiltzailea erabiltzailea,
+        int sektorearenIdentifikatzailea,
+        int kargoarenIdentifikatzailea)
+    {
+        erabiltzailea.SektorearenIdentifikatzailea = sektorearenIdentifikatzailea;
+        erabiltzailea.KargoarenIdentifikatzailea = kargoarenIdentifikatzailea;
+        erabiltzailea.Kargoa = SektoreaKargoarenHiztegia.LortuKargoarenEtiketa((EnpresakoLangileKargoa)kargoarenIdentifikatzailea);
+    }
 }

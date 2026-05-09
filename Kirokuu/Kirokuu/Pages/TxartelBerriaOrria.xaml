@@ -26,8 +26,18 @@
 
             <VerticalStackLayout Spacing="4">
                 <Label Text="Kategoria" FontAttributes="Bold" />
-                <Picker ItemsSource="{Binding Source={x:Static vm:TxartelBerriaViewModel.KategoriaIzenak}}"
+                <Picker x:Name="KategoriaHautapena"
+                        ItemsSource="{Binding Source={x:Static vm:TxartelBerriaViewModel.KategoriaIzenak}}"
                         SelectedIndex="{Binding HautatutakoKategoriaIndizea}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout x:Name="GarraioAukeraketaBlokea"
+                                 Spacing="4"
+                                 IsVisible="{Binding IbilgailuaAukeraketaIkagarri}">
+                <Label Text="Nola joan zinen?" FontAttributes="Bold" />
+                <Picker x:Name="GarraioModuarenHautapena"
+                        ItemsSource="{Binding Source={x:Static vm:TxartelBerriaViewModel.GarraioAukerenTestuak}}"
+                        SelectedIndex="{Binding HautatutakoGarraioIndizea}" />
             </VerticalStackLayout>
 
             <VerticalStackLayout Spacing="4">

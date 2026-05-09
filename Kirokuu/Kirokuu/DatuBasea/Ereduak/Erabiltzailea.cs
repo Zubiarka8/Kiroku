@@ -29,6 +29,12 @@ public sealed class Erabiltzailea
     [NotNull]
     public string Kargoa { get; set; } = string.Empty;
 
+    [Column("Sektorea")]
+    public int SektorearenIdentifikatzailea { get; set; }
+
+    [Column("KargoarenIdentifikatzailea")]
+    public int KargoarenIdentifikatzailea { get; set; }
+
     public int Rola { get; set; }
 
     public int Aktiboa { get; set; } = 1;

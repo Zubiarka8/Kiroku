@@ -161,4 +161,26 @@ public sealed partial class DatuBaseaZerbitzua
         gastuLerroa.TxostenId = txostena.TxostenId;
         await _sqliteKonexioa.InsertAsync(gastuLerroa).ConfigureAwait(false);
     }
+
+    public async Task<IReadOnlyList<GastuKontzeptua>> ZerrendatuGastuKontzeptuakAsync(
+        CancellationToken cancellationToken = default)
+    {
+        await HasieratuAsync().ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_urrunTursoModua)
+        {
+            return await ExekutatuTursoanAsync(async bezeroa =>
+            {
+                const string sql = """
+                    SELECT * FROM GastuKontzeptuak ORDER BY KategoriaId;
+                    """;
+                var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
+                return MapeatuGastuKontzeptuZerrenda(emaitza);
+            }, cancellationToken).ConfigureAwait(false);
+        }
+
+        return await _sqliteKonexioa!.QueryAsync<GastuKontzeptua>(
+            "SELECT * FROM GastuKontzeptuak ORDER BY KategoriaId").ConfigureAwait(false);
+    }
 }

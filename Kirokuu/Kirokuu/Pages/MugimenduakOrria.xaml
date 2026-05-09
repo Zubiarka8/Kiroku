@@ -5,94 +5,67 @@
              xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              x:Class="Kirokuu.Pages.MugimenduakOrria"
-             x:Name="MugimenduOrriaErreferentzia"
+             x:Name="MugimenduakOrriaErreferentzia"
              x:DataType="vm:MugimenduakViewModel"
              Title="Mugimenduak">
-
-    <ContentPage.Resources>
-        <toolkit:InvertedBoolConverter x:Key="AlderantzizBoolBihurtzailea" />
-    </ContentPage.Resources>
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing"
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="8" RowSpacing="8">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="8" RowSpacing="8">
         <ActivityIndicator Grid.Row="0"
                            IsRunning="{Binding IsKargatzean}"
                            IsVisible="{Binding IsKargatzean}"
                            HorizontalOptions="Center" />
 
-        <HorizontalStackLayout Grid.Row="1" Spacing="8" HorizontalOptions="Fill">
-            <Button Text="Gastu-txostenak"
-                    Command="{Binding HautatuGastuAtalaCommand}"
-                    HorizontalOptions="FillAndExpand" />
-            <Button Text="Diru-sarrerak"
-                    Command="{Binding HautatuDiruSarreraAtalaCommand}"
-                    HorizontalOptions="FillAndExpand" />
-        </HorizontalStackLayout>
-
-        <Label Grid.Row="2"
+        <Label Grid.Row="1"
                Text="{Binding ErroreMezua}"
                TextColor="{AppThemeBinding Light=#B00020, Dark=#FF8A80}"
                HorizontalTextAlignment="Center"
                Margin="4,0" />
 
-        <Grid Grid.Row="3">
-            <CollectionView ItemsSource="{Binding TxostenZainak}"
-                            IsVisible="{Binding GastuAtalaNagusia}">
-                <CollectionView.EmptyView>
-                    <Label Text="Ez dago Zain egoerako txostenik."
-                           HorizontalTextAlignment="Center"
-                           VerticalOptions="Center"
-                           Margin="16" />
-                </CollectionView.EmptyView>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
-                        <Border Padding="12" Margin="4">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Command="{Binding Source={x:Reference MugimenduOrriaErreferentzia}, Path=BindingContext.IrekiTxostenXehetasunaCommand}"
-                                    CommandParameter="{Binding .}" />
-                            </Border.GestureRecognizers>
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="{Binding Helmuga}" FontAttributes="Bold" />
-                                <Label Text="{Binding LangileTestua}" FontSize="13" />
-                                <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='Guztira: {0:N2} €'}" FontSize="13" />
-                                <Label Text="{Binding Egoera}" FontSize="12" />
+        <CollectionView Grid.Row="2"
+                        ItemsSource="{Binding TxostenZainak}">
+            <CollectionView.EmptyView>
+                <Label Text="Ez dago Zain egoerako txostenik."
+                       HorizontalTextAlignment="Center"
+                       VerticalOptions="Center"
+                       Margin="16" />
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
+                    <Grid Margin="4,2"
+                          MinimumHeightRequest="52">
+                        <Grid.GestureRecognizers>
+                            <TapGestureRecognizer NumberOfTapsRequired="1"
+                                                  Command="{Binding Source={x:Reference MugimenduakOrriaErreferentzia}, Path=BindingContext.IrekiTxostenXehetasunaCommand}"
+                                                  CommandParameter="{Binding .}" />
+                        </Grid.GestureRecognizers>
+                        <Border Padding="12"
+                                InputTransparent="True"
+                                Stroke="{AppThemeBinding Light={StaticResource Gray200Brush}, Dark={StaticResource Gray600Brush}}"
+                                StrokeThickness="1"
+                                StrokeShape="RoundRectangle 8">
+                            <VerticalStackLayout Spacing="4" InputTransparent="True">
+                                <Label InputTransparent="True"
+                                       Text="{Binding Helmuga}"
+                                       FontAttributes="Bold" />
+                                <Label InputTransparent="True"
+                                       Text="{Binding LangileTestua}"
+                                       FontSize="13" />
+                                <Label InputTransparent="True"
+                                       Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='Guztira: {0:N2} €'}"
+                                       FontSize="13" />
+                                <Label InputTransparent="True"
+                                       Text="{Binding Egoera}"
+                                       FontSize="12" />
                             </VerticalStackLayout>
                         </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-
-            <CollectionView ItemsSource="{Binding DiruSarreraZainak}"
-                            IsVisible="{Binding GastuAtalaNagusia, Converter={StaticResource AlderantzizBoolBihurtzailea}}">
-                <CollectionView.EmptyView>
-                    <Label Text="Ez dago Zain egoerako diru-sarrerarik."
-                           HorizontalTextAlignment="Center"
-                           VerticalOptions="Center"
-                           Margin="16" />
-                </CollectionView.EmptyView>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="datu:DiruSarreraOnarpenLaburpena">
-                        <Border Padding="12" Margin="4">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Command="{Binding Source={x:Reference MugimenduOrriaErreferentzia}, Path=BindingContext.IrekiDiruSarreraXehetasunaCommand}"
-                                    CommandParameter="{Binding .}" />
-                            </Border.GestureRecognizers>
-                            <VerticalStackLayout Spacing="4">
-                                <Label Text="{Binding Deskribapena}" FontAttributes="Bold" />
-                                <Label Text="{Binding LangileTestua}" FontSize="13" />
-                                <Label Text="{Binding Zenbatekoa, StringFormat='Zenbatekoa: {0:N2} €'}" FontSize="13" />
-                                <Label Text="{Binding Egoera}" FontSize="12" />
-                            </VerticalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-        </Grid>
+                    </Grid>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
     </Grid>
 </ContentPage>
