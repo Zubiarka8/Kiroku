@@ -2,7 +2,7 @@ namespace Kirokuu.DatuEreduak;
 
 public sealed class TxostenOnarpenLaburpena
 {
-    public string TxostenId { get; set; } = string.Empty;
+    public int TxostenId { get; set; }
 
     public int ErabiltzaileId { get; set; }
 
@@ -13,4 +13,6 @@ public sealed class TxostenOnarpenLaburpena
     public string Egoera { get; set; } = string.Empty;
 
     public double GastuenBatuketakoZenbatekoa { get; set; }
+
+    public bool EzeztatuDaiteke => string.Equals(Egoera, "Zain", StringComparison.Ordinal);
 }

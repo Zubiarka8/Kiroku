@@ -122,22 +122,22 @@ public partial class MugimenduakViewModel : ObservableObject
     [RelayCommand]
     private async Task IrekiTxostenXehetasunaAsync(TxostenOnarpenLaburpena? laburpena)
     {
-        if (laburpena is null || string.IsNullOrWhiteSpace(laburpena.TxostenId))
+        if (laburpena is null || laburpena.TxostenId <= 0)
             return;
 
         await Shell.Current
-            .GoToAsync($"{nameof(TxostenOnarpenXehetasunOrria)}?TxostenId={Uri.EscapeDataString(laburpena.TxostenId)}")
+            .GoToAsync($"{nameof(TxostenOnarpenXehetasunOrria)}?TxostenId={laburpena.TxostenId}")
             .ConfigureAwait(true);
     }
 
     [RelayCommand]
     private async Task IrekiDiruSarreraXehetasunaAsync(DiruSarreraOnarpenLaburpena? laburpena)
     {
-        if (laburpena is null || string.IsNullOrWhiteSpace(laburpena.SarreraId))
+        if (laburpena is null || laburpena.SarreraId <= 0)
             return;
 
         await Shell.Current
-            .GoToAsync($"{nameof(DiruSarreraOnarpenXehetasunOrria)}?SarreraId={Uri.EscapeDataString(laburpena.SarreraId)}")
+            .GoToAsync($"{nameof(DiruSarreraOnarpenXehetasunOrria)}?SarreraId={laburpena.SarreraId}")
             .ConfigureAwait(true);
     }
 }

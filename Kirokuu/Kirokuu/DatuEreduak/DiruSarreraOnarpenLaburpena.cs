@@ -2,7 +2,7 @@ namespace Kirokuu.DatuEreduak;
 
 public sealed class DiruSarreraOnarpenLaburpena
 {
-    public string SarreraId { get; set; } = string.Empty;
+    public int SarreraId { get; set; }
 
     public int ErabiltzaileId { get; set; }
 

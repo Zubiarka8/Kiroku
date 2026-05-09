@@ -21,7 +21,20 @@
             <Entry Text="{Binding Abizena2}" Placeholder="Bigarren abizena" />
             <Entry Text="{Binding Dni}" Placeholder="DNI / NAN" />
             <Entry Text="{Binding Kargoa}" Placeholder="Kargoa" />
-            <Entry Text="{Binding Posta}" Placeholder="Posta" Keyboard="Email" />
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+                <Entry Grid.Column="0"
+                       Text="{Binding Posta}"
+                       Placeholder="Posta"
+                       Keyboard="Email" />
+                <Button Grid.Column="1"
+                        Text="@"
+                        Command="{Binding TxertaturikArobaCommand}"
+                        FontSize="16"
+                        Padding="12,0"
+                        WidthRequest="48"
+                        HeightRequest="44"
+                        VerticalOptions="Center" />
+            </Grid>
 
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
                 <Entry Grid.Column="0"

@@ -224,6 +224,7 @@ public sealed partial class DatuBaseaZerbitzua
             await SortuSqliteTaulaAsync<Erabiltzailea>("Erabiltzaileak").ConfigureAwait(false);
             await BermatuSqliteErabiltzaileEskemaAsync().ConfigureAwait(false);
             await SortuSqliteTaulaAsync<GastuKontzeptua>("GastuKontzeptuak").ConfigureAwait(false);
+            await SeedSqliteGastuKontzeptuakAsync().ConfigureAwait(false);
             await SortuSqliteTaulaAsync<BidaiaTxostena>("BidaiaTxostenak").ConfigureAwait(false);
             await BermatuSqliteBidaiaTxostenaAdminOharraAsync().ConfigureAwait(false);
             await SortuSqliteTaulaAsync<GastuLerroa>("GastuLerroak").ConfigureAwait(false);
@@ -242,6 +243,29 @@ public sealed partial class DatuBaseaZerbitzua
             GarapenLogaError(ex, "Datu-basea hasieratzean errorea.");
             throw;
         }
+    }
+
+    private async Task SeedSqliteGastuKontzeptuakAsync()
+    {
+        var kopurua = await _sqliteKonexioa!.ExecuteScalarAsync<int>("SELECT COUNT(*) FROM GastuKontzeptuak").ConfigureAwait(false);
+        if (kopurua >= 9)
+            return;
+
+        var kontzeptuak = new GastuKontzeptua[]
+        {
+            new() { KategoriaId = 1, Izena = "Bazkaria",         Deskribapena = "Jangela eta bazkari gastuak",   IbilgailuaBeharDu = 0, Estatusa = "Aktibo", GastuKontzeptuId = 1 },
+            new() { KategoriaId = 2, Izena = "Gasolina",         Deskribapena = "Erregai gastuak",               IbilgailuaBeharDu = 1, Estatusa = "Aktibo", GastuKontzeptuId = 2 },
+            new() { KategoriaId = 3, Izena = "Garraio publikoa", Deskribapena = "Autobus, metro eta trena",      IbilgailuaBeharDu = 0, Estatusa = "Aktibo", GastuKontzeptuId = 3 },
+            new() { KategoriaId = 4, Izena = "Hotela",           Deskribapena = "Ostatua eta gau-pasak",         IbilgailuaBeharDu = 0, Estatusa = "Aktibo", GastuKontzeptuId = 4 },
+            new() { KategoriaId = 5, Izena = "Peajea",           Deskribapena = "Autobide eta tunelak",          IbilgailuaBeharDu = 1, Estatusa = "Aktibo", GastuKontzeptuId = 5 },
+            new() { KategoriaId = 6, Izena = "Aparkalekua",      Deskribapena = "Aparkagune gastuak",            IbilgailuaBeharDu = 1, Estatusa = "Aktibo", GastuKontzeptuId = 6 },
+            new() { KategoriaId = 7, Izena = "Bidaia",           Deskribapena = "Hegazkin eta garraio nagusiak", IbilgailuaBeharDu = 0, Estatusa = "Aktibo", GastuKontzeptuId = 7 },
+            new() { KategoriaId = 8, Izena = "Materialak",       Deskribapena = "Bulego eta lan materialak",     IbilgailuaBeharDu = 0, Estatusa = "Aktibo", GastuKontzeptuId = 8 },
+            new() { KategoriaId = 9, Izena = "Bestelakoa",       Deskribapena = "Sailkatu gabeko gastuak",       IbilgailuaBeharDu = 0, Estatusa = "Aktibo", GastuKontzeptuId = 9 }
+        };
+
+        foreach (var k in kontzeptuak)
+            await _sqliteKonexioa.InsertOrReplaceAsync(k).ConfigureAwait(false);
     }
 
     private async Task SortuSqliteTaulaAsync<T>(string taulaIzena) where T : new()
@@ -320,11 +344,18 @@ public sealed partial class DatuBaseaZerbitzua
             .Select(zutabea => zutabea.Izena)
             .Where(izena => !string.IsNullOrWhiteSpace(izena))
             .ToHashSet(StringComparer.OrdinalIgnoreCase);
-        if (izenak.Contains("AdminOharra"))
-            return;
 
-        await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN AdminOharra TEXT").ConfigureAwait(false);
-        _logger.LogWarning("SQLite BidaiaTxostenak taulan AdminOharra zutabea gehitu da.");
+        if (!izenak.Contains("AdminOharra"))
+        {
+            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN AdminOharra TEXT").ConfigureAwait(false);
+            _logger.LogWarning("SQLite BidaiaTxostenak taulan AdminOharra zutabea gehitu da.");
+        }
+
+        if (!izenak.Contains("LangileDNI"))
+        {
+            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN LangileDNI TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
+            _logger.LogWarning("SQLite BidaiaTxostenak taulan LangileDNI zutabea gehitu da.");
+        }
     }
 
     private async Task<HashSet<string>> IrakurriSqliteErabiltzaileZutabeakAsync()

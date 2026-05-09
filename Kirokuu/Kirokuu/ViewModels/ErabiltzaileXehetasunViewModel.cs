@@ -96,6 +96,9 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
     }
 
     [RelayCommand]
+    private void TxertaturikAroba() => Posta += "@";
+
+    [RelayCommand]
     private void AlderantzikatuPasahitzaMaska() => PasahitzaBerriaMaskaratuta = !PasahitzaBerriaMaskaratuta;
 
     private async Task KargatuAsync()

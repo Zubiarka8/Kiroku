@@ -5,9 +5,9 @@ namespace Kirokuu.DatuBasea.Ereduak;
 [Table("BidaiaTxostenak")]
 public sealed class BidaiaTxostena
 {
-    [PrimaryKey]
+    [PrimaryKey, AutoIncrement]
     [Column("TxostenId")]
-    public string TxostenId { get; set; } = string.Empty;
+    public int TxostenId { get; set; }
 
     [Column("ErabiltzaileId")]
     public int ErabiltzaileId { get; set; }
@@ -32,6 +32,7 @@ public sealed class BidaiaTxostena
 
     public int PertsonaKopurua { get; set; }
 
+    [Column("JasoAurrerakina")]
     public int JasoAurrekina { get; set; }
 
     [NotNull]
@@ -46,6 +47,7 @@ public sealed class BidaiaTxostena
     public string  SorkuntzaData { get; set; }
 
     [NotNull]
+    [Column("AzkenEguneraketa")]
     public string  AzkenEguneratzea { get; set; }
 
     [NotNull]

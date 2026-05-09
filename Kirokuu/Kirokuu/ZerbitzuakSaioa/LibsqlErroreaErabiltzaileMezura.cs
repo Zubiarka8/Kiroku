@@ -122,10 +122,21 @@ public static class LibsqlErroreaErabiltzaileMezura
         var t = testua;
 
         if (t.Contains("UNIQUE", StringComparison.OrdinalIgnoreCase) ||
-            t.Contains("constraint", StringComparison.OrdinalIgnoreCase) ||
-            t.Contains("SQLITE_CONSTRAINT", StringComparison.OrdinalIgnoreCase) ||
+            t.Contains("SQLITE_CONSTRAINT_UNIQUE", StringComparison.OrdinalIgnoreCase) ||
             t.Contains("2067", StringComparison.Ordinal))
             return ("Datu bikoiztua: sarrera hau dagoeneko existitzen da.", null);
+
+        if (t.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase) ||
+            t.Contains("SQLITE_CONSTRAINT_FOREIGNKEY", StringComparison.OrdinalIgnoreCase))
+            return ("Datu-base erreferentzia errorea: lotutako kategoria ez da existitzen.", null);
+
+        if (t.Contains("NOT NULL", StringComparison.OrdinalIgnoreCase) ||
+            t.Contains("SQLITE_CONSTRAINT_NOTNULL", StringComparison.OrdinalIgnoreCase))
+            return ("Datu-base errorea: derrigorrezko eremu bat hutsik dago.", null);
+
+        if (t.Contains("constraint", StringComparison.OrdinalIgnoreCase) ||
+            t.Contains("SQLITE_CONSTRAINT", StringComparison.OrdinalIgnoreCase))
+            return ("Datu-base murrizketa errorea: ezin da gorde. Saiatu berriro.", null);
 
         if (t.Contains("SQLITE_BUSY", StringComparison.OrdinalIgnoreCase) ||
             t.Contains("database is locked", StringComparison.OrdinalIgnoreCase) ||

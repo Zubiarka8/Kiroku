@@ -36,8 +36,9 @@ public sealed class ShellFitxaEraikitzailea
         }
         else
         {
-            tabBar.Items.Add(SortuLasterEdukia("Nire txartelak", "NireTxartelak"));
-            tabBar.Items.Add(SortuLasterEdukia("Txartel berria", "TxartelBerria"));
+            tabBar.Items.Add(SortuLangileOrria<HasieraOrria>("Hasiera"));
+            tabBar.Items.Add(SortuLangileOrria<NireTxartelakOrria>("Nire txartelak"));
+            tabBar.Items.Add(SortuLangileOrria<TxartelKanbanOrria>("Txartelak"));
             tabBar.Items.Add(SortuEzarpenak());
         }
 
@@ -55,14 +56,14 @@ public sealed class ShellFitxaEraikitzailea
         };
     }
 
-    private ShellContent SortuLasterEdukia(string titulua, string ibilbidea)
+    private ShellContent SortuLangileOrria<T>(string titulua) where T : Page
     {
-        var orria = _zerbitzuHornitzailea.GetRequiredService<LasterEdukiaOrria>();
+        var orria = _zerbitzuHornitzailea.GetRequiredService<T>();
         return new ShellContent
         {
             Title = titulua,
             Content = orria,
-            Route = ibilbidea
+            Route = typeof(T).Name
         };
     }
 
