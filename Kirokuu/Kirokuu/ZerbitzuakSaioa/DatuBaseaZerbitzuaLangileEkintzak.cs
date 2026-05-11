@@ -25,7 +25,8 @@ public sealed partial class DatuBaseaZerbitzua
               TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
               b.Helmuga AS Helmuga,
               b.Egoera AS Egoera,
-              COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa
+              COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+              b.HasieraData AS HasieraData
             FROM BidaiaTxostenak b
             INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
             WHERE b.ErabiltzaileId = ?
@@ -47,7 +48,8 @@ public sealed partial class DatuBaseaZerbitzua
                   TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
                   b.Helmuga AS Helmuga,
                   b.Egoera AS Egoera,
-                  COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa
+                  COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                  b.HasieraData AS HasieraData
                 FROM BidaiaTxostenak b
                 INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
                 WHERE b.ErabiltzaileId = ?

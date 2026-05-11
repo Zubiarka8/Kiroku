@@ -15,7 +15,7 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="12,8" RowSpacing="10">
+    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16,10,16,0" RowSpacing="0">
 
         <ActivityIndicator Grid.Row="0"
                            IsRunning="{Binding IsKargatzean}"
@@ -26,74 +26,115 @@
                Text="{Binding ErroreMezua}"
                Style="{StaticResource ErroreEtiketaEstiloa}"
                IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}"
-               Margin="4,0" />
+               Margin="0,4,0,0" />
 
-        <CollectionView Grid.Row="2"
-                        ItemsSource="{Binding Txartelak}">
-            <CollectionView.EmptyView>
-                <VerticalStackLayout VerticalOptions="Center" Spacing="12" Padding="24">
-                    <Label Style="{StaticResource IkonoHandiaEstiloa}"
-                           Text="{x:Static kiro:IkonoFontIturria.HutsikIkonoGlifoa}"
-                           SemanticProperties.Description="Hutsik" />
-                    <Label Text="Oraindik ez daukazu txartelik."
-                           HorizontalTextAlignment="Center"
-                           Style="{StaticResource TestuBigarrenMailaEstiloa}" />
-                </VerticalStackLayout>
-            </CollectionView.EmptyView>
-            <CollectionView.ItemTemplate>
-                <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
-                    <Border Style="{StaticResource TxartelTxartelaEstiloa}" Margin="0,4">
-                        <Border.GestureRecognizers>
-                            <TapGestureRecognizer
-                                Command="{Binding Source={x:Reference NireTxartelakOrriaErreferentzia}, Path=BindingContext.IkusiXehetasunaCommand}"
-                                CommandParameter="{Binding .}" />
-                        </Border.GestureRecognizers>
-                        <Grid RowDefinitions="Auto,Auto,Auto" ColumnDefinitions="*,Auto" RowSpacing="6">
-                            <Label Grid.Row="0" Grid.Column="0"
-                                   Text="{Binding Helmuga}"
-                                   FontAttributes="Bold"
-                                   FontSize="15" />
-                            <Border Grid.Row="0" Grid.Column="1"
-                                    Padding="8,4"
-                                    StrokeShape="RoundRectangle 8">
-                                <Border.Triggers>
-                                    <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Zain">
-                                        <Setter Property="BackgroundColor" Value="{StaticResource EgoeraZainAtzekoa}" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Onartua">
-                                        <Setter Property="BackgroundColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ukatua">
-                                        <Setter Property="BackgroundColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
-                                    </DataTrigger>
-                                    <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ezeztatua">
-                                        <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
-                                    </DataTrigger>
-                                </Border.Triggers>
-                                <Label Text="{Binding Egoera}"
-                                       Style="{StaticResource EgoeraEtiketaTestuaEstiloa}" />
-                            </Border>
-                            <Label Grid.Row="1" Grid.ColumnSpan="2"
-                                   Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='Guztira: {0:N2} €'}"
-                                   Style="{StaticResource TestuBigarrenMailaEstiloa}"
-                                   FontSize="13" />
-                            <Button Grid.Row="2" Grid.ColumnSpan="2"
-                                    Text="Ezeztatu"
-                                    IsVisible="{Binding EzeztatuDaiteke}"
-                                    Command="{Binding Source={x:Reference NireTxartelakOrriaErreferentzia}, Path=BindingContext.EzeztatuTxartelaCommand}"
-                                    CommandParameter="{Binding .}"
-                                    Style="{StaticResource BotoiArriskuEstiloa}"
-                                    Margin="0,4,0,0" />
-                        </Grid>
-                    </Border>
-                </DataTemplate>
-            </CollectionView.ItemTemplate>
-        </CollectionView>
+        <RefreshView Grid.Row="2"
+                     Command="{Binding AgertzenDeneanCommand}"
+                     IsRefreshing="{Binding IsKargatzean}">
+            <CollectionView ItemsSource="{Binding Txartelak}"
+                            Margin="0,6,0,0">
+                <CollectionView.EmptyView>
+                    <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
+                                         Spacing="12" Padding="24,56">
+                        <Label Style="{StaticResource IkonoHandiaEstiloa}"
+                               Text="{x:Static kiro:IkonoFontIturria.HutsikIkonoGlifoa}"
+                               HorizontalOptions="Center"
+                               SemanticProperties.Description="Hutsik" />
+                        <Label Text="Oraindik ez daukazu txartelik."
+                               HorizontalTextAlignment="Center"
+                               FontAttributes="Bold"
+                               FontSize="16" />
+                        <Label Text="Sakatu beheko botoia zure lehen gastua sortzeko."
+                               HorizontalTextAlignment="Center"
+                               FontSize="13"
+                               TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
+                    </VerticalStackLayout>
+                </CollectionView.EmptyView>
+                <CollectionView.ItemTemplate>
+                    <DataTemplate x:DataType="datu:TxostenOnarpenLaburpena">
+                        <Border Style="{StaticResource TxartelTxartelaEstiloa}"
+                                Margin="0,5"
+                                Padding="0">
+                            <Border.GestureRecognizers>
+                                <TapGestureRecognizer
+                                    Command="{Binding Source={x:Reference NireTxartelakOrriaErreferentzia}, Path=BindingContext.IkusiXehetasunaCommand}"
+                                    CommandParameter="{Binding .}" />
+                            </Border.GestureRecognizers>
+                            <VerticalStackLayout Spacing="0">
+
+                                <!-- Header: category + status badge -->
+                                <Grid ColumnDefinitions="*,Auto"
+                                      ColumnSpacing="8"
+                                      Padding="14,13,14,6">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding Helmuga}"
+                                           FontAttributes="Bold"
+                                           FontSize="16"
+                                           VerticalOptions="Center" />
+                                    <Border Grid.Column="1"
+                                            Padding="10,4"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 12"
+                                            VerticalOptions="Center">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Zain">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraZainAtzekoa}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Onartua">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ukatua">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ezeztatua">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Label Text="{Binding Egoera}"
+                                               Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
+                                               FontSize="11"
+                                               FontAttributes="Bold" />
+                                    </Border>
+                                </Grid>
+
+                                <!-- Date -->
+                                <Label Text="{Binding DataFormateatua}"
+                                       FontSize="12"
+                                       Padding="14,0,14,0"
+                                       TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}"
+                                       IsVisible="{Binding DataFormateatua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
+
+                                <!-- Amount -->
+                                <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
+                                       FontAttributes="Bold"
+                                       FontSize="22"
+                                       Padding="14,6,14,13"
+                                       TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}" />
+
+                                <!-- Cancel zone (only if cancellable) -->
+                                <BoxView HeightRequest="1"
+                                         IsVisible="{Binding EzeztatuDaiteke}"
+                                         Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}" />
+                                <Button Text="Ezeztatu"
+                                        IsVisible="{Binding EzeztatuDaiteke}"
+                                        Command="{Binding Source={x:Reference NireTxartelakOrriaErreferentzia}, Path=BindingContext.EzeztatuTxartelaCommand}"
+                                        CommandParameter="{Binding .}"
+                                        Style="{StaticResource BotoiArriskuEstiloa}"
+                                        Margin="14,8,14,10"
+                                        HeightRequest="40"
+                                        FontSize="13" />
+
+                            </VerticalStackLayout>
+                        </Border>
+                    </DataTemplate>
+                </CollectionView.ItemTemplate>
+            </CollectionView>
+        </RefreshView>
 
         <Button Grid.Row="3"
                 Text="Gastu berria gehitu"
                 Command="{Binding TxartelBerriaSortuCommand}"
-                Margin="0,4,0,8"
+                Margin="0,10,0,16"
                 HorizontalOptions="Fill">
             <Button.ImageSource>
                 <FontImageSource FontFamily="MaterialIcons"
