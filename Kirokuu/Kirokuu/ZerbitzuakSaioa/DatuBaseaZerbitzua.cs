@@ -643,8 +643,7 @@ public sealed partial class DatuBaseaZerbitzua
                 KontzeptuId INTEGER NOT NULL DEFAULT 0,
                 IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0,
                 FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE CASCADE,
-                FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT,
-                FOREIGN KEY (KontzeptuId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
+                FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
             );
             """).ConfigureAwait(false);
     }

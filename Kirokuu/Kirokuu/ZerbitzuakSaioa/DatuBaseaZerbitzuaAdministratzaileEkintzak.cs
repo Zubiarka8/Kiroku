@@ -130,8 +130,7 @@ public sealed partial class DatuBaseaZerbitzua
                 KontzeptuId INTEGER NOT NULL DEFAULT 0,
                 IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0,
                 FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE CASCADE,
-                FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT,
-                FOREIGN KEY (KontzeptuId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
+                FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
             );
             """;
 
@@ -308,7 +307,8 @@ public sealed partial class DatuBaseaZerbitzua
                 TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
                 b.Helmuga AS Helmuga,
                 b.Egoera AS Egoera,
-                COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa
+                COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                b.HasieraData AS HasieraData
               FROM BidaiaTxostenak b
               INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
               ORDER BY b.SorkuntzaData DESC;
@@ -320,7 +320,8 @@ public sealed partial class DatuBaseaZerbitzua
                 TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
                 b.Helmuga AS Helmuga,
                 b.Egoera AS Egoera,
-                COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa
+                COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                b.HasieraData AS HasieraData
               FROM BidaiaTxostenak b
               INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
               WHERE b.Egoera = ?
@@ -347,7 +348,8 @@ public sealed partial class DatuBaseaZerbitzua
                     TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
                     b.Helmuga AS Helmuga,
                     b.Egoera AS Egoera,
-                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa
+                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                    b.HasieraData AS HasieraData
                   FROM BidaiaTxostenak b
                   INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
                   ORDER BY b.SorkuntzaData DESC;
@@ -359,7 +361,8 @@ public sealed partial class DatuBaseaZerbitzua
                     TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
                     b.Helmuga AS Helmuga,
                     b.Egoera AS Egoera,
-                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa
+                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                    b.HasieraData AS HasieraData
                   FROM BidaiaTxostenak b
                   INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
                   WHERE b.Egoera = ?
@@ -627,7 +630,8 @@ public sealed partial class DatuBaseaZerbitzua
                 LangileTestua = IrakurriMapaTestuaLehenetsia(mapa, "LangileTestua"),
                 Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
                 Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
-                GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0)
+                GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0),
+                HasieraData = IrakurriMapaTestuaLehenetsia(mapa, "HasieraData")
             };
             if (egoeraBerretsia is not null)
                 laburpena.Egoera = egoeraBerretsia;
