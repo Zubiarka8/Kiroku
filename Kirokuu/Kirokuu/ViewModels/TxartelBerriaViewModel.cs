@@ -236,7 +236,12 @@ public partial class TxartelBerriaViewModel : ObservableObject
             var kategoriaIzena = KategoriaIzenak[HautatutakoKategoriaIndizea];
 
             var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId.Value).ConfigureAwait(true);
-            var langileDni = erabiltzailea?.DNI ?? string.Empty;
+            if (erabiltzailea is null)
+            {
+                ErroreMezua = "Ezin da erabiltzailearen DNI lortu. Berriz hasi saioa.";
+                return;
+            }
+            var langileDni = erabiltzailea.DNI;
 
             string ticketArgazkiaUrl = string.Empty;
             if (!string.IsNullOrWhiteSpace(LokalArgazkiBidea))
