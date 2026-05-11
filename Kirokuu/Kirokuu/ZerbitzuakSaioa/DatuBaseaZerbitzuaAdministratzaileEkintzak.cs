@@ -104,10 +104,15 @@ public sealed partial class DatuBaseaZerbitzua
                 JasoAurrerakina INTEGER NOT NULL DEFAULT 0,
                 Egoera TEXT NOT NULL DEFAULT '',
                 AdminOharra TEXT,
+                AdminDNI TEXT,
+                EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0,
                 MonetaKodea TEXT NOT NULL DEFAULT '',
                 SorkuntzaData TEXT NOT NULL DEFAULT '',
                 AzkenEguneraketa TEXT NOT NULL DEFAULT '',
-                DataAprobazioa TEXT NOT NULL DEFAULT ''
+                DataAprobazioa TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+                FOREIGN KEY (LangileDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE,
+                FOREIGN KEY (AdminDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE
             );
             """;
 
@@ -122,7 +127,11 @@ public sealed partial class DatuBaseaZerbitzua
                 Kilometroak REAL NOT NULL DEFAULT 0,
                 TicketArgazkiBidea TEXT NOT NULL DEFAULT '',
                 Oharrak TEXT NOT NULL DEFAULT '',
-                KontzeptuId INTEGER NOT NULL DEFAULT 0
+                KontzeptuId INTEGER NOT NULL DEFAULT 0,
+                IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0,
+                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE CASCADE,
+                FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT,
+                FOREIGN KEY (KontzeptuId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
             );
             """;
 
@@ -134,7 +143,8 @@ public sealed partial class DatuBaseaZerbitzua
                 Ekintza TEXT NOT NULL DEFAULT '',
                 DataOrdua TEXT NOT NULL DEFAULT '',
                 Deskribapena TEXT NOT NULL DEFAULT '',
-                IP_Helbidea TEXT NOT NULL DEFAULT ''
+                IP_Helbidea TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT
             );
             """;
 
@@ -207,6 +217,30 @@ public sealed partial class DatuBaseaZerbitzua
         await SaiatuTursoAlterEtIgnoratuAsync(
                 bezeroa,
                 "ALTER TABLE BidaiaTxostenak ADD COLUMN LangileDNI TEXT NOT NULL DEFAULT '';",
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await SaiatuTursoAlterEtIgnoratuAsync(
+                bezeroa,
+                "ALTER TABLE BidaiaTxostenak ADD COLUMN AdminDNI TEXT;",
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await SaiatuTursoAlterEtIgnoratuAsync(
+                bezeroa,
+                "ALTER TABLE BidaiaTxostenak ADD COLUMN EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await SaiatuTursoAlterEtIgnoratuAsync(
+                bezeroa,
+                "ALTER TABLE GastuLerroak ADD COLUMN IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0;",
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await SaiatuTursoAlterEtIgnoratuAsync(
+                bezeroa,
+                "CREATE UNIQUE INDEX IF NOT EXISTS idx_erabiltzaileak_dni ON Erabiltzaileak(DNI);",
                 cancellationToken)
             .ConfigureAwait(false);
     }
@@ -497,6 +531,7 @@ public sealed partial class DatuBaseaZerbitzua
     private static BidaiaTxostena MapeatuBidaiaTxostenaMapatik(Dictionary<string, string> mapa)
     {
         var adminOharraBalioa = IrakurriMapaTestuaLehenetsia(mapa, "AdminOharra", string.Empty);
+        var adminDniBalioa = IrakurriMapaTestuaLehenetsia(mapa, "AdminDNI", string.Empty);
         return new BidaiaTxostena
         {
             TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
@@ -511,6 +546,8 @@ public sealed partial class DatuBaseaZerbitzua
             JasoAurrekina = IrakurriMapaOsoaLehenetsia(mapa, "JasoAurrerakina", 0),
             Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
             AdminOharra = string.IsNullOrEmpty(adminOharraBalioa) ? null : adminOharraBalioa,
+            AdminDNI = string.IsNullOrEmpty(adminDniBalioa) ? null : adminDniBalioa,
+            EmpresaIbilgailua = IrakurriMapaOsoaLehenetsia(mapa, "EmpresaIbilgailua", 0),
             MonetaKodea = IrakurriMapaTestuaLehenetsia(mapa, "MonetaKodea"),
             SorkuntzaData = IrakurriMapaTestuaLehenetsia(mapa, "SorkuntzaData"),
             AzkenEguneratzea = IrakurriMapaTestuaLehenetsia(mapa, "AzkenEguneraketa"),
@@ -544,7 +581,8 @@ public sealed partial class DatuBaseaZerbitzua
                 Kilometroak = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Kilometroak", 0),
                 TicketArgazkia = IrakurriMapaTestuaLehenetsia(mapa, "TicketArgazkiBidea"),
                 Oharrak = IrakurriMapaTestuaLehenetsia(mapa, "Oharrak"),
-                KontzeptuId = IrakurriMapaOsoaLehenetsia(mapa, "KontzeptuId", 0)
+                KontzeptuId = IrakurriMapaOsoaLehenetsia(mapa, "KontzeptuId", 0),
+                IbilgailuaBeharrezkoa = IrakurriMapaOsoaLehenetsia(mapa, "IbilgailuaBeharrezkoa", 0)
             });
         }
 

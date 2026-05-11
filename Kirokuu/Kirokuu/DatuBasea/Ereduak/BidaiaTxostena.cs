@@ -40,6 +40,12 @@ public sealed class BidaiaTxostena
 
     public string? AdminOharra { get; set; }
 
+    [Column("AdminDNI")]
+    public string? AdminDNI { get; set; }
+
+    [Column("EmpresaIbilgailua")]
+    public int EmpresaIbilgailua { get; set; }
+
     [NotNull]
     public string MonetaKodea { get; set; } = string.Empty;
 

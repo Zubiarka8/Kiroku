@@ -34,4 +34,7 @@ public sealed class GastuLerroa
     public string Oharrak { get; set; } = string.Empty;
 
     public int KontzeptuId { get; set; }
+
+    [Column("IbilgailuaBeharrezkoa")]
+    public int IbilgailuaBeharrezkoa { get; set; }
 }

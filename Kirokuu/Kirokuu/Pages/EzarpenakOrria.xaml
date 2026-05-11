@@ -29,22 +29,26 @@
             <Label Text="Izena" FontAttributes="Bold" />
             <Entry x:Name="IzenaSarrera"
                    Text="{Binding Izena}"
-                   Placeholder="Izena" />
+                   Placeholder="Izena"
+                   IsEnabled="{Binding DaAdministratzailea}" />
 
             <Label Text="Lehen abizena" FontAttributes="Bold" />
             <Entry x:Name="LehenAbizenaSarrera"
                    Text="{Binding Abizena}"
-                   Placeholder="Lehen abizena" />
+                   Placeholder="Lehen abizena"
+                   IsEnabled="{Binding DaAdministratzailea}" />
 
             <Label Text="Bigarren abizena" FontAttributes="Bold" />
             <Entry x:Name="BigarrenAbizenaSarrera"
                    Text="{Binding Abizena2}"
-                   Placeholder="Bigarren abizena" />
+                   Placeholder="Bigarren abizena"
+                   IsEnabled="{Binding DaAdministratzailea}" />
 
             <Label Text="NAN / IFZ" FontAttributes="Bold" />
             <Entry x:Name="NanIfzSarrera"
                    Text="{Binding DNI}"
-                   Placeholder="NAN / IFZ" />
+                   Placeholder="NAN / IFZ"
+                   IsEnabled="{Binding DaAdministratzailea}" />
 
             <Label Text="Posta elektronikoa" FontAttributes="Bold" />
             <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">

@@ -74,6 +74,8 @@ public partial class EzarpenakViewModel : ObservableObject
     [ObservableProperty] private string _rolTestu = string.Empty;
     [ObservableProperty] private string _sorkuntzaDataTestu = string.Empty;
 
+    [ObservableProperty] private bool _daAdministratzailea;
+
     [ObservableProperty] private bool _erakutsiSektoreaKargoHautapenak = true;
 
     [ObservableProperty] private string _finkatutakoSektorearenEtiketa = string.Empty;
@@ -239,40 +241,34 @@ public partial class EzarpenakViewModel : ObservableObject
             return;
         }
 
-        if (string.IsNullOrWhiteSpace(Izena) || string.IsNullOrWhiteSpace(Abizena) ||
-            string.IsNullOrWhiteSpace(Abizena2) || string.IsNullOrWhiteSpace(DNI) ||
-            string.IsNullOrWhiteSpace(Posta))
+        if (string.IsNullOrWhiteSpace(Posta))
         {
             ErroreMezua = "Eremu bat edo gehiago hutsik daude. Bete beharrezko eremuak.";
             return;
         }
 
-        if (!_daAdministratzaileTaldea && (HautatutakoSektorea is null || HautatutakoKargoa is null))
+        if (_daAdministratzaileTaldea)
         {
-            ErroreMezua = "Eremu bat edo gehiago hutsik daude. Bete beharrezko eremuak.";
-            return;
-        }
+            if (string.IsNullOrWhiteSpace(Izena) || string.IsNullOrWhiteSpace(Abizena) ||
+                string.IsNullOrWhiteSpace(Abizena2) || string.IsNullOrWhiteSpace(DNI))
+            {
+                ErroreMezua = "Eremu bat edo gehiago hutsik daude. Bete beharrezko eremuak.";
+                return;
+            }
 
-        if (!ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Izena, 2, 80) ||
-            !ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Abizena, 2, 80) ||
-            !ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Abizena2, 2, 80))
-        {
-            ErroreMezua = "Izen edo abizenak ez dira zuzenak (letrak eta tarteak soilik, 2–80 karaktere).";
-            return;
-        }
+            if (!ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Izena, 2, 80) ||
+                !ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Abizena, 2, 80) ||
+                !ErabiltzaileDatuenBalidazioLaguntzailea.PertsonaIzenLaburraBaliozkoa(Abizena2, 2, 80))
+            {
+                ErroreMezua = "Izen edo abizenak ez dira zuzenak (letrak eta tarteak soilik, 2–80 karaktere).";
+                return;
+            }
 
-        if (!ErabiltzaileDatuenBalidazioLaguntzailea.NanEdoIfzBaliozkoa(DNI))
-        {
-            ErroreMezua = "NAN / IFZ zenbakia ez da zuzena (8 zenbaki + letra, edo X/Y/Z + 7 zenbaki + letra).";
-            return;
-        }
-
-        if (!_daAdministratzaileTaldea &&
-            !SektoreaKargoarenHiztegia.SektoreaEtaKargoarenIdentifikatzaileakBaliozkoa(
-                HautatutakoSektorea!.Identifikatzailea, HautatutakoKargoa!.Identifikatzailea))
-        {
-            ErroreMezua = "Hautatu sektore eta kargo baliodunak.";
-            return;
+            if (!ErabiltzaileDatuenBalidazioLaguntzailea.NanEdoIfzBaliozkoa(DNI))
+            {
+                ErroreMezua = "NAN / IFZ zenbakia ez da zuzena (8 zenbaki + letra, edo X/Y/Z + 7 zenbaki + letra).";
+                return;
+            }
         }
 
         if (!ErabiltzaileDatuenBalidazioLaguntzailea.PostaBaliozkoa(Posta))
@@ -514,7 +510,8 @@ public partial class EzarpenakViewModel : ObservableObject
     private void EzarriSektoreaKargoIkuspegia(Erabiltzailea erabiltzailea)
     {
         _daAdministratzaileTaldea = DaAdministratzaileTaldea(erabiltzailea.Rola);
-        ErakutsiSektoreaKargoHautapenak = !_daAdministratzaileTaldea;
+        DaAdministratzailea = _daAdministratzaileTaldea;
+        ErakutsiSektoreaKargoHautapenak = false;
         if (_daAdministratzaileTaldea)
         {
             FinkatutakoSektorearenEtiketa = SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(
@@ -525,6 +522,8 @@ public partial class EzarpenakViewModel : ObservableObject
         }
 
         HasieratuSektoreaKargoHautapenak(erabiltzailea);
+        FinkatutakoSektorearenEtiketa = HautatutakoSektorea?.Etiketa ?? string.Empty;
+        FinkatutakoKargoarenEtiketa = HautatutakoKargoa?.Etiketa ?? string.Empty;
     }
 
     private void HasieratuSektoreaKargoHautapenak(Erabiltzailea erabiltzailea)
