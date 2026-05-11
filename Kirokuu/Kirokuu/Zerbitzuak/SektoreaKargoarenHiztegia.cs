@@ -72,7 +72,7 @@ public static class SektoreaKargoarenHiztegia
     public static string LortuKargoarenEtiketa(EnpresakoLangileKargoa kargo)
     {
         if (kargo == EnpresakoLangileKargoa.AdministratzaileSistema)
-            return "Administratzailea";
+            return "Administrador";
 
         foreach (var sektorea in new[] { EnpresakoSektorea.Finantzak, EnpresakoSektorea.Marketina, EnpresakoSektorea.Salmentak })
         {

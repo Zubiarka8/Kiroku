@@ -127,9 +127,6 @@ public partial class EzarpenakViewModel : ObservableObject
         PasahitzaErroreDago = !string.IsNullOrEmpty(value);
 
     [RelayCommand]
-    private void TxertaturikAroba() => Posta += "@";
-
-    [RelayCommand]
     private void AlderantzikatuPasahitzaZaharraMaska() => PasahitzaZaharraMaskaratuta = !PasahitzaZaharraMaskaratuta;
 
     [RelayCommand]
@@ -172,9 +169,9 @@ public partial class EzarpenakViewModel : ObservableObject
             Posta = erabiltzailea.Posta;
             RolTestu = erabiltzailea.Rola switch
             {
-                (int)ErabiltzaileRola.Administratzailea => "Administratzailea",
-                (int)ErabiltzaileRola.ZuzendariNagusia => "Zuzendari nagusia (CEO)",
-                _ => "Langilea"
+                (int)ErabiltzaileRola.Administratzailea => "Administrador",
+                (int)ErabiltzaileRola.ZuzendariNagusia => "Director general (CEO)",
+                _ => "Empleado"
             };
 
             EzarriSektoreaKargoIkuspegia(erabiltzailea);
