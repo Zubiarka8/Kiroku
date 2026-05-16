@@ -5,6 +5,7 @@
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:lvc="clr-namespace:LiveChartsCore.SkiaSharpView.Maui;assembly=LiveChartsCore.SkiaSharpView.Maui"
              xmlns:measure="clr-namespace:LiveChartsCore.Measure;assembly=LiveChartsCore"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.HasieraOrria"
              x:DataType="vm:HasieraViewModel"
              Title="Hasiera">
@@ -14,20 +15,15 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
-            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                               IsVisible="{Binding IsKargatzean}"
-                               HorizontalOptions="Center" />
-
             <Label Text="{Binding Ongietorria}"
                    Style="{StaticResource Headline}"
                    SemanticProperties.HeadingLevel="Level1"
                    HorizontalOptions="Center"
                    HorizontalTextAlignment="Center" />
-
-            <Label Text="{Binding ErroreMezua}"
-                   Style="{StaticResource ErroreEtiketaEstiloa}" />
 
             <Grid ColumnDefinitions="*,*" ColumnSpacing="12">
                 <Border Grid.Column="0" Style="{StaticResource TxartelTxartelaEstiloa}" Padding="14">
@@ -116,4 +112,5 @@
                                 YAxes="{Binding EgoeraYArdatzak}" />
         </VerticalStackLayout>
     </ScrollView>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

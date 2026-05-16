@@ -2,148 +2,114 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
-             xmlns:ered="clr-namespace:Kirokuu.DatuBasea.Ereduak"
              xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.TxostenOnarpenXehetasunOrria"
              x:DataType="vm:TxostenOnarpenXehetasunViewModel"
              Title="Txostenaren xehetasuna">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="20" Spacing="14">
-            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                               IsVisible="{Binding IsKargatzean}"
-                               HorizontalOptions="Center" />
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
+        <ScrollView>
+            <VerticalStackLayout Padding="20" Spacing="14">
 
-            <Label Text="{Binding Helmuga}" Style="{StaticResource Headline}" />
-            <Label Text="{Binding LangileTestua}" FontSize="14" />
-            <Label Text="{Binding SailarenEtiketa, StringFormat='Saila: {0}'}"
-                   FontSize="14"
-                   IsVisible="{Binding SailarenEtiketa, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
-            <Label Text="{Binding Egoera, StringFormat='Egoera: {0}'}" FontSize="14" />
-            <Label Text="{Binding GastuenGuztira, StringFormat='Gastuen guztira: {0:N2} €'}" FontSize="14" />
-            <Label Text="{Binding JasoAurrerakina, StringFormat='Jasotako aurrerakina: {0} €'}"
-                   FontSize="14"
-                   IsVisible="{Binding JasoAurrerakinaIkagarri}" />
-            <Label Text="{Binding OrdaintzekoBidea, StringFormat='Ordaintzeko: {0:N2} €'}"
-                   FontSize="14"
-                   FontAttributes="Bold"
-                   IsVisible="{Binding JasoAurrerakinaIkagarri}" />
+                <kontrolak:TxartelXehetasunHeroaView Egoera="{Binding Egoera}"
+                                                     Helmuga="{Binding Helmuga}"
+                                                     Zenbatekoa="{Binding GastuenGuztira}" />
 
-            <Border Style="{StaticResource TxartelTxartelaEstiloa}"
-                    Padding="14"
-                    IsVisible="{Binding IbilgailuaEremuakIkagarri}">
-                <VerticalStackLayout Spacing="10">
-                    <Label Text="Ibilgailua"
-                           Style="{StaticResource TituluAtalaEstiloa}" />
+                <Label Text="{Binding LangileTestua}" FontSize="14" />
+                <Label Text="{Binding SailarenEtiketa, StringFormat='Saila: {0}'}"
+                       FontSize="14"
+                       IsVisible="{Binding SailarenEtiketa, Converter={StaticResource TestuaDagoConverter}}" />
+                <Label Text="{Binding JasoAurrerakina, StringFormat='Jasotako aurrerakina: {0} €'}"
+                       FontSize="14"
+                       IsVisible="{Binding JasoAurrerakinaIkagarri}" />
+                <Label Text="{Binding OrdaintzekoBidea, StringFormat='Ordaintzeko: {0:N2} €'}"
+                       FontSize="14"
+                       FontAttributes="Bold"
+                       IsVisible="{Binding JasoAurrerakinaIkagarri}" />
 
-                    <HorizontalStackLayout Spacing="10"
-                                           VerticalOptions="Center"
-                                           IsVisible="{Binding IbilgailuaEremuakEditagarri}">
-                        <Label Text="Norberaren ibilgailua"
-                               VerticalOptions="Center"
-                               FontSize="13" />
-                        <Switch IsToggled="{Binding EnpresakoIbilgailua}"
-                                VerticalOptions="Center" />
-                        <Label Text="Enpresako ibilgailua"
-                               VerticalOptions="Center"
-                               FontSize="13"
-                               FontAttributes="Bold" />
-                    </HorizontalStackLayout>
-
-                    <Label FontSize="14"
-                           IsVisible="{Binding IbilgailuaEremuakEditagarri, Converter={toolkit:InvertedBoolConverter}}">
-                        <Label.Triggers>
-                            <DataTrigger TargetType="Label" Binding="{Binding EnpresakoIbilgailua}" Value="True">
-                                <Setter Property="Text" Value="Enpresako ibilgailua" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="Label" Binding="{Binding EnpresakoIbilgailua}" Value="False">
-                                <Setter Property="Text" Value="Norberaren ibilgailua" />
-                            </DataTrigger>
-                        </Label.Triggers>
-                    </Label>
-
-                    <VerticalStackLayout Spacing="4"
-                                         IsVisible="{Binding IbilgailuaEremuakEditagarri}">
-                        <Label Text="Kilometroak (km)"
-                               FontAttributes="Bold"
-                               FontSize="13" />
-                        <Entry Text="{Binding KilometroakTestua}"
-                               Keyboard="Numeric"
-                               Placeholder="0" />
+                <Border Style="{StaticResource TxartelTxartelaEstiloa}"
+                        Padding="14"
+                        IsVisible="{Binding IbilgailuaEremuakIkagarri}">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Ibilgailua"
+                               Style="{StaticResource TituluAtalaEstiloa}" />
+                        <HorizontalStackLayout Spacing="10"
+                                               VerticalOptions="Center"
+                                               IsVisible="{Binding IbilgailuaEremuakEditagarri}">
+                            <Label Text="Norberaren ibilgailua"
+                                   VerticalOptions="Center"
+                                   FontSize="13" />
+                            <Switch IsToggled="{Binding EnpresakoIbilgailua}"
+                                    VerticalOptions="Center" />
+                            <Label Text="Enpresako ibilgailua"
+                                   VerticalOptions="Center"
+                                   FontSize="13"
+                                   FontAttributes="Bold" />
+                        </HorizontalStackLayout>
+                        <Label FontSize="14"
+                               IsVisible="{Binding IbilgailuaEremuakEditagarri, Converter={toolkit:InvertedBoolConverter}}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label" Binding="{Binding EnpresakoIbilgailua}" Value="True">
+                                    <Setter Property="Text" Value="Enpresako ibilgailua" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label" Binding="{Binding EnpresakoIbilgailua}" Value="False">
+                                    <Setter Property="Text" Value="Norberaren ibilgailua" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <VerticalStackLayout Spacing="4"
+                                             IsVisible="{Binding IbilgailuaEremuakEditagarri}">
+                            <Label Text="Kilometroak (km)"
+                                   FontAttributes="Bold"
+                                   FontSize="13" />
+                            <Entry Text="{Binding KilometroakTestua}"
+                                   Keyboard="Numeric"
+                                   Placeholder="0" />
+                        </VerticalStackLayout>
+                        <Label Text="{Binding KilometroakTestua, StringFormat='Kilometroak: {0} km'}"
+                               FontSize="14"
+                               IsVisible="{Binding IbilgailuaEremuakEditagarri, Converter={toolkit:InvertedBoolConverter}}" />
                     </VerticalStackLayout>
+                </Border>
 
-                    <Label Text="{Binding KilometroakTestua, StringFormat='Kilometroak: {0} km'}"
-                           FontSize="14"
-                           IsVisible="{Binding IbilgailuaEremuakEditagarri, Converter={toolkit:InvertedBoolConverter}}" />
-                </VerticalStackLayout>
-            </Border>
+                <kontrolak:TxartelXehetasunGastuZerrendaView GastuLerroak="{Binding GastuLerroak}" />
 
-            <Label Text="Gastu lerroak" Style="{StaticResource SubHeadline}" />
+                <Label Text="Administratzailearen oharra (ukapenean, aukerakoa)"
+                       FontSize="13"
+                       IsVisible="{Binding OnarpenEkintzakIkagarri}" />
+                <Editor Text="{Binding AdminOharra}"
+                        Placeholder="Oharra idatzi ukapenean..."
+                        AutoSize="TextChanges"
+                        MinimumHeightRequest="80"
+                        IsVisible="{Binding OnarpenEkintzakIkagarri}" />
 
-            <CollectionView ItemsSource="{Binding GastuLerroak}">
-                <CollectionView.EmptyView>
-                    <VerticalStackLayout Padding="16" Spacing="8" VerticalOptions="Center">
-                        <Label Style="{StaticResource IkonoHandiaEstiloa}"
-                               Text="{x:Static kiro:IkonoFontIturria.HutsikIkonoGlifoa}" />
-                        <Label Text="Ez dago gastu lerroirik."
-                               HorizontalTextAlignment="Center"
-                               Style="{StaticResource TestuBigarrenMailaEstiloa}" />
-                    </VerticalStackLayout>
-                </CollectionView.EmptyView>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="ered:GastuLerroa">
-                        <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="10" Margin="2">
-                            <VerticalStackLayout Spacing="2">
-                                <Label Text="{Binding GastuDataFormateatua}" FontAttributes="Bold" />
-                                <Label Text="{Binding ZenbatekoaGuztira, StringFormat='Zenbatekoa: {0:N2} €'}" FontSize="13" />
-                                <Label Text="{Binding GarraioBidea, StringFormat='Garraioa: {0}'}"
-                                       FontSize="12"
-                                       IsVisible="{Binding GarraioBidea, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
-                                <Label Text="{Binding Kilometroak, StringFormat='Kilometroak: {0:N0} km'}"
-                                       FontSize="12"
-                                       IsVisible="{Binding KilometroakIkagarri}" />
-                                <Label Text="{Binding Oharrak}" FontSize="12" />
-                            </VerticalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
+                <Button Command="{Binding OnartuCommand}"
+                        IsVisible="{Binding OnarpenEkintzakIkagarri}"
+                        Text="Onartu">
+                    <Button.ImageSource>
+                        <FontImageSource FontFamily="MaterialIcons"
+                                         Glyph="{x:Static kiro:IkonoFontIturria.BaieztatuIkonoGlifoa}"
+                                         Size="22"
+                                         Color="{StaticResource White}" />
+                    </Button.ImageSource>
+                </Button>
 
-            <Label Text="Administratzailearen oharra (ukapenean, aukerakoa)"
-                   FontSize="13"
-                   IsVisible="{Binding OnarpenEkintzakIkagarri}" />
-            <Editor Text="{Binding AdminOharra}"
-                    Placeholder="Oharra idatzi ukapenean..."
-                    AutoSize="TextChanges"
-                    MinimumHeightRequest="80"
-                    IsVisible="{Binding OnarpenEkintzakIkagarri}" />
+                <Button Command="{Binding UkatuCommand}"
+                        IsVisible="{Binding OnarpenEkintzakIkagarri}"
+                        Style="{StaticResource BotoiSaioItxiEstiloa}"
+                        Text="Ukatu">
+                    <Button.ImageSource>
+                        <FontImageSource FontFamily="MaterialIcons"
+                                         Glyph="{x:Static kiro:IkonoFontIturria.UkatuIkonoGlifoa}"
+                                         Size="22"
+                                         Color="{StaticResource White}" />
+                    </Button.ImageSource>
+                </Button>
 
-            <Label Text="{Binding ErroreMezua}"
-                   Style="{StaticResource ErroreEtiketaEstiloa}" />
-
-            <Button Command="{Binding OnartuCommand}"
-                    IsVisible="{Binding OnarpenEkintzakIkagarri}"
-                    Text="Onartu">
-                <Button.ImageSource>
-                    <FontImageSource FontFamily="MaterialIcons"
-                                     Glyph="{x:Static kiro:IkonoFontIturria.BaieztatuIkonoGlifoa}"
-                                     Size="22"
-                                     Color="{StaticResource White}" />
-                </Button.ImageSource>
-            </Button>
-
-            <Button Command="{Binding UkatuCommand}"
-                    IsVisible="{Binding OnarpenEkintzakIkagarri}"
-                    Style="{StaticResource BotoiSaioItxiEstiloa}"
-                    Text="Ukatu">
-                <Button.ImageSource>
-                    <FontImageSource FontFamily="MaterialIcons"
-                                     Glyph="{x:Static kiro:IkonoFontIturria.UkatuIkonoGlifoa}"
-                                     Size="22"
-                                     Color="{StaticResource White}" />
-                </Button.ImageSource>
-            </Button>
-        </VerticalStackLayout>
-    </ScrollView>
+            </VerticalStackLayout>
+        </ScrollView>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

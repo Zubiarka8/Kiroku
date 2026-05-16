@@ -1,7 +1,8 @@
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
+using Kirokuu.Zerbitzuak;
 
-namespace Kirokuu.Zerbitzuak;
+namespace Kirokuu.AplikazioZerbitzuak;
 
 public static class SektoreaKargoarenHiztegia
 {

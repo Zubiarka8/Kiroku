@@ -5,6 +5,7 @@
              xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:kiro="clr-namespace:Kirokuu"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.LangileZerrendaOrria"
              x:Name="LangileZerrendaOrriOrokorra"
              x:DataType="vm:LangileZerrendaViewModel"
@@ -22,35 +23,20 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="0" RowSpacing="0">
-        <ActivityIndicator Grid.Row="0"
-                           IsRunning="{Binding IsKargatzean}"
-                           IsVisible="{Binding IsKargatzean}"
-                           HorizontalOptions="Center"
-                           Margin="0,12" />
-
-        <Label Grid.Row="1"
-               Text="{Binding ErroreMezua}"
-               Style="{StaticResource ErroreEtiketaEstiloa}"
-               Margin="16,8" />
-
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
+    <Grid RowDefinitions="Auto,*" Padding="0" RowSpacing="0">
         <SearchBar x:Name="LangileenBilaketa"
-                   Grid.Row="2"
+                   Grid.Row="0"
                    Placeholder="Bilatu izen, abizen edo posta..."
                    Text="{Binding BilaketaTestua, Mode=TwoWay}"
                    Margin="8,0" />
 
-        <CollectionView Grid.Row="3"
+        <CollectionView Grid.Row="1"
                         ItemsSource="{Binding Langileak}"
                         Margin="8,0">
             <CollectionView.EmptyView>
-                <VerticalStackLayout Padding="24" Spacing="12" VerticalOptions="Center">
-                    <Label Style="{StaticResource IkonoHandiaEstiloa}"
-                           Text="{x:Static kiro:IkonoFontIturria.HutsikIkonoGlifoa}" />
-                    <Label Text="{Binding HutsaMezua}"
-                           HorizontalTextAlignment="Center"
-                           Style="{StaticResource TestuBigarrenMailaEstiloa}" />
-                </VerticalStackLayout>
+                <kontrolak:HutsikIkuspegia Mezua="{Binding HutsaMezua}" />
             </CollectionView.EmptyView>
             <CollectionView.ItemTemplate>
                 <DataTemplate x:DataType="datu:ErabiltzaileLaburpena">
@@ -77,4 +63,5 @@
             </CollectionView.ItemTemplate>
         </CollectionView>
     </Grid>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

@@ -1,6 +1,6 @@
 using Kirokuu.DatuBasea.Ereduak;
 
-namespace Kirokuu.Zerbitzuak;
+namespace Kirokuu.AplikazioZerbitzuak;
 
 public static class AdministratzaileOrganizazioLehenetsia
 {

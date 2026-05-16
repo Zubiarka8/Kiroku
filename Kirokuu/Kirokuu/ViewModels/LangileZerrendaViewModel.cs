@@ -109,45 +109,9 @@ public partial class LangileZerrendaViewModel : ObservableObject
 
             EzarriIkuspegiaBilaketarekin();
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(libEx, "Langile zerrenda: Turso/libSQL errorea.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Langile zerrenda: zutabe edo mapa errorea.");
-        }
-        catch (FormatException fmtEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Langile zerrenda: balio formatu errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Langile zerrenda: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Langile zerrenda: sare errorea (Turso?).");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Langile zerrenda: eragiketa baliogabea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Langile zerrenda: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "Langile zerrenda");
         }
         finally
         {

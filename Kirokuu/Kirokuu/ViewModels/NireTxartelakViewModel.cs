@@ -108,36 +108,9 @@ public partial class NireTxartelakViewModel : ObservableObject
             BerritzeKopuruak();
             AplikatuIragazkia();
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(libEx, "NireTxartelak: Turso errorea.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "NireTxartelak: mapa errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "NireTxartelak: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "NireTxartelak: sare errorea.");
-        }
-        catch (TaskCanceledException tcEx)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-            _logger.LogError(tcEx, "NireTxartelak: denbora muga.");
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "NireTxartelak: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "NireTxartelak");
         }
         finally
         {
@@ -219,21 +192,9 @@ public partial class NireTxartelakViewModel : ObservableObject
             IsKargatzean = false;
             await AgertzenDeneanAsync().ConfigureAwait(true);
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(libEx, "EzeztatuTxartela: Turso errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(sqlEx, "EzeztatuTxartela: SQLite errorea.");
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "EzeztatuTxartela: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIdazketa(ex, m => ErroreMezua = m, _logger, "EzeztatuTxartela");
         }
         finally
         {

@@ -3,20 +3,15 @@
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.ErregistroOrria"
              x:DataType="vm:ErregistroViewModel"
              Title="Kontua sortu">
 
-    <ContentPage.Resources>
-        <toolkit:IsStringNotNullOrEmptyConverter x:Key="TestuaDagoConverter" />
-    </ContentPage.Resources>
-
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="16">
-            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                               IsVisible="{Binding IsKargatzean}"
-                               HorizontalOptions="Center" />
-
             <Label Text="Erabiltzaile berria"
                    Style="{StaticResource Headline}"
                    HorizontalOptions="Center" />
@@ -134,4 +129,5 @@
                     Style="{StaticResource BotoiBigarrenMailakoaEstiloa}" />
         </VerticalStackLayout>
     </ScrollView>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

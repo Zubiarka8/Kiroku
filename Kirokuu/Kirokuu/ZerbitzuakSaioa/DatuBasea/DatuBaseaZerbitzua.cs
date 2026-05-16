@@ -1,6 +1,8 @@
 using System.Globalization;
+using Kirokuu.DatuBasea;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.Storage;
@@ -361,14 +363,19 @@ public sealed partial class DatuBaseaZerbitzua
 
             await BermatSqliteKonexioaSortutaAsync().ConfigureAwait(false);
 
+            await SortuSqliteBertsioTaulaAsync().ConfigureAwait(false);
+            var gordetakoBertsioa = await IrakurriSqliteBertsioaAsync().ConfigureAwait(false);
+
             await SortuSqliteTaulaAsync<Erabiltzailea>("Erabiltzaileak").ConfigureAwait(false);
-            await SortuSqliteTaulaAsync<GastuKontzeptua>("GastuKontzeptuak").ConfigureAwait(false);
-            await SeedSqliteGastuKontzeptuakAsync().ConfigureAwait(false);
+            await SortuSqliteGastuKontzeptuakSqlAsync().ConfigureAwait(false);
             await SortuSqliteBidaiaTxostenaFKrekinAsync().ConfigureAwait(false);
             await SortuSqliteGastuLerroaFKrekinAsync().ConfigureAwait(false);
             await SortuSqliteAuditoretzaLogaFKrekinAsync().ConfigureAwait(false);
             await MigraAuditoretzaLogaDiruSarreraIdTxostenIdraSqliteAsync().ConfigureAwait(false);
             await MigraAuditoretzaLogaLangileIdGehituSqliteAsync().ConfigureAwait(false);
+
+            if (gordetakoBertsioa < DatuBaseaBertsioa.OraingoBertsioa)
+                await GordeSqliteBertsioaAsync(DatuBaseaBertsioa.OraingoBertsioa).ConfigureAwait(false);
 #if DEBUG
                     await AdministratzaileLehenarenSeedGarapeneanAsync().ConfigureAwait(false);
                     await AdministratzaileProbakoDatuakSQLiteAsync().ConfigureAwait(false);
@@ -474,73 +481,57 @@ public sealed partial class DatuBaseaZerbitzua
         await bezeroa.ExekutatuAsync(alterSql, cancellationToken).ConfigureAwait(false);
     }
 
+    private async Task SortuSqliteBertsioTaulaAsync()
+    {
+        var sql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("__schema_version.sql");
+        await _sqliteKonexioa!.ExecuteAsync(sql).ConfigureAwait(false);
+    }
+
+    private async Task<int> IrakurriSqliteBertsioaAsync()
+    {
+        try
+        {
+            return await _sqliteKonexioa!.ExecuteScalarAsync<int>(
+                $"SELECT Bertsioa FROM {DatuBaseaBertsioa.BertsioTaulaIzena} LIMIT 1").ConfigureAwait(false);
+        }
+        catch (SQLiteException)
+        {
+            return 0;
+        }
+    }
+
+    private async Task GordeSqliteBertsioaAsync(int bertsioa)
+    {
+        await _sqliteKonexioa!.ExecuteAsync($"DELETE FROM {DatuBaseaBertsioa.BertsioTaulaIzena}").ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync(
+            $"INSERT INTO {DatuBaseaBertsioa.BertsioTaulaIzena} (Bertsioa) VALUES (?)",
+            bertsioa).ConfigureAwait(false);
+    }
+
+    private async Task SortuSqliteGastuKontzeptuakSqlAsync()
+    {
+        var sortzeSql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("GastuKontzeptuak.sql");
+        var seedSql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("GastuKontzeptuakSeed.sql");
+        await _sqliteKonexioa!.ExecuteAsync(sortzeSql).ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync(seedSql).ConfigureAwait(false);
+    }
+
     private async Task SortuSqliteBidaiaTxostenaFKrekinAsync()
     {
-        await _sqliteKonexioa!.ExecuteAsync("""
-            CREATE TABLE IF NOT EXISTS BidaiaTxostenak (
-                TxostenId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                ErabiltzaileId INTEGER NOT NULL,
-                LangileDNI TEXT NOT NULL DEFAULT '',
-                Saila TEXT NOT NULL DEFAULT '',
-                Helmuga TEXT NOT NULL DEFAULT '',
-                BidaiaHelburua TEXT NOT NULL DEFAULT '',
-                HasieraData TEXT NOT NULL DEFAULT '',
-                AmaieraData TEXT NOT NULL DEFAULT '',
-                PertsonaKopurua INTEGER NOT NULL DEFAULT 0,
-                JasoAurrerakina INTEGER NOT NULL DEFAULT 0,
-                Egoera TEXT NOT NULL DEFAULT '',
-                AdminOharra TEXT,
-                AdminDNI TEXT,
-                EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0,
-                MonetaKodea TEXT NOT NULL DEFAULT '',
-                SorkuntzaData TEXT NOT NULL DEFAULT '',
-                AzkenEguneraketa TEXT NOT NULL DEFAULT '',
-                DataAprobazioa TEXT NOT NULL DEFAULT '',
-                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
-                FOREIGN KEY (LangileDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE,
-                FOREIGN KEY (AdminDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE
-            );
-            """).ConfigureAwait(false);
+        var sql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("BidaiaTxostenak.sql");
+        await _sqliteKonexioa!.ExecuteAsync(sql).ConfigureAwait(false);
     }
 
     private async Task SortuSqliteGastuLerroaFKrekinAsync()
     {
-        await _sqliteKonexioa!.ExecuteAsync("""
-            CREATE TABLE IF NOT EXISTS GastuLerroak (
-                GastuId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                TxostenId INTEGER NOT NULL DEFAULT 0,
-                KategoriaId INTEGER NOT NULL DEFAULT 0,
-                GastuData TEXT NOT NULL DEFAULT '',
-                GarraioBidea TEXT NOT NULL DEFAULT '',
-                Zenbatekoa_Guztira REAL NOT NULL DEFAULT 0,
-                Kilometroak REAL NOT NULL DEFAULT 0,
-                TicketArgazkiBidea TEXT NOT NULL DEFAULT '',
-                Oharrak TEXT NOT NULL DEFAULT '',
-                KontzeptuId INTEGER NOT NULL DEFAULT 0,
-                IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0,
-                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE CASCADE,
-                FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
-            );
-            """).ConfigureAwait(false);
+        var sql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("GastuLerroak.sql");
+        await _sqliteKonexioa!.ExecuteAsync(sql).ConfigureAwait(false);
     }
 
     private async Task SortuSqliteAuditoretzaLogaFKrekinAsync()
     {
-        await _sqliteKonexioa!.ExecuteAsync("""
-            CREATE TABLE IF NOT EXISTS AuditoretzaLoga (
-                LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                TxostenId INTEGER,
-                ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
-                LangileId INTEGER,
-                Ekintza TEXT NOT NULL DEFAULT '',
-                DataOrdua TEXT NOT NULL DEFAULT '',
-                Deskribapena TEXT NOT NULL DEFAULT '',
-                IP_Helbidea TEXT NOT NULL DEFAULT '',
-                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
-                FOREIGN KEY (LangileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE SET NULL,
-                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
-            );
-            """).ConfigureAwait(false);
+        var sql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("AuditoretzaLoga.sql");
+        await _sqliteKonexioa!.ExecuteAsync(sql).ConfigureAwait(false);
     }
 
 

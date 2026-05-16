@@ -4,6 +4,7 @@
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
              xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.SaioHasieraOrria"
              x:DataType="vm:SaioHasieraViewModel"
              Title="Saioa hasi">
@@ -13,12 +14,10 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="20">
-            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                               IsVisible="{Binding IsKargatzean}"
-                               HorizontalOptions="Center" />
-
             <Image x:Name="SaioHasieraLogoa"
                    Source="kiroku_logo.webp"
                    Aspect="AspectFit"
@@ -72,10 +71,6 @@
                 </Border>
             </VerticalStackLayout>
 
-            <Label Text="{Binding ErroreMezua}"
-                   Style="{StaticResource ErroreEtiketaEstiloa}"
-                   IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
-
             <Button x:Name="SaioaHasiTekla"
                     Text="Sartu"
                     Command="{Binding SaioaHasiCommand}"
@@ -93,4 +88,5 @@
                     Style="{StaticResource BotoiBigarrenMailakoaEstiloa}" />
         </VerticalStackLayout>
     </ScrollView>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

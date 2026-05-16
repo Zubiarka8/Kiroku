@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuEreduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
@@ -202,39 +203,9 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
 
             await Shell.Current.GoToAsync("..").ConfigureAwait(true);
         }
-        catch (ErabiltzaileMurrizketaSalbuespena murEx)
-        {
-            ErroreMezua = "Posta edo DNI bikoiztua.";
-            _logger.LogWarning(murEx, "Erabiltzaile berria: murrizketa.");
-        }
-        catch (SQLiteException sqlEx) when (sqlEx.Result == SQLite3.Result.Constraint)
-        {
-            ErroreMezua = "Datu bikoiztua: erabiltzaile hau dagoeneko badago.";
-            _logger.LogWarning(sqlEx, "Erabiltzaile berria: SQLite murrizketa.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Erabiltzaile berria: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Erabiltzaile berria: sare errorea.");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Erabiltzaile berria: eragiketa baliogabea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Erabiltzaile berria: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIdazketa(ex, m => ErroreMezua = m, _logger, "Erabiltzaile berria");
         }
         finally
         {

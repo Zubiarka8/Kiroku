@@ -4,6 +4,7 @@
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
              xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.TxartelBerriaOrria"
              x:DataType="vm:TxartelBerriaViewModel"
              Title="Gastu berria">
@@ -13,17 +14,10 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
     <ScrollView>
         <VerticalStackLayout Padding="16" Spacing="16">
-
-            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                               IsVisible="{Binding IsKargatzean}"
-                               HorizontalOptions="Center" />
-
-            <Label Text="{Binding ErroreMezua}"
-                   Style="{StaticResource ErroreEtiketaEstiloa}"
-                   IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
-
             <VerticalStackLayout Spacing="4"
                                  IsVisible="{Binding SailarenEtiketa, Converter={toolkit:IsStringNotNullOrEmptyConverter}}">
                 <Label Text="Saila" FontAttributes="Bold" />
@@ -179,4 +173,5 @@
 
         </VerticalStackLayout>
     </ScrollView>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

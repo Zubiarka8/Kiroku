@@ -6,6 +6,7 @@
              xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
              xmlns:pages="clr-namespace:Kirokuu.Pages"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.NireTxartelakOrria"
              x:Name="NireTxartelakOrriaErreferentzia"
              x:DataType="vm:NireTxartelakViewModel"
@@ -16,45 +17,8 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <ContentPage.Resources>
-        <toolkit:IsStringNotNullOrEmptyConverter x:Key="EzDaNullEdoHutsBihurgailua" />
-
-        <Style x:Key="IragazkiTxipEstiloa" TargetType="Border">
-            <Setter Property="Padding" Value="14,8" />
-            <Setter Property="StrokeThickness" Value="1.5" />
-            <Setter Property="StrokeShape" Value="RoundRectangle 20" />
-            <Setter Property="VerticalOptions" Value="Center" />
-            <Setter Property="MinimumHeightRequest" Value="40" />
-        </Style>
-        <Style x:Key="IragazkiTxipTestuEstiloa" TargetType="Label">
-            <Setter Property="FontSize" Value="13" />
-            <Setter Property="FontAttributes" Value="Bold" />
-            <Setter Property="VerticalOptions" Value="Center" />
-        </Style>
-        <Style x:Key="IragazkiTxipKopuruEstiloa" TargetType="Label">
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="VerticalOptions" Value="Center" />
-            <Setter Property="Opacity" Value="0.9" />
-        </Style>
-        <Style x:Key="EgoeraLaburpenTxartelaEstiloa" TargetType="Border">
-            <Setter Property="StrokeShape" Value="RoundRectangle 14" />
-            <Setter Property="StrokeThickness" Value="1" />
-            <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource MugaTxartelaArgia}, Dark={StaticResource MugaTxartelaIluna}}" />
-            <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AzalaTxartelaArgia}, Dark={StaticResource AzalaTxartelaIluna}}" />
-            <Setter Property="Padding" Value="12,10" />
-            <Setter Property="MinimumHeightRequest" Value="72" />
-        </Style>
-        <Style x:Key="EgoeraLaburpenKopuruaEstiloa" TargetType="Label">
-            <Setter Property="FontSize" Value="22" />
-            <Setter Property="FontAttributes" Value="Bold" />
-            <Setter Property="HorizontalOptions" Value="Start" />
-        </Style>
-        <Style x:Key="EgoeraLaburpenEtiketaEstiloa" TargetType="Label">
-            <Setter Property="FontSize" Value="12" />
-            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
-        </Style>
-    </ContentPage.Resources>
-
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
     <Grid RowDefinitions="*,Auto" Padding="20,12,20,0">
 
         <RefreshView Grid.Row="0"
@@ -76,14 +40,6 @@
                                    LineBreakMode="WordWrap"
                                    TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
                         </VerticalStackLayout>
-
-                        <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                                           IsVisible="{Binding IsKargatzean}"
-                                           HorizontalOptions="Center" />
-
-                        <Label Text="{Binding ErroreMezua}"
-                               Style="{StaticResource ErroreEtiketaEstiloa}"
-                               IsVisible="{Binding ErroreMezua, Converter={StaticResource EzDaNullEdoHutsBihurgailua}}" />
 
                         <Border StrokeThickness="0"
                                 StrokeShape="RoundRectangle 16"
@@ -490,7 +446,7 @@
                                         </Grid>
 
                                         <HorizontalStackLayout Spacing="6"
-                                                               IsVisible="{Binding DataFormateatua, Converter={StaticResource EzDaNullEdoHutsBihurgailua}}">
+                                                               IsVisible="{Binding DataFormateatua, Converter={StaticResource TestuaDagoConverter}}">
                                             <Label FontFamily="MaterialIcons"
                                                    Text="&#xe916;"
                                                    FontSize="14"
@@ -570,4 +526,5 @@
         </Border>
 
     </Grid>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

@@ -2,11 +2,10 @@ using CommunityToolkit.Maui.Alerts;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuBasea.Ereduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
-using Microsoft.Maui.ApplicationModel;
-using Microsoft.Maui.Media;
 using SQLite;
 using System.IO;
 
@@ -18,6 +17,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
     private readonly ArgazkiIgotzeZerbitzua _argazkiIgotzeZerbitzua;
     private readonly ILogger<TxartelBerriaViewModel> _logger;
+    private readonly TxartelBerriaArgazkiLaguntzailea _argazkiLaguntzailea = new();
     private bool _zenbatekoaEguneratzen;
 
     private Dictionary<int, int> _ibilgailuaBeharDuKategoriaIdz = new();
@@ -182,56 +182,34 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 _ibilgailuaBeharDuKategoriaIdz[k.KategoriaId] = k.IbilgailuaBeharDu;
             EguneratuIbilgailuaAukeraketaIkagarri();
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan dira kategoriak kargatu.";
-            _logger.LogError(libEx, "TxartelBerria: kategoriak kargatzean Turso errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan dira kategoriak kargatu.";
-            _logger.LogError(sqlEx, "TxartelBerria: kategoriak kargatzean SQLite errorea.");
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Saiatu berriro.";
-            _logger.LogError(ex, "TxartelBerria: kategoriak kargatzean errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "TxartelBerria kategoriak");
         }
     }
 
-    private const long ArgazkiGehienezkoTamainaBytes = 10 * 1024 * 1024; // 10 MB
 
     [RelayCommand]
     private async Task HautatuGaleriatikAsync()
     {
         try
         {
-            if (!await EskatuGaleriaBaimenaAsync().ConfigureAwait(true))
+            var (ongi, lokalBidea, errorea) = await _argazkiLaguntzailea.HautatuGaleriatikAsync().ConfigureAwait(true);
+            if (!ongi)
             {
-                ErroreMezua = "Galeria erabiltzeko baimena behar da. Ezarpenetan aktibatu.";
+                if (errorea is not null)
+                    ErroreMezua = errorea;
                 return;
             }
 
-            var argazkia = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
-            {
-                Title = "Hautatu ticket argazkia"
-            }).ConfigureAwait(true);
-
-            await ProzesatuHautatutakoArgazkiaAsync(argazkia).ConfigureAwait(true);
-        }
-        catch (PermissionException)
-        {
-            ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
-        }
-        catch (FeatureNotSupportedException)
-        {
-            ErroreMezua = "Gailu honek ez du galeria onartzen.";
+            ErroreMezua = null;
+            LokalArgazkiBidea = lokalBidea;
+            ArgazkiHautatua = !string.IsNullOrWhiteSpace(lokalBidea);
         }
         catch (Exception ex)
         {
-            ErroreMezua = "Argazkia hautatzean errorea gertatu da.";
-            _logger.LogError(ex, "HautatuGaleriatik: errorea.");
+            if (!ViewModelSalbuespenTratatzailea.TratatuArgazkiEragiketa(ex, m => ErroreMezua = m, _logger, "HautatuGaleriatik", kamera: false))
+                ErroreMezua = "Argazkia hautatzean errorea gertatu da.";
         }
     }
 
@@ -240,74 +218,23 @@ public partial class TxartelBerriaViewModel : ObservableObject
     {
         try
         {
-            if (!MediaPicker.Default.IsCaptureSupported)
+            var (ongi, lokalBidea, errorea) = await _argazkiLaguntzailea.AteraKameratikAsync().ConfigureAwait(true);
+            if (!ongi)
             {
-                ErroreMezua = "Gailu honek ez du kamerarik edo ez da onartzen.";
+                if (errorea is not null)
+                    ErroreMezua = errorea;
                 return;
             }
 
-            if (!await EskatuKameraBaimenaAsync().ConfigureAwait(true))
-            {
-                ErroreMezua = "Kamera erabiltzeko baimena behar da. Ezarpenetan aktibatu.";
-                return;
-            }
-
-            var argazkia = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
-            {
-                Title = "Atera ticket argazkia"
-            }).ConfigureAwait(true);
-
-            await ProzesatuHautatutakoArgazkiaAsync(argazkia).ConfigureAwait(true);
-        }
-        catch (PermissionException)
-        {
-            ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
-        }
-        catch (FeatureNotSupportedException)
-        {
-            ErroreMezua = "Gailu honek ez du kamerarik.";
+            ErroreMezua = null;
+            LokalArgazkiBidea = lokalBidea;
+            ArgazkiHautatua = !string.IsNullOrWhiteSpace(lokalBidea);
         }
         catch (Exception ex)
         {
-            ErroreMezua = "Argazkia ateratzean errorea gertatu da.";
-            _logger.LogError(ex, "AteraKameratik: errorea.");
+            if (!ViewModelSalbuespenTratatzailea.TratatuArgazkiEragiketa(ex, m => ErroreMezua = m, _logger, "AteraKameratik", kamera: true))
+                ErroreMezua = "Argazkia ateratzean errorea gertatu da.";
         }
-    }
-
-    private static async Task<bool> EskatuKameraBaimenaAsync()
-    {
-        var egoera = await Permissions.CheckStatusAsync<Permissions.Camera>().ConfigureAwait(true);
-        if (egoera == PermissionStatus.Granted)
-            return true;
-
-        egoera = await Permissions.RequestAsync<Permissions.Camera>().ConfigureAwait(true);
-        return egoera == PermissionStatus.Granted;
-    }
-
-    private static async Task<bool> EskatuGaleriaBaimenaAsync()
-    {
-        if (DeviceInfo.Platform != DevicePlatform.Android)
-            return true;
-
-        PermissionStatus egoera;
-        if (DeviceInfo.Version.Major >= 13)
-        {
-            egoera = await Permissions.CheckStatusAsync<Permissions.Photos>().ConfigureAwait(true);
-            if (egoera == PermissionStatus.Granted)
-                return true;
-
-            egoera = await Permissions.RequestAsync<Permissions.Photos>().ConfigureAwait(true);
-        }
-        else
-        {
-            egoera = await Permissions.CheckStatusAsync<Permissions.StorageRead>().ConfigureAwait(true);
-            if (egoera == PermissionStatus.Granted)
-                return true;
-
-            egoera = await Permissions.RequestAsync<Permissions.StorageRead>().ConfigureAwait(true);
-        }
-
-        return egoera == PermissionStatus.Granted;
     }
 
     [RelayCommand]
@@ -318,69 +245,12 @@ public partial class TxartelBerriaViewModel : ObservableObject
         ErroreMezua = null;
     }
 
-    private async Task ProzesatuHautatutakoArgazkiaAsync(FileResult? argazkia)
-    {
-        if (argazkia is null)
-            return;
-
-        if (string.IsNullOrWhiteSpace(argazkia.FullPath))
-        {
-            ErroreMezua = "Ezin izan da argazkiaren fitxategia irakurri. Saiatu berriro.";
-            return;
-        }
-
-        if (!BalidatuArgazkiFitxategia(argazkia, out var balidazioMezua))
-        {
-            ErroreMezua = balidazioMezua;
-            return;
-        }
-
-        ErroreMezua = null;
-        LokalArgazkiBidea = argazkia.FullPath;
-        ArgazkiHautatua = true;
-        await Toast.Make("Argazkia prest dago. Gorde botoiarekin bidali dezakezu.").Show().ConfigureAwait(true);
-    }
-
-    private static bool BalidatuArgazkiFitxategia(FileResult argazkia, out string? erroreMezua)
-    {
-        var bidea = argazkia.FullPath;
-        var izena = argazkia.FileName ?? Path.GetFileName(bidea);
-        var luzapena = Path.GetExtension(izena);
-        if (string.IsNullOrEmpty(luzapena))
-            luzapena = ".jpg";
-
-        luzapena = luzapena.ToLowerInvariant();
-        if (luzapena is not ".jpg" and not ".jpeg" and not ".png")
-        {
-            erroreMezua = "Formatu onartua: JPEG edo PNG soilik.";
-            return false;
-        }
-
-        if (!File.Exists(bidea))
-        {
-            erroreMezua = "Ezin izan da argazkiaren fitxategia irakurri. Saiatu berriro.";
-            return false;
-        }
-
-        var tamaina = new FileInfo(bidea).Length;
-        if (tamaina > ArgazkiGehienezkoTamainaBytes)
-        {
-            erroreMezua = "Argazkia handiegia da (gehienez 10 MB).";
-            return false;
-        }
-
-        erroreMezua = null;
-        return true;
-    }
-
     [RelayCommand]
     private async Task GordeAsync()
     {
         ErroreMezua = null;
 
-        if (string.IsNullOrWhiteSpace(ZenbatekoaTestua) ||
-            !double.TryParse(ZenbatekoaTestua.Replace(',', '.'), System.Globalization.NumberStyles.Any,
-                System.Globalization.CultureInfo.InvariantCulture, out var zenbatekoa) ||
+        if (!ZenbatekoaBalidazioLaguntzailea.SaiatuParseatuDezimala(ZenbatekoaTestua, out var zenbatekoa) ||
             zenbatekoa <= 0)
         {
             ErroreMezua = "Zenbatekoa baliogabea. Zenbaki positibo bat sartu.";
@@ -474,10 +344,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
             double kilometroak = 0;
             if (KilometroakIkagarri && !string.IsNullOrWhiteSpace(KilometroakTestua))
             {
-                double.TryParse(KilometroakTestua.Replace(',', '.'),
-                    System.Globalization.NumberStyles.Any,
-                    System.Globalization.CultureInfo.InvariantCulture,
-                    out kilometroak);
+                ZenbatekoaBalidazioLaguntzailea.SaiatuParseatuDezimala(KilometroakTestua, out kilometroak);
             }
 
             var txostena = new BidaiaTxostena
@@ -520,30 +387,9 @@ public partial class TxartelBerriaViewModel : ObservableObject
             await Toast.Make("Gastua ondo gorde da.").Show().ConfigureAwait(true);
             await Shell.Current.GoToAsync("..").ConfigureAwait(true);
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(libEx, "TxartelBerria: Turso errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(sqlEx, "TxartelBerria: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "TxartelBerria: sare errorea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "TxartelBerria: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIdazketa(ex, m => ErroreMezua = m, _logger, "TxartelBerria gorde");
         }
         finally
         {

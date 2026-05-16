@@ -1,0 +1,23 @@
+CREATE TABLE IF NOT EXISTS BidaiaTxostenak (
+    TxostenId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    ErabiltzaileId INTEGER NOT NULL,
+    LangileDNI TEXT NOT NULL DEFAULT '',
+    Saila TEXT NOT NULL DEFAULT '',
+    Helmuga TEXT NOT NULL DEFAULT '',
+    BidaiaHelburua TEXT NOT NULL DEFAULT '',
+    HasieraData TEXT NOT NULL DEFAULT '',
+    AmaieraData TEXT NOT NULL DEFAULT '',
+    PertsonaKopurua INTEGER NOT NULL DEFAULT 0,
+    JasoAurrerakina INTEGER NOT NULL DEFAULT 0,
+    Egoera TEXT NOT NULL DEFAULT '',
+    AdminOharra TEXT,
+    AdminDNI TEXT,
+    EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0,
+    MonetaKodea TEXT NOT NULL DEFAULT '',
+    SorkuntzaData TEXT NOT NULL DEFAULT '',
+    AzkenEguneraketa TEXT NOT NULL DEFAULT '',
+    DataAprobazioa TEXT NOT NULL DEFAULT '',
+    FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+    FOREIGN KEY (LangileDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE,
+    FOREIGN KEY (AdminDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE
+);

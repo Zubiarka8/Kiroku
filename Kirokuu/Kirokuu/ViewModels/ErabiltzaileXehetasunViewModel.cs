@@ -4,6 +4,7 @@ using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
@@ -64,8 +65,7 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
 
     partial void OnErabiltzaileIdQueryChanged(string value)
     {
-        if (string.IsNullOrWhiteSpace(value) ||
-            !int.TryParse(value, NumberStyles.Integer, CultureInfo.InvariantCulture, out var id))
+        if (!ShellQueryLaguntzailea.SaiatuParseatuId(value, out var id))
         {
             _erabiltzaileIdZenbakia = 0;
             return;
@@ -166,45 +166,9 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
             HasieratuSektoreaKargoHautapenak(erabiltzailea);
             PasahitzaBerria = string.Empty;
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(libEx, "Erabiltzaile xehetasuna: Turso errorea.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Erabiltzaile xehetasuna: mapa errorea.");
-        }
-        catch (FormatException fmtEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Erabiltzaile xehetasuna: formatu errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Erabiltzaile xehetasuna: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Erabiltzaile xehetasuna: sare errorea.");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Erabiltzaile xehetasuna: eragiketa baliogabea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Erabiltzaile xehetasuna: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "Erabiltzaile xehetasuna");
         }
         finally
         {
@@ -312,39 +276,9 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
 
             await Shell.Current.GoToAsync("..").ConfigureAwait(true);
         }
-        catch (SQLiteException sqlEx) when (sqlEx.Result == SQLite3.Result.Constraint)
-        {
-            ErroreMezua = "Datu bikoiztua: posta edo DNI jadanik erabilita.";
-            _logger.LogWarning(sqlEx, "Erabiltzaile xehetasuna: murrizketa.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Erabiltzaile xehetasuna: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Erabiltzaile xehetasuna: sare errorea.");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu.";
-            _logger.LogError(opEx, "Erabiltzaile xehetasuna: eragiketa baliogabea.");
-        }
-        catch (ArgumentException argEx)
-        {
-            ErroreMezua = "Pasahitz berria baliogabea da.";
-            _logger.LogError(argEx, "Erabiltzaile xehetasuna: argumentu errorea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Erabiltzaile xehetasuna: gorde errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIdazketa(ex, m => ErroreMezua = m, _logger, "Erabiltzaile xehetasuna gorde");
         }
         finally
         {

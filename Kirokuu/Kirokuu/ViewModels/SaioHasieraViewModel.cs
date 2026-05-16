@@ -85,48 +85,9 @@ public partial class SaioHasieraViewModel : ObservableObject
             if (await _saioaGordetzeZerbitzua.BadagoSaioaAsync().ConfigureAwait(true))
                 await _nabigazioNagusia.JoanAppShelleraAsync().ConfigureAwait(true);
         }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Saio hasiera: nabigazio errorea agertzean.");
-        }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da kargatu. Saiatu berriro.";
-            _logger.LogError(libEx, "Saio hasiera: Turso/libSQL errorea agertzean.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Saio hasiera: zutabe edo mapa errorea agertzean.");
-        }
-        catch (FormatException fmtEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Saio hasiera: balio formatu errorea agertzean.");
-        }
-        catch (UnauthorizedAccessException uaaEx)
-        {
-            ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
-            _logger.LogError(uaaEx, "Saio hasiera: baimena ukatua agertzean.");
-        }
-        catch (IOException ioEx)
-        {
-            ErroreMezua = "Fitxategi errorea: ezin izan dira saioaren datuak irakurri.";
-            _logger.LogError(ioEx, "Saio hasiera: fitxategi errorea agertzean.");
-        }
-        catch (AggregateException aggEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.AgregatuarenBarnekoErabiltzaileMezua(aggEx)
-                ?? "Datu-base edo sare errorea: saiatu berriro.";
-            _logger.LogError(aggEx, "Saio hasiera: salbuespen agregatua agertzean.");
-        }
         catch (Exception ex)
         {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(ex)
-                ?? "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Saio hasiera: ustekabeko errorea agertzean.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "Saio hasiera agertzean");
         }
         finally
         {
@@ -191,66 +152,9 @@ public partial class SaioHasieraViewModel : ObservableObject
                     break;
             }
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da saioa hasi. Saiatu berriro.";
-            _logger.LogError(libEx, "Saio hasiera: Turso/libSQL errorea.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Saio hasiera: zutabe edo mapa errorea.");
-        }
-        catch (FormatException fmtEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Saio hasiera: balio formatu errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da saioa hasi. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Saio hasiera: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Saio hasiera: sare errorea (Turso?).");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
-        catch (OperationCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du edo eragiketa ezeztatu da. Saiatu berriro.";
-        }
-        catch (UnauthorizedAccessException uaaEx)
-        {
-            ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
-            _logger.LogError(uaaEx, "Saio hasiera: baimena ukatua (SecureStorage edo sistema).");
-        }
-        catch (IOException ioEx)
-        {
-            ErroreMezua = "Fitxategi errorea: ezin izan dira saioaren datuak gorde.";
-            _logger.LogError(ioEx, "Saio hasiera: fitxategi errorea (SecureStorage?).");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Saio hasiera: nabigazio errorea.");
-        }
-        catch (AggregateException aggEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.AgregatuarenBarnekoErabiltzaileMezua(aggEx)
-                ?? "Datu-base edo sare errorea: saiatu berriro.";
-            _logger.LogError(aggEx, "Saio hasiera: salbuespen agregatua.");
-        }
         catch (Exception ex)
         {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(ex)
-                ?? "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Saio hasiera: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "Saio hasiera");
         }
         finally
         {
@@ -300,32 +204,9 @@ public partial class SaioHasieraViewModel : ObservableObject
             else
                 throw new InvalidOperationException("Nabigazio orria ez da aurkitu.");
         }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Erregistro orrira joatean.");
-        }
-        catch (UnauthorizedAccessException uaaEx)
-        {
-            ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
-            _logger.LogError(uaaEx, "Erregistro orrira joatean: baimena ukatua.");
-        }
-        catch (IOException ioEx)
-        {
-            ErroreMezua = "Fitxategi errorea: ezin izan da nabigazioa burutu.";
-            _logger.LogError(ioEx, "Erregistro orrira joatean: fitxategi errorea.");
-        }
-        catch (AggregateException aggEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.AgregatuarenBarnekoErabiltzaileMezua(aggEx)
-                ?? "Datu-base edo sare errorea: saiatu berriro.";
-            _logger.LogError(aggEx, "Erregistro orrira joatean: salbuespen agregatua.");
-        }
         catch (Exception ex)
         {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(ex)
-                ?? "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Erregistro orrira joatean: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "Erregistro orrira");
         }
     }
 }

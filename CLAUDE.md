@@ -61,38 +61,24 @@ TicketArgazkia        ZuzendariNagusia
 Kirokuu/                              ← git root / solution root
   Kirokuu.sln
   Kirokuu/                            ← MAUI project
-    DatuBasea/
-      Ereduak/
-        AuditoretzaLoga.cs
-        BidaiaTxostena.cs
-        Erabiltzailea.cs
-        ErabiltzaileRola.cs
-        GastuKontzeptua.cs
-        GastuLerroa.cs
-      SortzeAginduak/
-        TursoGarapenBerrezarpena.sql
-    DatuEreduak/
-    Pages/
-    ViewModels/
-    Zerbitzuak/
-      SektoreaKargoarenHiztegia.cs
-      ArgazkiIgotzeZerbitzua.cs
-      GarraioBideaBalioak.cs
-      InguruneKargatzailea.cs
+    DatuBasea/Ereduak/                ← SQLite entities
+    DatuBasea/SortzeAginduak/*.sql     ← embedded DDL
+    DatuEreduak/                       ← DTOs (e.g. TxartelXehetasunIkuspegia)
+    AplikazioZerbitzuak/                ← namespace Kirokuu.AplikazioZerbitzuak (sector, Turso mapping)
+    Grafikoak/                          ← HasieraGrafikoEraikitzailea
+    Laguntzaileak/                      ← TxartelXehetasunLaguntzailea, IkonoFontIturria (namespace Kirokuu for XAML)
+    Controls/ Pages/ ViewModels/
     ZerbitzuakSaioa/
-      AutorizazioZerbitzua.cs
-      DatuBaseaZerbitzua.cs              (+ partials: Administratzaile, Langile, Hasiera)
-      DatuBaseaZifraketaLaguntzailea.cs
-      ErabiltzaileZerbitzua.cs
-      ShellFitxaEraikitzailea.cs
-      NabigazioNagusia.cs
+      DatuBasea/                        ← DatuBaseaZerbitzua partials
+      Nabigazioa/                       ← Shell, routing
+      Argazki/                          ← form photo helper
+    Platforms/Android/                  ← Turso .env loader, Logcat logger
+    Resources/
+  Kirokuu.Zerbitzuak/                 ← shared lib only (namespace Kirokuu.Zerbitzuak)
   Kirokuu.Tests/
-  Kirokuu.Zerbitzuak/                  ← shared library (referenced by MAUI)
-    DataOrduaBalioak.cs
-    TursoHttpsPipelineEgikaritzailea.cs
-    ArgazkiIgotzeZerbitzua.cs
-    ...
 ```
+
+Do not recreate a `Kirokuu/Zerbitzuak/` folder under the MAUI app — it collided with the class library name.
 
 Never create files outside this structure without asking first.
 
@@ -107,7 +93,7 @@ Never create files outside this structure without asking first.
 - Services injected via DI, never `new()`
 
 **DI registration (`MauiProgram.cs`):**
-- Singleton: `ArgazkiIgotzeZerbitzua`, `KredentzialEgiaztapenZerbitzua`, `PasahitzaZerbitzua`, `DatuBaseaZerbitzua`, `ErabiltzaileZerbitzua`, `SaioaGordetzeZerbitzua`, `AutorizazioZerbitzua`, `BerrespenLeihoZerbitzua`, `ShellFitxaEraikitzailea`, `INabigazioNagusia`
+- Singleton: `ArgazkiIgotzeZerbitzua`, `KredentzialEgiaztapenZerbitzua`, `PasahitzaZerbitzua`, `DatuBaseaZerbitzua`, `ErabiltzaileZerbitzua`, `SaioaGordetzeZerbitzua`, `AutorizazioZerbitzua`, `AuditoretzaZerbitzua`, `BerrespenLeihoZerbitzua`, `ShellFitxaEraikitzailea`, `INabigazioNagusia`
 - Transient: all ViewModels and Pages
 
 ---
@@ -179,6 +165,10 @@ Single source for sector/cargo pickers, labels, and validation. Prefer this over
 - Indexes required on: `ErabiltzaileId`, `TxartelEgoera`, `DNI` (UNIQUE)
 - `PRAGMA foreign_keys = ON` per SQLite connection in `EgiaztatuSqliteKonezioaAsync`
 - Turso bootstrap runs `PRAGMA foreign_keys = ON` in `BermatuTursoGainerakoTaulakEtaZutabeakAsync` — HTTP session behavior may still differ from local SQLite
+- **Schema version:** table `__schema_version` (`DatuBaseaBertsioa.BertsioTaulaIzena`), current `DatuBaseaBertsioa.OraingoBertsioa = 2`, persisted after SQLite init/migrations
+- **DDL resources:** `DatuBasea/SortzeAginduak/*.sql` (embedded) for `Erabiltzaileak`, `GastuKontzeptuak`, `BidaiaTxostenak`, `GastuLerroak`, `AuditoretzaLoga`, seeds, `__schema_version`
+- **Turso mapping:** `TursoLerroMapatzailea` in `Kirokuu/Zerbitzuak/` — all Turso row → `BidaiaTxostena` / `GastuLerroa` / `TxostenOnarpenLaburpena` mapping; partials only orchestrate HTTP + SQL
+- **Audit from VMs:** approve/reject and similar flows call `AuditoretzaZerbitzua.IdazkiLogaAsync` (implementation remains `DatuBaseaZerbitzua.IdazkiAuditoretzaLogaZerbitzuraAsync`)
 
 **FK constraints (SQLite + Turso DDL):**
 
@@ -443,6 +433,14 @@ GarraioBidea: set when GastuKontzeptua.IbilgailuaBeharrezkoa = 1
 - No ghost SQL columns: `KargoarenIdentifikatzailea`, `SektorearenIdentifikatzailea` on tickets are `[Ignore]` facades only; ticket sector column is `Saila`
 - No raw date strings to DB — always `DataOrduaBalioak` for TEXT date columns
 - No `[Ignore]` omitted on computed properties
+
+---
+
+## Manual verification (3 roles)
+
+- **Langilea:** Hasiera charts, Nire txartelak filters/swipe, Txartel berria + photo, cancel Zain ticket
+- **Administratzailea:** sector Hasiera, Mugimenduak, Txosten guztiak, approve/reject + audit log, Langile zerrenda
+- **CEO:** Hasiera + Ezarpenak only; no admin routes
 
 ---
 

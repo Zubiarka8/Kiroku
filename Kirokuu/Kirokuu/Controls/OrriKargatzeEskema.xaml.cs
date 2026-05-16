@@ -1,5 +1,6 @@
 namespace Kirokuu.Controls;
 
+[ContentProperty(nameof(Edukia))]
 public partial class OrriKargatzeEskema
 {
     public static readonly BindableProperty IsKargatzeanProperty =

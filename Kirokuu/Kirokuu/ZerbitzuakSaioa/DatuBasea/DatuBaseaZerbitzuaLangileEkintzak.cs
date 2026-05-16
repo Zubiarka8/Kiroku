@@ -1,7 +1,9 @@
 using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
+using static Kirokuu.Zerbitzuak.TxostenLaburpenaKontsulta;
 
 namespace Kirokuu.ZerbitzuakSaioa;
 
@@ -17,22 +19,13 @@ public sealed partial class DatuBaseaZerbitzua
         if (_urrunTursoModua)
             return await ZerrendatuLangilerenTxostenakTursoAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false);
 
-        return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(
-            """
-            SELECT
-              b.TxostenId AS TxostenId,
-              b.ErabiltzaileId AS ErabiltzaileId,
-              TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
-              b.Helmuga AS Helmuga,
-              b.Egoera AS Egoera,
-              COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
-              b.HasieraData AS HasieraData
-            FROM BidaiaTxostenak b
-            INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-            WHERE b.ErabiltzaileId = ?
-            ORDER BY b.SorkuntzaData DESC
-            """,
-            erabiltzaileId).ConfigureAwait(false);
+        var (sql, parametroak) = SortuZerrendaSql(
+            adminTestuaSartu: false,
+            egoeraIragazkia: null,
+            sektoreId: null,
+            erabiltzaileId: erabiltzaileId,
+            ordenatuSorkuntzaData: true);
+        return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, parametroak).ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyList<TxostenOnarpenLaburpena>> ZerrendatuLangilerenTxostenakTursoAsync(
@@ -41,22 +34,14 @@ public sealed partial class DatuBaseaZerbitzua
     {
         return await ExekutatuTursoanAsync(async bezeroa =>
         {
-            const string sql = """
-                SELECT
-                  b.TxostenId AS TxostenId,
-                  b.ErabiltzaileId AS ErabiltzaileId,
-                  TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
-                  b.Helmuga AS Helmuga,
-                  b.Egoera AS Egoera,
-                  COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
-                  b.HasieraData AS HasieraData
-                FROM BidaiaTxostenak b
-                INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-                WHERE b.ErabiltzaileId = ?
-                ORDER BY b.SorkuntzaData DESC;
-                """;
-            var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(erabiltzaileId)).ConfigureAwait(false);
-            return MapeatuTxostenOnarpenLaburrak(emaitza, null);
+            var (sql, parametroak) = SortuZerrendaSql(
+                adminTestuaSartu: false,
+                egoeraIragazkia: null,
+                sektoreId: null,
+                erabiltzaileId: erabiltzaileId,
+                ordenatuSorkuntzaData: true);
+            var emaitza = await bezeroa.ExekutatuAsync(sql + ";", cancellationToken, LibsqlLoturaNormalizatua(parametroak)).ConfigureAwait(false);
+            return TursoLerroMapatzailea.MapeatuTxostenOnarpenLaburrak(emaitza, null);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -224,7 +209,7 @@ public sealed partial class DatuBaseaZerbitzua
                     SELECT * FROM GastuKontzeptuak ORDER BY KategoriaId;
                     """;
                 var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
-                return MapeatuGastuKontzeptuZerrenda(emaitza);
+                return TursoLerroMapatzailea.MapeatuGastuKontzeptuZerrenda(emaitza);
             }, cancellationToken).ConfigureAwait(false);
         }
 

@@ -1,6 +1,7 @@
 using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
 using SQLite;
 
@@ -651,8 +652,8 @@ public sealed partial class DatuBaseaZerbitzua
         if (lerroa is null)
             return 0;
 
-        var mapa = SortuTursoLerroMapa(emaitza.ZutabeIzenak, lerroa);
-        return IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Guztira", 0);
+        var mapa = TursoLerroMapatzailea.SortuTursoLerroMapa(emaitza.ZutabeIzenak, lerroa);
+        return TursoLerroMapatzailea.IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Guztira", 0);
     }
 
     private static int IrakurriKopuruaLehena(TursoHttpExekuzioarenEmaitza emaitza)
@@ -661,8 +662,8 @@ public sealed partial class DatuBaseaZerbitzua
         if (lerroa is null)
             return 0;
 
-        var mapa = SortuTursoLerroMapa(emaitza.ZutabeIzenak, lerroa);
-        return IrakurriMapaOsoaLehenetsia(mapa, "Kopurua", 0);
+        var mapa = TursoLerroMapatzailea.SortuTursoLerroMapa(emaitza.ZutabeIzenak, lerroa);
+        return TursoLerroMapatzailea.IrakurriMapaOsoaLehenetsia(mapa, "Kopurua", 0);
     }
 
     private static IReadOnlyList<HilabetekoGastuAgregatua> MapeatuHilabetekoGastuAgregatuak(TursoHttpExekuzioarenEmaitza emaitza)
@@ -671,11 +672,11 @@ public sealed partial class DatuBaseaZerbitzua
         var zerrenda = new List<HilabetekoGastuAgregatua>();
         foreach (var lerroa in emaitza.LerroTestuBalioak)
         {
-            var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
+            var mapa = TursoLerroMapatzailea.SortuTursoLerroMapa(zutabeak, lerroa);
             zerrenda.Add(new HilabetekoGastuAgregatua
             {
-                Hilabetea = IrakurriMapaTestuaLehenetsia(mapa, "Hilabetea"),
-                Guztira = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Guztira", 0)
+                Hilabetea = TursoLerroMapatzailea.IrakurriMapaTestuaLehenetsia(mapa, "Hilabetea"),
+                Guztira = TursoLerroMapatzailea.IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Guztira", 0)
             });
         }
 
@@ -688,11 +689,11 @@ public sealed partial class DatuBaseaZerbitzua
         var zerrenda = new List<KategoriakoGastuAgregatua>();
         foreach (var lerroa in emaitza.LerroTestuBalioak)
         {
-            var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
+            var mapa = TursoLerroMapatzailea.SortuTursoLerroMapa(zutabeak, lerroa);
             zerrenda.Add(new KategoriakoGastuAgregatua
             {
-                KontzeptuIzena = IrakurriMapaTestuaLehenetsia(mapa, "KontzeptuIzena"),
-                Guztira = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Guztira", 0)
+                KontzeptuIzena = TursoLerroMapatzailea.IrakurriMapaTestuaLehenetsia(mapa, "KontzeptuIzena"),
+                Guztira = TursoLerroMapatzailea.IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Guztira", 0)
             });
         }
 
@@ -705,11 +706,11 @@ public sealed partial class DatuBaseaZerbitzua
         var zerrenda = new List<TxostenEgoeraKopurua>();
         foreach (var lerroa in emaitza.LerroTestuBalioak)
         {
-            var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
+            var mapa = TursoLerroMapatzailea.SortuTursoLerroMapa(zutabeak, lerroa);
             zerrenda.Add(new TxostenEgoeraKopurua
             {
-                Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
-                Kopurua = IrakurriMapaOsoaLehenetsia(mapa, "Kopurua", 0)
+                Egoera = TursoLerroMapatzailea.IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
+                Kopurua = TursoLerroMapatzailea.IrakurriMapaOsoaLehenetsia(mapa, "Kopurua", 0)
             });
         }
 

@@ -2,6 +2,7 @@ using System.Collections.ObjectModel;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuEreduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
@@ -212,133 +213,14 @@ public partial class ErregistroViewModel : ObservableObject
             }).ConfigureAwait(true);
             await _nabigazioNagusia.JoanAppShelleraAsync().ConfigureAwait(true);
         }
-        catch (ErabiltzaileMurrizketaSalbuespena murEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Datu bikoiztua: posta hau dagoeneko erregistratuta dago.";
-            _logger.LogWarning(murEx, "Erregistroa: murrizketa (Turso).");
-        }
-        catch (SQLiteException sqlEx) when (sqlEx.Result == SQLite3.Result.Constraint)
-        {
-            var (eskN, eskX) = DatuBaseaErroreaErabiltzaileMezura.EskuratuSqliteMezuak(sqlEx.Message);
-            ErroreMezua = eskN ?? "Datu bikoiztua: posta hau dagoeneko erregistratuta dago.";
-            ErroreXehetasuna = eskX;
-            _logger.LogWarning(sqlEx, "Erregistroa: murrizketa urratua.");
-        }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            var (nagusia, xehetasuna) = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezuaXehetasunarekin(libEx);
-            ErroreMezua = nagusia ?? "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            ErroreXehetasuna = xehetasuna;
-            _logger.LogError(libEx, "Erregistroa: Turso/libSQL errorea.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Erregistroa: zutabe edo mapa errorea.");
-        }
-        catch (FormatException fmtEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Erregistroa: balio formatu errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            var (eskN, eskX) = DatuBaseaErroreaErabiltzaileMezura.EskuratuSqliteMezuak(sqlEx.Message);
-            if (eskN is not null)
-            {
-                ErroreMezua = eskN;
-                ErroreXehetasuna = eskX;
-            }
-            else
-            {
-                ErroreXehetasuna = null;
-                ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            }
-
-            _logger.LogError(sqlEx, "Erregistroa: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Erregistroa: sare errorea (Turso?).");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
-        catch (OperationCanceledException)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Eskaerak denbora muga gainditu du edo eragiketa ezeztatu da. Saiatu berriro.";
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Erregistroa: nabigazio errorea.");
-        }
-        catch (ArgumentException argEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Ezin izan da saioaren datuak gorde. Saiatu berriro edo berrabiarazi aplikazioa.";
-            _logger.LogError(argEx, "Erregistroa: SecureStorage edo balio baliogabea.");
-        }
-        catch (NotSupportedException nsEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Datu-base errorea: eragiketa ez da onartzen. Saiatu berriro.";
-            _logger.LogError(nsEx, "Erregistroa: onartzen ez den eragiketa.");
-        }
-        catch (UnauthorizedAccessException uaaEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
-            _logger.LogError(uaaEx, "Erregistroa: baimena ukatua (SecureStorage edo sistema).");
-        }
-        catch (IOException ioEx)
-        {
-            ErroreXehetasuna = null;
-            ErroreMezua = "Fitxategi errorea: ezin izan dira saioaren datuak gorde.";
-            _logger.LogError(ioEx, "Erregistroa: fitxategi errorea (SecureStorage?).");
-        }
-        catch (AggregateException aggEx)
-        {
-            var (nAg, xAg) = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezuaXehetasunarekin(aggEx);
-            if (nAg is not null)
-            {
-                ErroreMezua = nAg;
-                ErroreXehetasuna = xAg;
-            }
-            else
-            {
-                ErroreMezua = LibsqlErroreaErabiltzaileMezura.AgregatuarenBarnekoErabiltzaileMezua(aggEx)
-                    ?? "Datu-base edo sare errorea: saiatu berriro.";
-                ErroreXehetasuna = null;
-            }
-
-            _logger.LogError(aggEx, "Erregistroa: salbuespen agregatua.");
-        }
         catch (Exception ex)
         {
-            var (nagusia, xehetasuna) = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezuaXehetasunarekin(ex);
-            if (nagusia is not null)
-            {
-                ErroreMezua = nagusia;
-                ErroreXehetasuna = xehetasuna;
-            }
-            else
-            {
-                ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(ex)
-                    ?? "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-                ErroreXehetasuna = null;
-            }
-
-            _logger.LogError(ex, "Erregistroa: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuErregistroIdazketa(
+                ex,
+                m => ErroreMezua = m,
+                x => ErroreXehetasuna = x,
+                _logger,
+                "Erregistroa");
         }
         finally
         {
@@ -357,31 +239,9 @@ public partial class ErregistroViewModel : ObservableObject
                 nabigazioa.Navigation.NavigationStack.Count > 1)
                 await nabigazioa.PopAsync().ConfigureAwait(true);
         }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Erregistroa: itzultze errorea.");
-        }
-        catch (UnauthorizedAccessException uaaEx)
-        {
-            ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
-            _logger.LogError(uaaEx, "Erregistroa: itzultzean baimena ukatua.");
-        }
-        catch (IOException ioEx)
-        {
-            ErroreMezua = "Fitxategi errorea: ezin izan da itzuli.";
-            _logger.LogError(ioEx, "Erregistroa: itzultzean fitxategi errorea.");
-        }
-        catch (AggregateException aggEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.AgregatuarenBarnekoErabiltzaileMezua(aggEx)
-                ?? "Datu-base edo sare errorea: saiatu berriro.";
-            _logger.LogError(aggEx, "Erregistroa: itzultzean salbuespen agregatua.");
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Erregistroa: itzultzean ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "Erregistroa itzuli");
         }
     }
 }

@@ -1,16 +1,15 @@
 using System.Collections.ObjectModel;
-using System.Linq;
+using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuBasea.Ereduak;
+using Kirokuu.DatuEreduak;
+using Kirokuu.Laguntzaileak;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
-using SQLite;
-using System.Globalization;
-using System.Net.Http;
 
 namespace Kirokuu.ViewModels;
 
@@ -19,21 +18,26 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
 {
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
+    private readonly AuditoretzaZerbitzua _auditoretzaZerbitzua;
     private readonly SaioaGordetzeZerbitzua _saioaGordetzeZerbitzua;
     private readonly ILogger<TxostenOnarpenXehetasunViewModel> _logger;
 
     private int _txostenIdGordeta;
+
+    private int _txostenaErabiltzaileId;
 
     private int? _adminSektoreIragazkia;
 
     public TxostenOnarpenXehetasunViewModel(
         AutorizazioZerbitzua autorizazioZerbitzua,
         DatuBaseaZerbitzua datuBaseaZerbitzua,
+        AuditoretzaZerbitzua auditoretzaZerbitzua,
         SaioaGordetzeZerbitzua saioaGordetzeZerbitzua,
         ILogger<TxostenOnarpenXehetasunViewModel> logger)
     {
         _autorizazioZerbitzua = autorizazioZerbitzua ?? throw new ArgumentNullException(nameof(autorizazioZerbitzua));
         _datuBaseaZerbitzua = datuBaseaZerbitzua ?? throw new ArgumentNullException(nameof(datuBaseaZerbitzua));
+        _auditoretzaZerbitzua = auditoretzaZerbitzua ?? throw new ArgumentNullException(nameof(auditoretzaZerbitzua));
         _saioaGordetzeZerbitzua = saioaGordetzeZerbitzua ?? throw new ArgumentNullException(nameof(saioaGordetzeZerbitzua));
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
     }
@@ -131,92 +135,49 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
                 return;
             }
 
-            Helmuga = txostena.Helmuga;
-            SailarenEtiketa = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(txostena.Saila);
-            Egoera = txostena.Egoera;
-            OnarpenEkintzakIkagarri = string.Equals(txostena.Egoera, TxostenEgoera.Zain, StringComparison.Ordinal);
-
             var langile = await _datuBaseaZerbitzua.BilatuErabiltzaileLaburpenaIdzAsync(txostena.ErabiltzaileId).ConfigureAwait(true);
-            LangileTestua = langile is null ? $"#{txostena.ErabiltzaileId}" : $"{langile.Izena} {langile.Abizena}";
+            var langileTestua = langile is null ? $"#{txostena.ErabiltzaileId}" : $"{langile.Izena} {langile.Abizena}";
 
             var lerroak = await _datuBaseaZerbitzua.ZerrendatuGastuLerroakTxostenIdzAsync(_txostenIdGordeta).ConfigureAwait(true);
-            double guztira = 0;
-            double kilometroMax = 0;
-            var ibilgailuaBeharDu = false;
-            var garraioPribatua = false;
-            var garraioPublikoaHautatua = false;
-            foreach (var lerroa in lerroak)
-            {
-                GastuLerroak.Add(lerroa);
-                guztira += lerroa.ZenbatekoaGuztira;
-                if (lerroa.Kilometroak > kilometroMax)
-                    kilometroMax = lerroa.Kilometroak;
-                if (lerroa.IbilgailuaBeharrezkoa == 1)
-                    ibilgailuaBeharDu = true;
-                if (GarraioBideaBalioak.IbilgailuaErabiltzenDu(lerroa.GarraioBidea))
-                    garraioPribatua = true;
-                if (string.Equals(lerroa.GarraioBidea.Trim(), GarraioBideaBalioak.GarraioPublikoa, StringComparison.Ordinal))
-                    garraioPublikoaHautatua = true;
-            }
-
-            GastuenGuztira = guztira;
-            AdminOharra = txostena.AdminOharra ?? string.Empty;
-            JasoAurrerakina = txostena.JasoAurrekina;
-            JasoAurrerakinaIkagarri = txostena.JasoAurrekina > 0;
-            IbilgailuaEremuakIkagarri = garraioPribatua || txostena.EmpresaIbilgailua == 1 || kilometroMax > 0
-                || (ibilgailuaBeharDu && !garraioPublikoaHautatua);
-            IbilgailuaEremuakEditagarri = OnarpenEkintzakIkagarri && IbilgailuaEremuakIkagarri;
-            EnpresakoIbilgailua = txostena.EmpresaIbilgailua == 1
-                || lerroak.Any(l => GarraioBideaBalioak.DaEnpresakoIbilgailua(l.GarraioBidea));
-            KilometroakTestua = kilometroMax > 0
-                ? kilometroMax.ToString("0.##", CultureInfo.InvariantCulture)
-                : string.Empty;
-            OnPropertyChanged(nameof(OrdaintzekoBidea));
-        }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(libEx, "Txosten xehetasuna: Turso errorea.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Txosten xehetasuna: mapa errorea.");
-        }
-        catch (FormatException fmtEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Txosten xehetasuna: formatu errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Txosten xehetasuna: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Txosten xehetasuna: sare errorea.");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu.";
-            _logger.LogError(opEx, "Txosten xehetasuna: eragiketa baliogabea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
+            var ikuspegia = TxartelXehetasunLaguntzailea.EraikiIkuspegia(
+                txostena,
+                lerroak,
+                langileTestua,
+                administratzaileIkuspegia: true);
+            AplikatuIkuspegia(ikuspegia);
         }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Txosten xehetasuna: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "Txosten xehetasuna");
         }
         finally
         {
             IsKargatzean = false;
         }
+    }
+
+    private void AplikatuIkuspegia(TxartelXehetasunIkuspegia ikuspegia)
+    {
+        _txostenaErabiltzaileId = ikuspegia.TxostenaErabiltzaileId;
+        Helmuga = ikuspegia.Helmuga;
+        SailarenEtiketa = ikuspegia.SailarenEtiketa;
+        Egoera = ikuspegia.Egoera;
+        LangileTestua = ikuspegia.LangileTestua;
+        GastuenGuztira = ikuspegia.GastuenGuztira;
+        OnarpenEkintzakIkagarri = ikuspegia.OnarpenEkintzakIkagarri;
+        AdminOharra = ikuspegia.AdminOharra ?? string.Empty;
+        JasoAurrerakina = ikuspegia.JasoAurrerakina;
+        JasoAurrerakinaIkagarri = ikuspegia.JasoAurrerakinaIkagarri;
+        IbilgailuaEremuakIkagarri = ikuspegia.IbilgailuaEremuakIkagarri;
+        IbilgailuaEremuakEditagarri = ikuspegia.IbilgailuaEremuakEditagarri;
+        EnpresakoIbilgailua = ikuspegia.EnpresakoIbilgailua;
+        KilometroakTestua = ikuspegia.KilometroakTestua;
+
+        GastuLerroak.Clear();
+        foreach (var lerroa in ikuspegia.GastuLerroak)
+            GastuLerroak.Add(lerroa);
+
+        OnPropertyChanged(nameof(OrdaintzekoBidea));
     }
 
     private async Task<int> EskuratuAdministratzaileIdAsync()
@@ -234,8 +195,8 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         if (!IbilgailuaEremuakIkagarri || !IbilgailuaEremuakEditagarri)
             return true;
 
-        if (!double.TryParse(KilometroakTestua.Replace(',', '.'), NumberStyles.Any,
-                CultureInfo.InvariantCulture, out var kilometroak) || kilometroak <= 0)
+        if (!ZenbatekoaBalidazioLaguntzailea.SaiatuParseatuDezimala(KilometroakTestua, out var kilometroak) ||
+            kilometroak <= 0)
         {
             ErroreMezua = "Sartu kilometro kopurua (0 baino handiagoa).";
             return false;
@@ -249,8 +210,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         if (!IbilgailuaEremuakIkagarri || !IbilgailuaEremuakEditagarri)
             return;
 
-        double.TryParse(KilometroakTestua.Replace(',', '.'), NumberStyles.Any,
-            CultureInfo.InvariantCulture, out var kilometroak);
+        ZenbatekoaBalidazioLaguntzailea.SaiatuParseatuDezimala(KilometroakTestua, out var kilometroak);
         kilometroak = Math.Round(kilometroak, 2, MidpointRounding.AwayFromZero);
 
         var garraioTestua = GarraioBideaBalioak.SortuGarraioBideaTestua(EnpresakoIbilgailua);
@@ -260,6 +220,20 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
                 garraioTestua,
                 kilometroak)
             .ConfigureAwait(true);
+    }
+
+    private async Task IdatziOnarpenAuditoreaAsync(string egoeraBerria, int adminId)
+    {
+        var ekintza = string.Equals(egoeraBerria, TxostenEgoera.Onartua, StringComparison.Ordinal)
+            ? AuditoretzaEkintzak.TxostenaOnartua
+            : AuditoretzaEkintzak.TxostenaEzeztatu;
+        var deskribapena = $"{_txostenIdGordeta} · {egoeraBerria}";
+        await _auditoretzaZerbitzua.IdazkiLogaAsync(
+            ekintza,
+            deskribapena,
+            adminId,
+            _txostenIdGordeta,
+            _txostenaErabiltzaileId).ConfigureAwait(true);
     }
 
     [RelayCommand]
@@ -284,6 +258,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
                     adminId,
                     _adminSektoreIragazkia)
                 .ConfigureAwait(true);
+            await IdatziOnarpenAuditoreaAsync(TxostenEgoera.Onartua, adminId).ConfigureAwait(true);
 
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
@@ -292,35 +267,9 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
 
             await Shell.Current.GoToAsync("..").ConfigureAwait(true);
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(libEx, "Txosten onartu: Turso errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Txosten onartu: SQLite errorea.");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu.";
-            _logger.LogError(opEx, "Txosten onartu: eragiketa baliogabea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Txosten onartu: sare errorea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Txosten onartu: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIdazketa(ex, m => ErroreMezua = m, _logger, "Txosten onartu");
         }
         finally
         {
@@ -350,6 +299,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
                     adminId,
                     _adminSektoreIragazkia)
                 .ConfigureAwait(true);
+            await IdatziOnarpenAuditoreaAsync(TxostenEgoera.Ukatua, adminId).ConfigureAwait(true);
 
             await MainThread.InvokeOnMainThreadAsync(async () =>
             {
@@ -358,35 +308,9 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
 
             await Shell.Current.GoToAsync("..").ConfigureAwait(true);
         }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(libEx, "Txosten ukatu: Turso errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da gorde. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Txosten ukatu: SQLite errorea.");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu.";
-            _logger.LogError(opEx, "Txosten ukatu: eragiketa baliogabea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Txosten ukatu: sare errorea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Txosten ukatu: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIdazketa(ex, m => ErroreMezua = m, _logger, "Txosten ukatu");
         }
         finally
         {

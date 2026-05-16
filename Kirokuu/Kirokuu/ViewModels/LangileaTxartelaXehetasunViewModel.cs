@@ -1,14 +1,13 @@
 using System.Collections.ObjectModel;
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuBasea.Ereduak;
+using Kirokuu.DatuEreduak;
+using Kirokuu.Laguntzaileak;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
-using System.Linq;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.ApplicationModel;
-using SQLite;
 
 namespace Kirokuu.ViewModels;
 
@@ -139,87 +138,42 @@ public partial class LangileaTxartelaXehetasunViewModel : ObservableObject
                 return;
             }
 
-            Helmuga = txostena.Helmuga;
-            SailarenEtiketa = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(txostena.Saila);
-            Egoera = txostena.Egoera;
-            AdminOharra = txostena.AdminOharra;
-            AdminOharraIkagarri = !string.IsNullOrWhiteSpace(txostena.AdminOharra);
-
-            DataTestua = DataOrduaBalioak.DataOrduaBistaratu(txostena.HasieraData);
-
             var lerroak = await _datuBaseaZerbitzua.ZerrendatuGastuLerroakTxostenIdzAsync(_txostenIdGordeta).ConfigureAwait(true);
-            double guztira = 0;
-            double kilometroMax = 0;
-            string? argazkia = null;
-            var ibilgailuaBeharDu = false;
-            var garraioPribatua = false;
-            var garraioPublikoaHautatua = false;
-            foreach (var lerroa in lerroak)
-            {
-                GastuLerroak.Add(lerroa);
-                guztira += lerroa.ZenbatekoaGuztira;
-                if (lerroa.Kilometroak > kilometroMax)
-                    kilometroMax = lerroa.Kilometroak;
-                if (lerroa.IbilgailuaBeharrezkoa == 1)
-                    ibilgailuaBeharDu = true;
-                if (GarraioBideaBalioak.IbilgailuaErabiltzenDu(lerroa.GarraioBidea))
-                    garraioPribatua = true;
-                if (string.Equals(lerroa.GarraioBidea.Trim(), GarraioBideaBalioak.GarraioPublikoa, StringComparison.Ordinal))
-                    garraioPublikoaHautatua = true;
-                if (string.IsNullOrWhiteSpace(argazkia) && !string.IsNullOrWhiteSpace(lerroa.TicketArgazkia))
-                    argazkia = lerroa.TicketArgazkia;
-                if (string.IsNullOrWhiteSpace(Deskribapena) && !string.IsNullOrWhiteSpace(lerroa.Oharrak))
-                    Deskribapena = lerroa.Oharrak;
-                if (!GarraioBideaIkagarri && !string.IsNullOrWhiteSpace(lerroa.GarraioBidea))
-                {
-                    GarraioBideaTestua = lerroa.GarraioBidea.Trim();
-                    GarraioBideaIkagarri = true;
-                }
-            }
-
-            IbilgailuaXehetasunakIkagarri = garraioPribatua || txostena.EmpresaIbilgailua == 1 || kilometroMax > 0
-                || (ibilgailuaBeharDu && !garraioPublikoaHautatua);
-            IbilgailuaMotaTestua = GarraioBideaBalioak.IbilgailuaMotaEtiketa(
-                GarraioBideaIkagarri ? GarraioBideaTestua : lerroak.FirstOrDefault(l => !string.IsNullOrWhiteSpace(l.GarraioBidea))?.GarraioBidea,
-                txostena.EmpresaIbilgailua);
-            if (string.IsNullOrWhiteSpace(IbilgailuaMotaTestua) && IbilgailuaXehetasunakIkagarri)
-                IbilgailuaMotaTestua = txostena.EmpresaIbilgailua == 1
-                    ? GarraioBideaBalioak.EnpresakoIbilgailua
-                    : GarraioBideaBalioak.NorberarenIbilgailua;
-            KilometroakBistaratzeaIkagarri = kilometroMax > 0;
-            KilometroakBistaratzea = kilometroMax > 0
-                ? kilometroMax.ToString("N0", CultureInfo.InvariantCulture)
-                : string.Empty;
-
-            GastuenGuztira = guztira;
-            ArgazkiUrl = argazkia;
-            ArgazkiDago = !string.IsNullOrWhiteSpace(argazkia);
-        }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(libEx, "LangileaTxartelaXehetasun: Turso errorea.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "LangileaTxartelaXehetasun: mapa errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "LangileaTxartelaXehetasun: SQLite errorea.");
+            var ikuspegia = TxartelXehetasunLaguntzailea.EraikiIkuspegia(txostena, lerroak);
+            AplikatuIkuspegia(ikuspegia);
         }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "LangileaTxartelaXehetasun: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "LangileaTxartelaXehetasun");
         }
         finally
         {
             IsKargatzean = false;
         }
+    }
+
+    private void AplikatuIkuspegia(TxartelXehetasunIkuspegia ikuspegia)
+    {
+        Helmuga = ikuspegia.Helmuga;
+        SailarenEtiketa = ikuspegia.SailarenEtiketa;
+        Egoera = ikuspegia.Egoera;
+        Deskribapena = ikuspegia.Deskribapena;
+        DataTestua = ikuspegia.DataTestua;
+        GastuenGuztira = ikuspegia.GastuenGuztira;
+        AdminOharra = ikuspegia.AdminOharra;
+        AdminOharraIkagarri = ikuspegia.AdminOharraIkagarri;
+        ArgazkiUrl = ikuspegia.ArgazkiUrl;
+        ArgazkiDago = ikuspegia.ArgazkiDago;
+        GarraioBideaTestua = ikuspegia.GarraioBideaTestua;
+        GarraioBideaIkagarri = ikuspegia.GarraioBideaIkagarri;
+        IbilgailuaXehetasunakIkagarri = ikuspegia.IbilgailuaXehetasunakIkagarri;
+        IbilgailuaMotaTestua = ikuspegia.IbilgailuaMotaTestua;
+        KilometroakBistaratzea = ikuspegia.KilometroakBistaratzea;
+        KilometroakBistaratzeaIkagarri = ikuspegia.KilometroakBistaratzeaIkagarri;
+
+        GastuLerroak.Clear();
+        foreach (var lerroa in ikuspegia.GastuLerroak)
+            GastuLerroak.Add(lerroa);
     }
 
     [RelayCommand]
@@ -232,19 +186,10 @@ public partial class LangileaTxartelaXehetasunViewModel : ObservableObject
         {
             await Launcher.Default.OpenAsync(new Uri(ArgazkiUrl)).ConfigureAwait(true);
         }
-        catch (UriFormatException uriEx)
-        {
-            ErroreMezua = "Argazkiaren helbidea baliogabea da.";
-            _logger.LogError(uriEx, "LangileaTxartelaXehetasun: argazki URL baliogabea.");
-        }
-        catch (FeatureNotSupportedException)
-        {
-            ErroreMezua = "Ezin da argazkia ireki gailu honetan.";
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ezin izan da argazkia ireki. Saiatu berriro.";
-            _logger.LogError(ex, "LangileaTxartelaXehetasun: argazkia irekitzean errorea.");
+            if (!ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "LangileaTxartelaXehetasun argazkia"))
+                ErroreMezua = "Ezin izan da argazkia ireki. Saiatu berriro.";
         }
     }
 

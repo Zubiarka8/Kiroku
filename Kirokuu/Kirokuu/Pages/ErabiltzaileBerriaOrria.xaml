@@ -2,16 +2,15 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.ErabiltzaileBerriaOrria"
              x:DataType="vm:ErabiltzaileBerriaViewModel"
              Title="Langile berria">
 
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="14">
-            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                               IsVisible="{Binding IsKargatzean}"
-                               HorizontalOptions="Center" />
-
             <Label Text="Langile kontua sortu (administratzailea)"
                    Style="{StaticResource Headline}"
                    HorizontalTextAlignment="Center" />
@@ -78,12 +77,10 @@
                              SemanticProperties.Description="{Binding PasahitzaBerretsiBegiarenDeskribapena}" />
             </Grid>
 
-            <Label Text="{Binding ErroreMezua}"
-                   Style="{StaticResource ErroreEtiketaEstiloa}" />
-
             <Button Text="Sortu langilea"
                     Command="{Binding GordeCommand}"
                     SemanticProperties.Hint="Langile berria sortu" />
         </VerticalStackLayout>
     </ScrollView>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

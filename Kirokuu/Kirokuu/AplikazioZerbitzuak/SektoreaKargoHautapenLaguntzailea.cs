@@ -2,7 +2,7 @@ using System.Collections.ObjectModel;
 using System.Linq;
 using Kirokuu.DatuEreduak;
 
-namespace Kirokuu.Zerbitzuak;
+namespace Kirokuu.AplikazioZerbitzuak;
 
 public static class SektoreaKargoHautapenLaguntzailea
 {

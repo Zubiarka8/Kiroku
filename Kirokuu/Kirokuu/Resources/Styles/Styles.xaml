@@ -590,4 +590,44 @@
         <Setter Property="InputTransparent" Value="True" />
     </Style>
 
+    <Style x:Key="IragazkiTxipEstiloa" TargetType="Border">
+        <Setter Property="Padding" Value="14,8" />
+        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 20" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="MinimumHeightRequest" Value="40" />
+    </Style>
+
+    <Style x:Key="IragazkiTxipTestuEstiloa" TargetType="Label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="VerticalOptions" Value="Center" />
+    </Style>
+
+    <Style x:Key="IragazkiTxipKopuruEstiloa" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="VerticalOptions" Value="Center" />
+        <Setter Property="Opacity" Value="0.9" />
+    </Style>
+
+    <Style x:Key="EgoeraLaburpenTxartelaEstiloa" TargetType="Border">
+        <Setter Property="StrokeShape" Value="RoundRectangle 14" />
+        <Setter Property="StrokeThickness" Value="1" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource MugaTxartelaArgia}, Dark={StaticResource MugaTxartelaIluna}}" />
+        <Setter Property="BackgroundColor" Value="{AppThemeBinding Light={StaticResource AzalaTxartelaArgia}, Dark={StaticResource AzalaTxartelaIluna}}" />
+        <Setter Property="Padding" Value="12,10" />
+        <Setter Property="MinimumHeightRequest" Value="72" />
+    </Style>
+
+    <Style x:Key="EgoeraLaburpenKopuruaEstiloa" TargetType="Label">
+        <Setter Property="FontSize" Value="22" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="HorizontalOptions" Value="Start" />
+    </Style>
+
+    <Style x:Key="EgoeraLaburpenEtiketaEstiloa" TargetType="Label">
+        <Setter Property="FontSize" Value="12" />
+        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
+    </Style>
+
 </ResourceDictionary>

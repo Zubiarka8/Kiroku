@@ -4,6 +4,7 @@ using System.Net.NetworkInformation;
 using System.Net.Sockets;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
 using Microsoft.Extensions.Logging;
 using SQLite;
@@ -24,91 +25,11 @@ public sealed partial class DatuBaseaZerbitzua
     {
         await bezeroa.ExekutatuAsync("PRAGMA foreign_keys = ON;", cancellationToken).ConfigureAwait(false);
 
-        const string gastuKontzeptuakSql = """
-            CREATE TABLE IF NOT EXISTS GastuKontzeptuak (
-                KategoriaId INTEGER PRIMARY KEY NOT NULL,
-                Izena TEXT NOT NULL DEFAULT '',
-                Deskribapena TEXT NOT NULL DEFAULT '',
-                IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0,
-                Estatusa TEXT NOT NULL DEFAULT '',
-                GastuKontzeptuId INTEGER NOT NULL DEFAULT 0
-            );
-            """;
-
-        const string bidaiaSql = """
-            CREATE TABLE IF NOT EXISTS BidaiaTxostenak (
-                TxostenId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                ErabiltzaileId INTEGER NOT NULL,
-                LangileDNI TEXT NOT NULL DEFAULT '',
-                Saila TEXT NOT NULL DEFAULT '',
-                Helmuga TEXT NOT NULL DEFAULT '',
-                BidaiaHelburua TEXT NOT NULL DEFAULT '',
-                HasieraData TEXT NOT NULL DEFAULT '',
-                AmaieraData TEXT NOT NULL DEFAULT '',
-                PertsonaKopurua INTEGER NOT NULL DEFAULT 0,
-                JasoAurrerakina INTEGER NOT NULL DEFAULT 0,
-                Egoera TEXT NOT NULL DEFAULT '',
-                AdminOharra TEXT,
-                AdminDNI TEXT,
-                EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0,
-                MonetaKodea TEXT NOT NULL DEFAULT '',
-                SorkuntzaData TEXT NOT NULL DEFAULT '',
-                AzkenEguneraketa TEXT NOT NULL DEFAULT '',
-                DataAprobazioa TEXT NOT NULL DEFAULT '',
-                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
-                FOREIGN KEY (LangileDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE,
-                FOREIGN KEY (AdminDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE
-            );
-            """;
-
-        const string gastuLerroSql = """
-            CREATE TABLE IF NOT EXISTS GastuLerroak (
-                GastuId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                TxostenId INTEGER NOT NULL DEFAULT 0,
-                KategoriaId INTEGER NOT NULL DEFAULT 0,
-                GastuData TEXT NOT NULL DEFAULT '',
-                GarraioBidea TEXT NOT NULL DEFAULT '',
-                Zenbatekoa_Guztira REAL NOT NULL DEFAULT 0,
-                Kilometroak REAL NOT NULL DEFAULT 0,
-                TicketArgazkiBidea TEXT NOT NULL DEFAULT '',
-                Oharrak TEXT NOT NULL DEFAULT '',
-                KontzeptuId INTEGER NOT NULL DEFAULT 0,
-                IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0,
-                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE CASCADE,
-                FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
-            );
-            """;
-
-        const string auditSql = """
-            CREATE TABLE IF NOT EXISTS AuditoretzaLoga (
-                LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                TxostenId INTEGER,
-                ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
-                LangileId INTEGER,
-                Ekintza TEXT NOT NULL DEFAULT '',
-                DataOrdua TEXT NOT NULL DEFAULT '',
-                Deskribapena TEXT NOT NULL DEFAULT '',
-                IP_Helbidea TEXT NOT NULL DEFAULT '',
-                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
-                FOREIGN KEY (LangileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE SET NULL,
-                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
-            );
-            """;
-
-        const string gastuKontzeptuakSeedSql = """
-            INSERT OR IGNORE INTO GastuKontzeptuak
-              (KategoriaId, Izena, Deskribapena, IbilgailuaBeharrezkoa, Estatusa, GastuKontzeptuId)
-            VALUES
-              (1, 'Bazkaria',         'Jangela eta bazkari gastuak',   0, 'Aktibo', 1),
-              (2, 'Gasolina',         'Erregai gastuak',               1, 'Aktibo', 2),
-              (3, 'Garraio publikoa', 'Autobus, metro eta trena',      0, 'Aktibo', 3),
-              (4, 'Hotela',           'Ostatua eta gau-pasak',         0, 'Aktibo', 4),
-              (5, 'Peajea',           'Autobide eta tunelak',          1, 'Aktibo', 5),
-              (6, 'Aparkalekua',      'Aparkagune gastuak',            1, 'Aktibo', 6),
-              (7, 'Bidaia',           'Hegazkin eta garraio nagusiak', 0, 'Aktibo', 7),
-              (8, 'Materialak',       'Bulego eta lan materialak',     0, 'Aktibo', 8),
-              (9, 'Bestelakoa',       'Sailkatu gabeko gastuak',       0, 'Aktibo', 9);
-            """;
+        var gastuKontzeptuakSql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("GastuKontzeptuak.sql");
+        var gastuKontzeptuakSeedSql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("GastuKontzeptuakSeed.sql");
+        var bidaiaSql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("BidaiaTxostenak.sql");
+        var gastuLerroSql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("GastuLerroak.sql");
+        var auditSql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("AuditoretzaLoga.sql");
 
         await bezeroa.ExekutatuAsync(gastuKontzeptuakSql, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(gastuKontzeptuakSeedSql, cancellationToken).ConfigureAwait(false);
@@ -282,32 +203,8 @@ public sealed partial class DatuBaseaZerbitzua
                 ordenatuSorkuntzaData: true);
             var emaitza = await ExekutatuTursoSqlParametroekinAsync(bezeroa, sql, parametroak, cancellationToken)
                 .ConfigureAwait(false);
-            return MapeatuTxostenGuztiekLaburrak(emaitza);
+            return TursoLerroMapatzailea.MapeatuTxostenGuztiekLaburrak(emaitza);
         }, cancellationToken).ConfigureAwait(false);
-    }
-
-    private static IReadOnlyList<TxostenOnarpenLaburpena> MapeatuTxostenGuztiekLaburrak(
-        TursoHttpExekuzioarenEmaitza emaitza)
-    {
-        var zutabeak = emaitza.ZutabeIzenak;
-        var zerrenda = new List<TxostenOnarpenLaburpena>();
-        foreach (var lerroa in emaitza.LerroTestuBalioak)
-        {
-            var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
-            zerrenda.Add(new TxostenOnarpenLaburpena
-            {
-                TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
-                ErabiltzaileId = IrakurriMapaOsoa(mapa, "ErabiltzaileId"),
-                LangileTestua = IrakurriMapaTestuaLehenetsia(mapa, "LangileTestua"),
-                Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
-                Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
-                GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0),
-                HasieraData = DataOrduaBalioak.MapatikDataOrdua(mapa, "HasieraData"),
-                AdminTestua = IrakurriMapaTestuaLehenetsia(mapa, "AdminTestua")
-            });
-        }
-
-        return zerrenda;
     }
 
     public async Task<BidaiaTxostena?> EskuratuBidaiaTxostenaIdzAsync(int txostenId, CancellationToken cancellationToken = default)
@@ -323,7 +220,7 @@ public sealed partial class DatuBaseaZerbitzua
             {
                 const string sql = "SELECT * FROM BidaiaTxostenak WHERE TxostenId = ? LIMIT 1;";
                 var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(txostenId)).ConfigureAwait(false);
-                return MapeatuBidaiaTxostenaLehena(emaitza);
+                return TursoLerroMapatzailea.MapeatuBidaiaTxostenaLehena(emaitza);
             }, cancellationToken).ConfigureAwait(false);
         }
 
@@ -346,7 +243,7 @@ public sealed partial class DatuBaseaZerbitzua
             {
                 const string sql = "SELECT * FROM GastuLerroak WHERE TxostenId = ? ORDER BY GastuData DESC;";
                 var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(txostenId)).ConfigureAwait(false);
-                return MapeatuGastuLerroZerrenda(emaitza);
+                return TursoLerroMapatzailea.MapeatuGastuLerroZerrenda(emaitza);
             }, cancellationToken).ConfigureAwait(false);
         }
 
@@ -392,7 +289,7 @@ public sealed partial class DatuBaseaZerbitzua
                 ordenatuSorkuntzaData: true);
             var emaitza = await ExekutatuTursoSqlParametroekinAsync(bezeroa, sql, parametroak, cancellationToken)
                 .ConfigureAwait(false);
-            return MapeatuTxostenOnarpenLaburrak(emaitza, egoeraIragazkia);
+            return TursoLerroMapatzailea.MapeatuTxostenOnarpenLaburrak(emaitza, egoeraIragazkia);
         }, cancellationToken).ConfigureAwait(false);
     }
 
@@ -493,17 +390,6 @@ public sealed partial class DatuBaseaZerbitzua
             await _sqliteKonexioa!.UpdateAsync(txostena).ConfigureAwait(false);
         }
 
-        var ekintza = string.Equals(egoeraBerria, TxostenEgoera.Onartua, StringComparison.Ordinal)
-            ? AuditoretzaEkintzaTxostenaOnartu
-            : AuditoretzaEkintzaTxostenaUkatu;
-        var deskribapena = $"{txostenId} · {egoeraBerria}";
-        await IdatziAuditoretzaLogaAsync(
-            ekintza,
-            deskribapena,
-            administratzaileErabiltzaileId,
-            txostenId,
-            txostena.ErabiltzaileId,
-            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task EguneratuTxostenIbilgailuaEtaKilometroakAsync(
@@ -676,53 +562,6 @@ public sealed partial class DatuBaseaZerbitzua
         return string.Empty;
     }
 
-    private static BidaiaTxostena? MapeatuBidaiaTxostenaLehena(TursoHttpExekuzioarenEmaitza emaitza)
-    {
-        var lerroa = emaitza.LerroTestuBalioak.FirstOrDefault();
-        if (lerroa is null)
-            return null;
-
-        var zutabeak = emaitza.ZutabeIzenak;
-        var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
-        return MapeatuBidaiaTxostenaMapatik(mapa);
-    }
-
-    private static Dictionary<string, string> SortuTursoLerroMapa(IReadOnlyList<string> zutabeak, IReadOnlyList<string> lerroa)
-    {
-        var mapa = new Dictionary<string, string>(StringComparer.OrdinalIgnoreCase);
-        for (var i = 0; i < zutabeak.Count && i < lerroa.Count; i++)
-            mapa[zutabeak[i]] = TursoTestuaIrakurri(lerroa[i]);
-
-        return mapa;
-    }
-
-    private static BidaiaTxostena MapeatuBidaiaTxostenaMapatik(Dictionary<string, string> mapa)
-    {
-        var adminOharraBalioa = IrakurriMapaTestuaLehenetsia(mapa, "AdminOharra", string.Empty);
-        var adminDniBalioa = IrakurriMapaTestuaLehenetsia(mapa, "AdminDNI", string.Empty);
-        return new BidaiaTxostena
-        {
-            TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
-            ErabiltzaileId = IrakurriMapaOsoaLehenetsia(mapa, "ErabiltzaileId", 0),
-            LangileDNI = IrakurriMapaTestuaLehenetsia(mapa, "LangileDNI"),
-            Saila = IrakurriMapaTestuaLehenetsia(mapa, "Saila"),
-            Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
-            BidaiaHelburua = IrakurriMapaTestuaLehenetsia(mapa, "BidaiaHelburua"),
-            HasieraData = DataOrduaBalioak.MapatikDataOrdua(mapa, "HasieraData"),
-            AmaieraData = DataOrduaBalioak.MapatikDataOrdua(mapa, "AmaieraData"),
-            PertsonaKopurua = IrakurriMapaOsoaLehenetsia(mapa, "PertsonaKopurua", 0),
-            JasoAurrekina = IrakurriMapaOsoaLehenetsia(mapa, "JasoAurrerakina", 0),
-            Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
-            AdminOharra = string.IsNullOrEmpty(adminOharraBalioa) ? null : adminOharraBalioa,
-            AdminDNI = string.IsNullOrEmpty(adminDniBalioa) ? null : adminDniBalioa,
-            EmpresaIbilgailua = IrakurriMapaOsoaLehenetsia(mapa, "EmpresaIbilgailua", 0),
-            MonetaKodea = IrakurriMapaTestuaLehenetsia(mapa, "MonetaKodea"),
-            SorkuntzaData = IrakurriMapaTestuaLehenetsia(mapa, "SorkuntzaData"),
-            AzkenEguneratzea = IrakurriMapaTestuaLehenetsia(mapa, "AzkenEguneraketa"),
-            DataAprobazioa = IrakurriMapaTestuaLehenetsia(mapa, "DataAprobazioa")
-        };
-    }
-
     private static BidaiaTxostena? NormalizatuBidaiaTxostenaDataOrduak(BidaiaTxostena? txostena)
     {
         if (txostena is null)
@@ -744,89 +583,6 @@ public sealed partial class DatuBaseaZerbitzua
     {
         foreach (var lerroa in lerroak)
             lerroa.GastuData = DataOrduaBalioak.DataOrduaOsatu(lerroa.GastuData);
-    }
-
-    private static double IrakurriMapaKomaHamarkatuaLehenetsia(Dictionary<string, string> mapa, string gakoa, double lehenetsia)
-    {
-        if (!mapa.TryGetValue(gakoa, out var testua) || string.IsNullOrWhiteSpace(testua))
-            return lehenetsia;
-
-        return double.TryParse(testua, NumberStyles.Float, CultureInfo.InvariantCulture, out var v) ? v : lehenetsia;
-    }
-
-    private static IReadOnlyList<GastuLerroa> MapeatuGastuLerroZerrenda(TursoHttpExekuzioarenEmaitza emaitza)
-    {
-        var zutabeak = emaitza.ZutabeIzenak;
-        var zerrenda = new List<GastuLerroa>();
-        foreach (var lerroa in emaitza.LerroTestuBalioak)
-        {
-            var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
-            zerrenda.Add(new GastuLerroa
-            {
-                GastuId = IrakurriMapaOsoaLehenetsia(mapa, "GastuId", 0),
-                TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
-                KategoriaId = IrakurriMapaOsoaLehenetsia(mapa, "KategoriaId", 0),
-                GastuData = DataOrduaBalioak.MapatikDataOrdua(mapa, "GastuData"),
-                GarraioBidea = IrakurriMapaTestuaLehenetsia(mapa, "GarraioBidea"),
-                ZenbatekoaGuztira = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Zenbatekoa_Guztira", 0),
-                Kilometroak = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Kilometroak", 0),
-                TicketArgazkia = IrakurriMapaTestuaLehenetsia(mapa, "TicketArgazkiBidea"),
-                Oharrak = IrakurriMapaTestuaLehenetsia(mapa, "Oharrak"),
-                KontzeptuId = IrakurriMapaOsoaLehenetsia(mapa, "KontzeptuId", 0),
-                IbilgailuaBeharrezkoa = IrakurriMapaOsoaLehenetsia(mapa, "IbilgailuaBeharrezkoa", 0)
-            });
-        }
-
-        return zerrenda;
-    }
-
-    private static IReadOnlyList<GastuKontzeptua> MapeatuGastuKontzeptuZerrenda(TursoHttpExekuzioarenEmaitza emaitza)
-    {
-        var zutabeak = emaitza.ZutabeIzenak;
-        var zerrenda = new List<GastuKontzeptua>();
-        foreach (var lerroa in emaitza.LerroTestuBalioak)
-        {
-            var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
-            zerrenda.Add(new GastuKontzeptua
-            {
-                KategoriaId = IrakurriMapaOsoaLehenetsia(mapa, "KategoriaId", 0),
-                Izena = IrakurriMapaTestuaLehenetsia(mapa, "Izena"),
-                Deskribapena = IrakurriMapaTestuaLehenetsia(mapa, "Deskribapena"),
-                IbilgailuaBeharDu = IrakurriMapaOsoaLehenetsia(mapa, "IbilgailuaBeharrezkoa", 0),
-                Estatusa = IrakurriMapaTestuaLehenetsia(mapa, "Estatusa"),
-                GastuKontzeptuId = IrakurriMapaOsoaLehenetsia(mapa, "GastuKontzeptuId", 0)
-            });
-        }
-
-        return zerrenda;
-    }
-
-    private static IReadOnlyList<TxostenOnarpenLaburpena> MapeatuTxostenOnarpenLaburrak(
-        TursoHttpExekuzioarenEmaitza emaitza,
-        string? egoeraIragazkia)
-    {
-        var zutabeak = emaitza.ZutabeIzenak;
-        var zerrenda = new List<TxostenOnarpenLaburpena>();
-        var egoeraBerretsia = string.IsNullOrWhiteSpace(egoeraIragazkia) ? null : egoeraIragazkia.Trim();
-        foreach (var lerroa in emaitza.LerroTestuBalioak)
-        {
-            var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
-            var laburpena = new TxostenOnarpenLaburpena
-            {
-                TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
-                ErabiltzaileId = IrakurriMapaOsoa(mapa, "ErabiltzaileId"),
-                LangileTestua = IrakurriMapaTestuaLehenetsia(mapa, "LangileTestua"),
-                Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
-                Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
-                GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0),
-                HasieraData = DataOrduaBalioak.MapatikDataOrdua(mapa, "HasieraData")
-            };
-            if (egoeraBerretsia is not null)
-                laburpena.Egoera = egoeraBerretsia;
-            zerrenda.Add(laburpena);
-        }
-
-        return zerrenda;
     }
 
 #if DEBUG
@@ -920,7 +676,7 @@ public sealed partial class DatuBaseaZerbitzua
             var langileLerroMapa = langileEmaitza.LerroTestuBalioak.FirstOrDefault();
             Dictionary<string, string>? langileMapa = null;
             if (langileLerroMapa is not null && langileLerroMapa.Count > 0)
-                langileMapa = SortuTursoLerroMapa(langileEmaitza.ZutabeIzenak, langileLerroMapa);
+                langileMapa = TursoLerroMapatzailea.SortuTursoLerroMapa(langileEmaitza.ZutabeIzenak, langileLerroMapa);
             var langileDni = langileMapa is not null
                 ? IrakurriMapaTestuaLehenetsia(langileMapa, "DNI")
                 : string.Empty;

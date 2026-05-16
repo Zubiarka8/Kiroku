@@ -1,6 +1,7 @@
 using System.Globalization;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
+using Kirokuu.AplikazioZerbitzuak;
 using Kirokuu.Zerbitzuak;
 using Microsoft.Extensions.Logging;
 using SQLite;

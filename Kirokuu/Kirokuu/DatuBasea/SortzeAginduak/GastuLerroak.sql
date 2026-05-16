@@ -1,0 +1,15 @@
+CREATE TABLE IF NOT EXISTS GastuLerroak (
+    GastuId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    TxostenId INTEGER NOT NULL DEFAULT 0,
+    KategoriaId INTEGER NOT NULL DEFAULT 0,
+    GastuData TEXT NOT NULL DEFAULT '',
+    GarraioBidea TEXT NOT NULL DEFAULT '',
+    Zenbatekoa_Guztira REAL NOT NULL DEFAULT 0,
+    Kilometroak REAL NOT NULL DEFAULT 0,
+    TicketArgazkiBidea TEXT NOT NULL DEFAULT '',
+    Oharrak TEXT NOT NULL DEFAULT '',
+    KontzeptuId INTEGER NOT NULL DEFAULT 0,
+    IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0,
+    FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE CASCADE,
+    FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
+);

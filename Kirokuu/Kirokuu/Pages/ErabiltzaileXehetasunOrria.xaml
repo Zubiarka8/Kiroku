@@ -2,16 +2,15 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.ErabiltzaileXehetasunOrria"
              x:DataType="vm:ErabiltzaileXehetasunViewModel"
              Title="Erabiltzailea">
 
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
     <ScrollView>
         <VerticalStackLayout Padding="24" Spacing="12">
-            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                               IsVisible="{Binding IsKargatzean}"
-                               HorizontalOptions="Center" />
-
             <Entry Text="{Binding Izena}" Placeholder="Izena" />
             <Entry Text="{Binding Abizena}" Placeholder="Abizena" />
             <Entry Text="{Binding Abizena2}" Placeholder="Bigarren abizena" />
@@ -54,9 +53,6 @@
                              SemanticProperties.Description="{Binding PasahitzaBegiarenDeskribapena}" />
             </Grid>
 
-            <Label Text="{Binding ErroreMezua}"
-                   Style="{StaticResource ErroreEtiketaEstiloa}" />
-
             <Button Text="Gorde"
                     Command="{Binding GordeCommand}" />
 
@@ -65,4 +61,5 @@
                     Style="{StaticResource BotoiSaioItxiEstiloa}" />
         </VerticalStackLayout>
     </ScrollView>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

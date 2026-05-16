@@ -2,249 +2,145 @@
 <ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
              xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
              xmlns:vm="clr-namespace:Kirokuu.ViewModels"
-             xmlns:datu="clr-namespace:Kirokuu.DatuBasea.Ereduak"
              xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
              x:Class="Kirokuu.Pages.LangileaTxartelaXehetasunOrria"
              x:DataType="vm:LangileaTxartelaXehetasunViewModel"
              Title="Txartel xehetasunak">
 
-    <ScrollView>
-        <VerticalStackLayout Padding="16" Spacing="14">
+    <kontrolak:OrriKargatzeEskema IsKargatzean="{Binding IsKargatzean}"
+                                  ErroreMezua="{Binding ErroreMezua}">
+        <ScrollView>
+            <VerticalStackLayout Padding="16" Spacing="14">
 
-            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
-                               IsVisible="{Binding IsKargatzean}"
-                               HorizontalOptions="Center" />
+                <kontrolak:TxartelXehetasunHeroaView Egoera="{Binding Egoera}"
+                                                     Helmuga="{Binding Helmuga}"
+                                                     Zenbatekoa="{Binding GastuenGuztira}"
+                                                     DataTestua="{Binding DataTestua}" />
 
-            <Label Text="{Binding ErroreMezua}"
-                   Style="{StaticResource ErroreEtiketaEstiloa}"
-                   IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
-
-            <!-- Hero card: status + category + amount + date -->
-            <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="20,20">
-                <VerticalStackLayout Spacing="6" HorizontalOptions="Center">
-
-                    <Border Padding="12,5"
-                            StrokeThickness="0"
-                            StrokeShape="RoundRectangle 14"
-                            HorizontalOptions="Center">
-                        <Border.Triggers>
-                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Zain">
-                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraZainAtzekoa}" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Onartua">
-                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ukatua">
-                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
-                            </DataTrigger>
-                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ezeztatua">
-                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
-                            </DataTrigger>
-                        </Border.Triggers>
-                        <Label Text="{Binding Egoera}"
-                               Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
-                               FontSize="13"
-                               FontAttributes="Bold" />
-                    </Border>
-
-                    <Label Text="{Binding Helmuga}"
-                           FontAttributes="Bold"
-                           FontSize="22"
-                           HorizontalTextAlignment="Center" />
-
-                    <Label Text="{Binding GastuenGuztira, StringFormat='{0:N2} €'}"
-                           FontAttributes="Bold"
-                           FontSize="34"
-                           HorizontalTextAlignment="Center"
-                           TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}" />
-
-                    <Label Text="{Binding DataTestua}"
-                           FontSize="14"
-                           HorizontalTextAlignment="Center"
-                           TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
-
-                </VerticalStackLayout>
-            </Border>
-
-            <!-- Details card: transport + description -->
-            <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="16">
-                <VerticalStackLayout Spacing="10">
-
-                    <Label Text="Xehetasunak"
-                           Style="{StaticResource TituluAtalaEstiloa}" />
-
-                    <BoxView HeightRequest="1"
-                             Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}" />
-
-                    <VerticalStackLayout Spacing="3"
-                                         IsVisible="{Binding SailarenEtiketa, Converter={toolkit:IsStringNotNullOrEmptyConverter}}">
-                        <Label Text="Saila"
-                               Style="{StaticResource EremuEtiketaEstiloa}" />
-                        <Label Text="{Binding SailarenEtiketa}"
-                               FontSize="14"
-                               FontAttributes="Bold" />
+                <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="16">
+                    <VerticalStackLayout Spacing="10">
+                        <Label Text="Xehetasunak"
+                               Style="{StaticResource TituluAtalaEstiloa}" />
+                        <BoxView HeightRequest="1"
+                                 Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}" />
+                        <VerticalStackLayout Spacing="3"
+                                             IsVisible="{Binding SailarenEtiketa, Converter={StaticResource TestuaDagoConverter}}">
+                            <Label Text="Saila"
+                                   Style="{StaticResource EremuEtiketaEstiloa}" />
+                            <Label Text="{Binding SailarenEtiketa}"
+                                   FontSize="14"
+                                   FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="3" IsVisible="{Binding IbilgailuaXehetasunakIkagarri}">
+                            <Label Text="Ibilgailua"
+                                   Style="{StaticResource EremuEtiketaEstiloa}" />
+                            <Label Text="{Binding IbilgailuaMotaTestua}"
+                                   FontSize="14"
+                                   FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="3" IsVisible="{Binding KilometroakBistaratzeaIkagarri}">
+                            <Label Text="Kilometroak"
+                                   Style="{StaticResource EremuEtiketaEstiloa}" />
+                            <Label Text="{Binding KilometroakBistaratzea, StringFormat='{0} km'}"
+                                   FontSize="14"
+                                   FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                        <VerticalStackLayout Spacing="3"
+                                             IsVisible="{Binding GarraioBideaIkagarri}">
+                            <Label Text="Garraioa"
+                                   Style="{StaticResource EremuEtiketaEstiloa}" />
+                            <Label Text="{Binding GarraioBideaTestua}"
+                                   FontSize="14"
+                                   FontAttributes="Bold" />
+                        </VerticalStackLayout>
+                        <BoxView HeightRequest="1"
+                                 Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}"
+                                 IsVisible="{Binding IbilgailuaXehetasunakIkagarri}" />
+                        <VerticalStackLayout Spacing="3">
+                            <Label Text="Deskribapena"
+                                   Style="{StaticResource EremuEtiketaEstiloa}" />
+                            <Label Text="{Binding Deskribapena}"
+                                   FontSize="14" />
+                        </VerticalStackLayout>
                     </VerticalStackLayout>
+                </Border>
 
-                    <VerticalStackLayout Spacing="3" IsVisible="{Binding IbilgailuaXehetasunakIkagarri}">
-                        <Label Text="Ibilgailua"
-                               Style="{StaticResource EremuEtiketaEstiloa}" />
-                        <Label Text="{Binding IbilgailuaMotaTestua}"
-                               FontSize="14"
-                               FontAttributes="Bold" />
-                    </VerticalStackLayout>
+                <kontrolak:TxartelXehetasunGastuZerrendaView GastuLerroak="{Binding GastuLerroak}" />
 
-                    <VerticalStackLayout Spacing="3" IsVisible="{Binding KilometroakBistaratzeaIkagarri}">
-                        <Label Text="Kilometroak"
-                               Style="{StaticResource EremuEtiketaEstiloa}" />
-                        <Label Text="{Binding KilometroakBistaratzea, StringFormat='{0} km'}"
-                               FontSize="14"
-                               FontAttributes="Bold" />
-                    </VerticalStackLayout>
-
-                    <VerticalStackLayout Spacing="3"
-                                         IsVisible="{Binding GarraioBideaIkagarri}">
-                        <Label Text="Garraioa"
-                               Style="{StaticResource EremuEtiketaEstiloa}" />
-                        <Label Text="{Binding GarraioBideaTestua}"
-                               FontSize="14"
-                               FontAttributes="Bold" />
-                    </VerticalStackLayout>
-
-                    <BoxView HeightRequest="1"
-                             Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}"
-                             IsVisible="{Binding IbilgailuaXehetasunakIkagarri}" />
-
-                    <VerticalStackLayout Spacing="3">
-                        <Label Text="Deskribapena"
-                               Style="{StaticResource EremuEtiketaEstiloa}" />
-                        <Label Text="{Binding Deskribapena}"
-                               FontSize="14" />
-                    </VerticalStackLayout>
-
-                </VerticalStackLayout>
-            </Border>
-
-            <!-- Expense lines -->
-            <Label Text="Gastu lerroak"
-                   Style="{StaticResource SubHeadline}" />
-
-            <CollectionView ItemsSource="{Binding GastuLerroak}">
-                <CollectionView.EmptyView>
-                    <Label Text="Ez dago gastu lerroirik."
-                           HorizontalTextAlignment="Center"
-                           Style="{StaticResource TestuBigarrenMailaEstiloa}"
-                           Margin="0,8" />
-                </CollectionView.EmptyView>
-                <CollectionView.ItemTemplate>
-                    <DataTemplate x:DataType="datu:GastuLerroa">
-                        <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="12" Margin="0,4">
-                            <VerticalStackLayout Spacing="5">
-                                <Grid ColumnDefinitions="*,Auto">
-                                    <Label Grid.Column="0"
-                                           Text="{Binding GastuDataFormateatua}"
-                                           FontAttributes="Bold"
-                                           FontSize="13" />
-                                    <Label Grid.Column="1"
-                                           Text="{Binding ZenbatekoaGuztira, StringFormat='{0:N2} €'}"
-                                           FontAttributes="Bold"
-                                           FontSize="15"
-                                           TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}" />
-                                </Grid>
-                                <Label Text="{Binding GarraioBidea, StringFormat='Garraioa: {0}'}"
-                                       FontSize="12"
-                                       IsVisible="{Binding GarraioBidea, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
-                                <Label Text="{Binding Kilometroak, StringFormat='Kilometroak: {0:N0} km'}"
-                                       FontSize="12"
-                                       IsVisible="{Binding KilometroakIkagarri}" />
-                                <Label Text="{Binding Oharrak}"
-                                       FontSize="12"
-                                       TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}"
-                                       IsVisible="{Binding Oharrak, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
-                                <Label Text="Ibilgailua erabili da"
-                                       FontSize="12"
-                                       FontAttributes="Bold"
-                                       TextColor="{StaticResource EgoeraOnartuaAtzekoa}"
-                                       IsVisible="{Binding IbilgailuaBeharrezkoaBai}" />
-                            </VerticalStackLayout>
-                        </Border>
-                    </DataTemplate>
-                </CollectionView.ItemTemplate>
-            </CollectionView>
-
-            <!-- Admin note -->
-            <Border Style="{StaticResource OharraKutxaEstiloa}"
-                    IsVisible="{Binding AdminOharraIkagarri}">
-                <VerticalStackLayout Spacing="6">
-                    <Label Text="Administratzailearen oharra"
-                           FontSize="12"
-                           FontAttributes="Bold"
-                           TextColor="{AppThemeBinding Light={StaticResource OharraTestuArgia}, Dark={StaticResource OharraTestuIluna}}" />
-                    <Label Text="{Binding AdminOharra}"
-                           FontSize="14" />
-                </VerticalStackLayout>
-            </Border>
-
-            <!-- Ticket photo -->
-            <Border Style="{StaticResource TxartelTxartelaEstiloa}"
-                    Padding="16"
-                    IsVisible="{Binding ArgazkiDago}">
-                <Border.GestureRecognizers>
-                    <TapGestureRecognizer Command="{Binding IrekiArgazkiaHandianCommand}" />
-                </Border.GestureRecognizers>
-                <VerticalStackLayout Spacing="10">
-                    <Grid ColumnDefinitions="*,Auto">
-                        <Label Grid.Column="0"
-                               Text="Ticket argazkia"
-                               Style="{StaticResource EremuEtiketaEstiloa}"
-                               FontAttributes="Bold"
-                               VerticalOptions="Center" />
-                        <Label Grid.Column="1"
-                               Text="Handitu"
-                               FontSize="13"
-                               TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}"
-                               VerticalOptions="Center" />
-                    </Grid>
-                    <Border StrokeThickness="0"
-                            StrokeShape="RoundRectangle 12"
-                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray950}}"
-                            Padding="8">
-                        <Image Source="{Binding ArgazkiUrl}"
-                               HeightRequest="240"
-                               Aspect="AspectFit"
-                               HorizontalOptions="Center" />
-                    </Border>
-                    <Label Text="Sakatu argazkia handitzeko"
-                           FontSize="12"
-                           HorizontalTextAlignment="Center"
-                           TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
-                </VerticalStackLayout>
-            </Border>
-
-            <Border Style="{StaticResource TxartelTxartelaEstiloa}"
-                    Padding="16"
-                    IsVisible="{Binding ArgazkiDago, Converter={toolkit:InvertedBoolConverter}}">
-                <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
-                    <Label Style="{StaticResource IkonoHandiaEstiloa}"
-                           Text="{x:Static kiro:IkonoFontIturria.ArgazkiaIkonoGlifoa}"
-                           Opacity="0.5"
-                           SemanticProperties.Description="Ez dago argazkirik" />
-                    <VerticalStackLayout Spacing="2" VerticalOptions="Center">
-                        <Label Text="Ez da ticket argazkirik erantsi"
-                               FontAttributes="Bold"
-                               FontSize="14" />
-                        <Label Text="Txartel honek ez du eranskin argazkirik."
+                <Border Style="{StaticResource OharraKutxaEstiloa}"
+                        IsVisible="{Binding AdminOharraIkagarri}">
+                    <VerticalStackLayout Spacing="6">
+                        <Label Text="Administratzailearen oharra"
                                FontSize="12"
+                               FontAttributes="Bold"
+                               TextColor="{AppThemeBinding Light={StaticResource OharraTestuArgia}, Dark={StaticResource OharraTestuIluna}}" />
+                        <Label Text="{Binding AdminOharra}"
+                               FontSize="14" />
+                    </VerticalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource TxartelTxartelaEstiloa}"
+                        Padding="16"
+                        IsVisible="{Binding ArgazkiDago}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding IrekiArgazkiaHandianCommand}" />
+                    </Border.GestureRecognizers>
+                    <VerticalStackLayout Spacing="10">
+                        <Grid ColumnDefinitions="*,Auto">
+                            <Label Grid.Column="0"
+                                   Text="Ticket argazkia"
+                                   Style="{StaticResource EremuEtiketaEstiloa}"
+                                   FontAttributes="Bold"
+                                   VerticalOptions="Center" />
+                            <Label Grid.Column="1"
+                                   Text="Handitu"
+                                   FontSize="13"
+                                   TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}"
+                                   VerticalOptions="Center" />
+                        </Grid>
+                        <Border StrokeThickness="0"
+                                StrokeShape="RoundRectangle 12"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray950}}"
+                                Padding="8">
+                            <Image Source="{Binding ArgazkiUrl}"
+                                   HeightRequest="240"
+                                   Aspect="AspectFit"
+                                   HorizontalOptions="Center" />
+                        </Border>
+                        <Label Text="Sakatu argazkia handitzeko"
+                               FontSize="12"
+                               HorizontalTextAlignment="Center"
                                TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
                     </VerticalStackLayout>
-                </HorizontalStackLayout>
-            </Border>
+                </Border>
 
-            <Button Text="Itzuli"
-                    Command="{Binding ItzeliCommand}"
-                    Style="{StaticResource EstekaBotoiEstiloa}"
-                    Margin="0,4,0,4" />
+                <Border Style="{StaticResource TxartelTxartelaEstiloa}"
+                        Padding="16"
+                        IsVisible="{Binding ArgazkiDago, Converter={toolkit:InvertedBoolConverter}}">
+                    <HorizontalStackLayout Spacing="12" VerticalOptions="Center">
+                        <Label Style="{StaticResource IkonoHandiaEstiloa}"
+                               Text="{x:Static kiro:IkonoFontIturria.ArgazkiaIkonoGlifoa}"
+                               Opacity="0.5"
+                               SemanticProperties.Description="Ez dago argazkirik" />
+                        <VerticalStackLayout Spacing="2" VerticalOptions="Center">
+                            <Label Text="Ez da ticket argazkirik erantsi"
+                                   FontAttributes="Bold"
+                                   FontSize="14" />
+                            <Label Text="Txartel honek ez du eranskin argazkirik."
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
+                        </VerticalStackLayout>
+                    </HorizontalStackLayout>
+                </Border>
 
-        </VerticalStackLayout>
-    </ScrollView>
+                <Button Text="Itzuli"
+                        Command="{Binding ItzeliCommand}"
+                        Style="{StaticResource EstekaBotoiEstiloa}"
+                        Margin="0,4,0,4" />
+
+            </VerticalStackLayout>
+        </ScrollView>
+    </kontrolak:OrriKargatzeEskema>
 </ContentPage>

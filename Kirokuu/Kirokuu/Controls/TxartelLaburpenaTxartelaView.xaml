@@ -1,0 +1,42 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
+             xmlns:kiro="clr-namespace:Kirokuu"
+             xmlns:kontrolak="clr-namespace:Kirokuu.Controls"
+             x:Class="Kirokuu.Controls.TxartelLaburpenaTxartelaView"
+             x:DataType="datu:TxostenOnarpenLaburpena">
+    <Border Style="{StaticResource MugimenduSakatagarriTxartelaEstiloa}"
+            InputTransparent="True">
+        <Grid ColumnDefinitions="*,Auto,Auto"
+              ColumnSpacing="8"
+              InputTransparent="True">
+            <VerticalStackLayout Grid.Column="0"
+                                 Spacing="4"
+                                 InputTransparent="True">
+                <Label Text="{Binding Helmuga}"
+                       FontAttributes="Bold"
+                       LineBreakMode="TailTruncation"
+                       InputTransparent="True" />
+                <Label Text="{Binding LangileTestua}"
+                       FontSize="13"
+                       LineBreakMode="TailTruncation"
+                       IsVisible="{Binding LangileTestua, Converter={StaticResource TestuaDagoConverter}}"
+                       InputTransparent="True" />
+                <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
+                       FontAttributes="Bold"
+                       FontSize="15"
+                       TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}"
+                       InputTransparent="True" />
+            </VerticalStackLayout>
+            <kontrolak:EgoeraBandarenView Grid.Column="1"
+                                          Egoera="{Binding Egoera}"
+                                          VerticalOptions="Center"
+                                          InputTransparent="True" />
+            <Label Grid.Column="2"
+                   Style="{StaticResource MugimenduChevronEtiketaEstiloa}"
+                   Text="{x:Static kiro:IkonoFontIturria.ChevronEskuinaIkonoGlifoa}"
+                   SemanticProperties.Description="Xehetasunak" />
+        </Grid>
+    </Border>
+</ContentView>

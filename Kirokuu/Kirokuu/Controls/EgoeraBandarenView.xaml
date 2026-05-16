@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentView xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             x:Class="Kirokuu.Controls.EgoeraBandarenView"
+             x:Name="Eskema">
+    <Border Padding="8,4"
+            StrokeThickness="0"
+            StrokeShape="RoundRectangle 10">
+        <Border.Triggers>
+            <DataTrigger TargetType="Border"
+                         Binding="{Binding Egoera, Source={x:Reference Eskema}}"
+                         Value="Zain">
+                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraZainAtzekoa}" />
+            </DataTrigger>
+            <DataTrigger TargetType="Border"
+                         Binding="{Binding Egoera, Source={x:Reference Eskema}}"
+                         Value="Onartua">
+                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
+            </DataTrigger>
+            <DataTrigger TargetType="Border"
+                         Binding="{Binding Egoera, Source={x:Reference Eskema}}"
+                         Value="Ukatua">
+                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
+            </DataTrigger>
+            <DataTrigger TargetType="Border"
+                         Binding="{Binding Egoera, Source={x:Reference Eskema}}"
+                         Value="Ezeztatua">
+                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
+            </DataTrigger>
+        </Border.Triggers>
+        <Label Text="{Binding Egoera, Source={x:Reference Eskema}}"
+               Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
+               HorizontalOptions="Center"
+               VerticalOptions="Center" />
+    </Border>
+</ContentView>

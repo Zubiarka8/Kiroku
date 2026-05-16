@@ -1,17 +1,12 @@
-using System.Globalization;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
-using Kirokuu.Zerbitzuak;
+using Kirokuu.Grafikoak;
 using Kirokuu.ZerbitzuakSaioa;
 using LiveChartsCore;
-using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
-using LiveChartsCore.SkiaSharpView.Painting;
 using Microsoft.Extensions.Logging;
-using SkiaSharp;
-using SQLite;
 
 namespace Kirokuu.ViewModels;
 
@@ -137,41 +132,9 @@ public partial class HasieraViewModel : ObservableObject
                 .ConfigureAwait(true);
             EraikiEgoeraGrafikoa(egoerak);
         }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Hasiera: baliogabeko eragiketa.");
-            EraikiGrafikoLehenetsiak();
-        }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da kargatu. Saiatu berriro.";
-            _logger.LogError(libEx, "Hasiera: Turso errorea.");
-            EraikiGrafikoLehenetsiak();
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Hasiera: mapa errorea.");
-            EraikiGrafikoLehenetsiak();
-        }
-        catch (FormatException fmtEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Hasiera: formatu errorea.");
-            EraikiGrafikoLehenetsiak();
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Hasiera: SQLite errorea.");
-            EraikiGrafikoLehenetsiak();
-        }
         catch (Exception ex)
         {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Hasiera: ustekabeko errorea.");
+            ViewModelSalbuespenTratatzailea.TratatuIrakurketa(ex, m => ErroreMezua = m, _logger, "Hasiera");
             EraikiGrafikoLehenetsiak();
         }
         finally
@@ -200,148 +163,23 @@ public partial class HasieraViewModel : ObservableObject
         HilabetekoXArdatzak = xArdatzak;
     }
 
-    private static string MoztuTestuaElipsis(string? testua, int gehienezkoLuzera) =>
-        HasieraGrafikoEraikitzailea.MoztuTestuaElipsis(testua, gehienezkoLuzera);
+    private void GarbituKategoriaGrafikoEgoera() =>
+        AplikatuKategoriaGrafikoEmaitza(HasieraGrafikoEraikitzailea.GarbituKategoriaGrafikoa());
 
-    private void GarbituKategoriaGrafikoEgoera()
+    private void EraikiKategoriaGrafikoa(IReadOnlyList<KategoriakoGastuAgregatua> datuak) =>
+        AplikatuKategoriaGrafikoEmaitza(HasieraGrafikoEraikitzailea.EraikiKategoriaGrafikoa(datuak));
+
+    private void AplikatuKategoriaGrafikoEmaitza(HasieraGrafikoEraikitzailea.KategoriaGrafikoEmaitza emaitza)
     {
-        KategoriaGastuSerieak = Array.Empty<ISeries>();
-        KategoriaBarraSerieak = Array.Empty<ISeries>();
-        KategoriaBarraYArdatzak = Array.Empty<Axis>();
-        KategoriaBarraXArdatzak = Array.Empty<Axis>();
-        ErakutsiKategoriaHutsikMezua = false;
-        ErakutsiKategoriaBakarra = false;
-        ErakutsiKategoriaPieGrafikoa = false;
-        ErakutsiKategoriaBarraGrafikoa = false;
-        KategoriaBakarXehetasuna = string.Empty;
-    }
-
-    private void EraikiKategoriaGrafikoa(IReadOnlyList<KategoriakoGastuAgregatua> datuak)
-    {
-        GarbituKategoriaGrafikoEgoera();
-
-        var moztuta = datuak.Take(HasieraGrafikoEraikitzailea.KategoriaGehienezkoKopuruaGrafikoan).ToList();
-        if (moztuta.Count == 0)
-        {
-            ErakutsiKategoriaHutsikMezua = true;
-            return;
-        }
-
-        if (moztuta.Count == 1)
-        {
-            ErakutsiKategoriaBakarra = true;
-            var d = moztuta[0];
-            var izena = string.IsNullOrWhiteSpace(d.KontzeptuIzena) ? "?" : d.KontzeptuIzena.Trim();
-            KategoriaBakarXehetasuna =
-                $"{izena}: {d.Guztira.ToString("N2", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} € (100%)";
-            return;
-        }
-
-        if (moztuta.Count >= HasieraGrafikoEraikitzailea.KategoriaBarraGutxienezkoZatituak)
-        {
-            ErakutsiKategoriaBarraGrafikoa = true;
-            EraikiKategoriaBarraGrafikoa(moztuta);
-            return;
-        }
-
-        ErakutsiKategoriaPieGrafikoa = true;
-        EraikiKategoriaPieZatiak(moztuta);
-    }
-
-    private void EraikiKategoriaPieZatiak(IReadOnlyList<KategoriakoGastuAgregatua> moztuta)
-    {
-        var guztira = moztuta.Sum(d => d.Guztira);
-        var serieak = new List<ISeries>(moztuta.Count);
-
-        for (var i = 0; i < moztuta.Count; i++)
-        {
-            var d = moztuta[i];
-            var zenbatekoa = d.Guztira;
-            var izenaOsoa = string.IsNullOrWhiteSpace(d.KontzeptuIzena) ? "?" : d.KontzeptuIzena.Trim();
-            var ehunekoa = guztira > 0 ? zenbatekoa / guztira * 100.0 : 0;
-            var legendaTestua =
-                $"{MoztuTestuaElipsis(izenaOsoa, HasieraGrafikoEraikitzailea.KategoriaLegendokoIzenGehienezkoLuzera)} · " +
-                $"{zenbatekoa.ToString("N2", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} € · {ehunekoa:0}%";
-            var kolorea = HasieraGrafikoEraikitzailea.KategoriaKoloreak[i % HasieraGrafikoEraikitzailea.KategoriaKoloreak.Length];
-            var izKopia = izenaOsoa;
-            var zbKopia = zenbatekoa;
-            var ehKopia = ehunekoa;
-            serieak.Add(new PieSeries<double>
-            {
-                Name = legendaTestua,
-                Values = new[] { zenbatekoa },
-                InnerRadius = 62,
-                Fill = new SolidColorPaint(kolorea),
-                DataLabelsPosition = PolarLabelsPosition.Middle,
-                DataLabelsSize = 12,
-                DataLabelsPaint = new SolidColorPaint(SKColors.White),
-                DataLabelsFormatter = pu =>
-                {
-                    var z = pu.Coordinate.PrimaryValue;
-                    var pct = guztira > 0 ? z / guztira * 100.0 : 0;
-                    return $"{pct:0}%";
-                },
-                ToolTipLabelFormatter = _ =>
-                    $"{izKopia}: {zbKopia.ToString("N2", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} € ({ehKopia:0}%)"
-            });
-        }
-
-        KategoriaGastuSerieak = serieak.ToArray();
-    }
-
-    private void EraikiKategoriaBarraGrafikoa(IReadOnlyList<KategoriakoGastuAgregatua> moztuta)
-    {
-        var balioak = moztuta.Select(d => d.Guztira).ToArray();
-        var etiketak = moztuta
-            .Select(d => string.IsNullOrWhiteSpace(d.KontzeptuIzena) ? "?" : d.KontzeptuIzena.Trim())
-            .ToArray();
-        var guztira = balioak.Sum();
-
-        KategoriaBarraSerieak = new ISeries[]
-        {
-            new RowSeries<double>
-            {
-                Name = "Onartutako gastua",
-                Values = balioak,
-                Fill = new SolidColorPaint(SKColors.SteelBlue),
-                MaxBarWidth = 20,
-                Rx = 4,
-                Ry = 4,
-                DataLabelsPaint = new SolidColorPaint(SKColors.White),
-                DataLabelsSize = 11,
-                DataLabelsPosition = DataLabelsPosition.Middle,
-                DataLabelsFormatter = pu =>
-                {
-                    var i = pu.Index;
-                    var z = pu.Coordinate.PrimaryValue;
-                    var pct = guztira > 0 ? z / guztira * 100.0 : 0;
-                    return $"{z.ToString("N0", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} € · {pct:0}%";
-                }
-            }
-        };
-
-        KategoriaBarraYArdatzak = new Axis[]
-        {
-            new Axis
-            {
-                Labels = etiketak,
-                LabelsRotation = 0,
-                ForceStepToMin = true,
-                MinStep = 1,
-                IsInverted = true,
-                SeparatorsPaint = new SolidColorPaint(new SKColor(210, 210, 210)),
-                TextSize = 11
-            }
-        };
-
-        KategoriaBarraXArdatzak = new Axis[]
-        {
-            new Axis
-            {
-                MinLimit = 0,
-                Labeler = v => $"{v.ToString("N0", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} €"
-            }
-        };
+        KategoriaGastuSerieak = emaitza.GastuSerieak;
+        KategoriaBarraSerieak = emaitza.BarraSerieak;
+        KategoriaBarraYArdatzak = emaitza.BarraYArdatzak;
+        KategoriaBarraXArdatzak = emaitza.BarraXArdatzak;
+        ErakutsiKategoriaHutsikMezua = emaitza.ErakutsiHutsikMezua;
+        ErakutsiKategoriaBakarra = emaitza.ErakutsiBakarra;
+        ErakutsiKategoriaPieGrafikoa = emaitza.ErakutsiPieGrafikoa;
+        ErakutsiKategoriaBarraGrafikoa = emaitza.ErakutsiBarraGrafikoa;
+        KategoriaBakarXehetasuna = emaitza.BakarXehetasuna;
     }
 
     private void EraikiEgoeraGrafikoa(IReadOnlyList<TxostenEgoeraKopurua> datuak)
