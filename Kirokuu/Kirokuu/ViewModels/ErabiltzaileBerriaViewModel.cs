@@ -172,6 +172,15 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
             return;
         }
 
+        var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+        if (adminId is { } aid &&
+            !await _erabiltzaileZerbitzua.AdministratzaileakSektoreaKudeatuDezakeAsync(
+                aid, HautatutakoSektorea.Identifikatzailea).ConfigureAwait(true))
+        {
+            ErroreMezua = "Ez duzu baimenik beste sektore batean langilea sortzeko.";
+            return;
+        }
+
         try
         {
             IsKargatzean = true;

@@ -27,6 +27,55 @@
                    FontAttributes="Bold"
                    IsVisible="{Binding JasoAurrerakinaIkagarri}" />
 
+            <Border Style="{StaticResource TxartelTxartelaEstiloa}"
+                    Padding="14"
+                    IsVisible="{Binding IbilgailuaEremuakIkagarri}">
+                <VerticalStackLayout Spacing="10">
+                    <Label Text="Ibilgailua"
+                           Style="{StaticResource TituluAtalaEstiloa}" />
+
+                    <HorizontalStackLayout Spacing="10"
+                                           VerticalOptions="Center"
+                                           IsVisible="{Binding IbilgailuaEremuakEditagarri}">
+                        <Label Text="Norberaren ibilgailua"
+                               VerticalOptions="Center"
+                               FontSize="13" />
+                        <Switch IsToggled="{Binding EnpresakoIbilgailua}"
+                                VerticalOptions="Center" />
+                        <Label Text="Enpresako ibilgailua"
+                               VerticalOptions="Center"
+                               FontSize="13"
+                               FontAttributes="Bold" />
+                    </HorizontalStackLayout>
+
+                    <Label FontSize="14"
+                           IsVisible="{Binding IbilgailuaEremuakEditagarri, Converter={toolkit:InvertedBoolConverter}}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding EnpresakoIbilgailua}" Value="True">
+                                <Setter Property="Text" Value="Enpresako ibilgailua" />
+                            </DataTrigger>
+                            <DataTrigger TargetType="Label" Binding="{Binding EnpresakoIbilgailua}" Value="False">
+                                <Setter Property="Text" Value="Norberaren ibilgailua" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+
+                    <VerticalStackLayout Spacing="4"
+                                         IsVisible="{Binding IbilgailuaEremuakEditagarri}">
+                        <Label Text="Kilometroak (km)"
+                               FontAttributes="Bold"
+                               FontSize="13" />
+                        <Entry Text="{Binding KilometroakTestua}"
+                               Keyboard="Numeric"
+                               Placeholder="0" />
+                    </VerticalStackLayout>
+
+                    <Label Text="{Binding KilometroakTestua, StringFormat='Kilometroak: {0} km'}"
+                           FontSize="14"
+                           IsVisible="{Binding IbilgailuaEremuakEditagarri, Converter={toolkit:InvertedBoolConverter}}" />
+                </VerticalStackLayout>
+            </Border>
+
             <Label Text="Gastu lerroak" Style="{StaticResource SubHeadline}" />
 
             <CollectionView ItemsSource="{Binding GastuLerroak}">
@@ -43,11 +92,14 @@
                     <DataTemplate x:DataType="ered:GastuLerroa">
                         <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="10" Margin="2">
                             <VerticalStackLayout Spacing="2">
-                                <Label Text="{Binding GastuData}" FontAttributes="Bold" />
+                                <Label Text="{Binding GastuDataFormateatua}" FontAttributes="Bold" />
                                 <Label Text="{Binding ZenbatekoaGuztira, StringFormat='Zenbatekoa: {0:N2} €'}" FontSize="13" />
                                 <Label Text="{Binding GarraioBidea, StringFormat='Garraioa: {0}'}"
                                        FontSize="12"
                                        IsVisible="{Binding GarraioBidea, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
+                                <Label Text="{Binding Kilometroak, StringFormat='Kilometroak: {0:N0} km'}"
+                                       FontSize="12"
+                                       IsVisible="{Binding KilometroakIkagarri}" />
                                 <Label Text="{Binding Oharrak}" FontSize="12" />
                             </VerticalStackLayout>
                         </Border>

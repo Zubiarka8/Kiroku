@@ -100,7 +100,10 @@ public partial class LangileZerrendaViewModel : ObservableObject
                 return;
             }
 
-            var zerrenda = await _erabiltzaileZerbitzua.EskuratuLangileenLaburpenakAsync().ConfigureAwait(true);
+            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+            var zerrenda = adminId is { } aid
+                ? await _erabiltzaileZerbitzua.EskuratuLangileenLaburpenakAdministratzailearentzatAsync(aid).ConfigureAwait(true)
+                : Array.Empty<ErabiltzaileLaburpena>();
             foreach (var lerroa in zerrenda)
                 _langileIturburuZerrenda.Add(lerroa);
 

@@ -64,6 +64,15 @@ public partial class NireTxartelakViewModel : ObservableObject
     [ObservableProperty]
     private int _kopuruaEzeztatua;
 
+    [ObservableProperty]
+    private int _txartelKopuruaErakusten;
+
+    [ObservableProperty]
+    private double _zenbatekoGuztiraErakusten;
+
+    [ObservableProperty]
+    private string _laburpenGoiburua = string.Empty;
+
     public bool IragazkiaGuztiakHautatua => EgoeraIragazkia == IragazkiGuztiak;
     public bool IragazkiaZainHautatua => EgoeraIragazkia == TxostenEgoera.Zain;
     public bool IragazkiaOnartuaHautatua => EgoeraIragazkia == TxostenEgoera.Onartua;
@@ -127,7 +136,7 @@ public partial class NireTxartelakViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            ErroreMezua = $"Ustekabeko errorea: {ex.GetType().Name} — {ex.Message}";
+            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
             _logger.LogError(ex, "NireTxartelak: ustekabeko errorea.");
         }
         finally
@@ -152,8 +161,19 @@ public partial class NireTxartelakViewModel : ObservableObject
         IEnumerable<TxostenOnarpenLaburpena> iragazia = EgoeraIragazkia == IragazkiGuztiak
             ? _txartelakGuztiak
             : _txartelakGuztiak.Where(t => string.Equals(t.Egoera, EgoeraIragazkia, StringComparison.Ordinal));
-        foreach (var t in iragazia)
+
+        var zerrenda = iragazia.ToList();
+        foreach (var t in zerrenda)
             Txartelak.Add(t);
+
+        TxartelKopuruaErakusten = zerrenda.Count;
+        ZenbatekoGuztiraErakusten = zerrenda.Sum(t => t.GastuenBatuketakoZenbatekoa);
+        LaburpenGoiburua = TxartelKopuruaErakusten switch
+        {
+            0 => "Ez dago txartelik iragazki honetan",
+            1 => "1 txartel",
+            _ => $"{TxartelKopuruaErakusten} txartel"
+        };
     }
 
     private void BerritzeKopuruak()

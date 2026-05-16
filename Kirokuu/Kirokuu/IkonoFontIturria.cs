@@ -21,8 +21,6 @@ public static class IkonoFontIturria
 
     public static FontImageSource FitxaNireTxartelak(double tamaina = 26) => Sortu("\uef6e", tamaina);
 
-    public static FontImageSource FitxaTxartelKanban(double tamaina = 26) => Sortu("\ueb7f", tamaina);
-
     public static FontImageSource FitxaHasieraAdministratzaile(double tamaina = 26) => Sortu("\ue871", tamaina);
 
     public static FontImageSource FitxaErabiltzaileZerrenda(double tamaina = 26) => Sortu("\ue7ef", tamaina);
@@ -46,6 +44,10 @@ public static class IkonoFontIturria
     public static string UkatuIkonoGlifoa => "\ue5c9";
 
     public static string ArgazkiaIkonoGlifoa => "\ue412";
+
+    public static string KameraIkonoGlifoa => "\ue3af";
+
+    public static string GaleriaIkonoGlifoa => "\ue413";
 
     public static string DiruaIkonoGlifoa => "\ue227";
 

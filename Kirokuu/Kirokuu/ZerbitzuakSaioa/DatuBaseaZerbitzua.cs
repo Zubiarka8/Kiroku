@@ -145,6 +145,30 @@ public sealed partial class DatuBaseaZerbitzua
         return zerrenda.FirstOrDefault();
     }
 
+    public async Task<int?> EskuratuAdministratzailearenSektoreIragazkiaAsync(
+        int administratzaileErabiltzaileId,
+        CancellationToken cancellationToken = default)
+    {
+        if (administratzaileErabiltzaileId <= 0)
+            return null;
+
+        var admin = await BilatuErabiltzaileaIdzAsync(administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
+        var sektoreId = admin?.SektorearenIdentifikatzailea ?? 0;
+        return sektoreId > 0 ? sektoreId : null;
+    }
+
+    public async Task<bool> ErabiltzaileaSektorearekinBatDatorAsync(
+        int erabiltzaileId,
+        int sektoreIragazkia,
+        CancellationToken cancellationToken = default)
+    {
+        if (erabiltzaileId <= 0 || sektoreIragazkia <= 0)
+            return false;
+
+        var erabiltzailea = await BilatuErabiltzaileaIdzAsync(erabiltzaileId, cancellationToken).ConfigureAwait(false);
+        return erabiltzailea?.SektorearenIdentifikatzailea == sektoreIragazkia;
+    }
+
     public async Task<bool> NANErabilitaDagoaAsync(string nan, int? ezezErabiltzaileId = null, CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
@@ -218,13 +242,29 @@ public sealed partial class DatuBaseaZerbitzua
         return zerrenda.FirstOrDefault();
     }
 
-    public async Task<IReadOnlyList<ErabiltzaileLaburpena>> ZerrendatuLangileLaburpenakAsync(CancellationToken cancellationToken = default)
+    public async Task<IReadOnlyList<ErabiltzaileLaburpena>> ZerrendatuLangileLaburpenakAsync(
+        int? sektoreIragazkia = null,
+        CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (_urrunTursoModua)
-            return await ZerrendatuLangileLaburpenakTursoAsync(cancellationToken).ConfigureAwait(false);
+            return await ZerrendatuLangileLaburpenakTursoAsync(sektoreIragazkia, cancellationToken).ConfigureAwait(false);
+
+        if (sektoreIragazkia is > 0)
+        {
+            return await _sqliteKonexioa!.QueryAsync<ErabiltzaileLaburpena>(
+                """
+                SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                       COALESCE(Aktiboa, 1) AS Aktiboa
+                FROM Erabiltzaileak
+                WHERE Rola = ? AND Sektorea = ?
+                ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE
+                """,
+                (int)ErabiltzaileRola.Langilea,
+                sektoreIragazkia.Value).ConfigureAwait(false);
+        }
 
         var zerrenda = await _sqliteKonexioa!.QueryAsync<ErabiltzaileLaburpena>(
             """
@@ -623,19 +663,41 @@ public sealed partial class DatuBaseaZerbitzua
         }, cancellationToken).ConfigureAwait(false);
     }
 
-    private async Task<IReadOnlyList<ErabiltzaileLaburpena>> ZerrendatuLangileLaburpenakTursoAsync(CancellationToken cancellationToken)
+    private async Task<IReadOnlyList<ErabiltzaileLaburpena>> ZerrendatuLangileLaburpenakTursoAsync(
+        int? sektoreIragazkia,
+        CancellationToken cancellationToken)
     {
         return await ExekutatuTursoanAsync(async bezeroa =>
         {
             cancellationToken.ThrowIfCancellationRequested();
-            const string sql = """
-                SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
-                       COALESCE(Aktiboa, 1) AS Aktiboa
-                FROM Erabiltzaileak
-                WHERE Rola = ?
-                ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
-                """;
-            var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, (int)ErabiltzaileRola.Langilea).ConfigureAwait(false);
+            TursoHttpExekuzioarenEmaitza emaitza;
+            if (sektoreIragazkia is > 0)
+            {
+                const string sqlSektorea = """
+                    SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                           COALESCE(Aktiboa, 1) AS Aktiboa
+                    FROM Erabiltzaileak
+                    WHERE Rola = ? AND Sektorea = ?
+                    ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
+                    """;
+                emaitza = await bezeroa.ExekutatuAsync(
+                    sqlSektorea,
+                    cancellationToken,
+                    (int)ErabiltzaileRola.Langilea,
+                    LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
+            }
+            else
+            {
+                const string sql = """
+                    SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                           COALESCE(Aktiboa, 1) AS Aktiboa
+                    FROM Erabiltzaileak
+                    WHERE Rola = ?
+                    ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
+                    """;
+                emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, (int)ErabiltzaileRola.Langilea).ConfigureAwait(false);
+            }
+
             return MapeatuLangileLaburpenak(emaitza);
         }, cancellationToken).ConfigureAwait(false);
     }

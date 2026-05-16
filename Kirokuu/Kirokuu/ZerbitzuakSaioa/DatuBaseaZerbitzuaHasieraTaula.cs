@@ -16,19 +16,22 @@ public sealed partial class DatuBaseaZerbitzua
     public Task<double> EskuratuOnartutakoGastuenGuztiraLangileAsync(
         int erabiltzaileId,
         CancellationToken cancellationToken = default) =>
-        EskuratuOnartutakoGastuenGuztiraBarneanAsync(erabiltzaileId, cancellationToken);
+        EskuratuOnartutakoGastuenGuztiraBarneanAsync(erabiltzaileId, null, cancellationToken);
 
     public Task<double> EskuratuOnartutakoGastuenGuztiraOrguOrokorraAsync(
+        int? sektoreIragazkia = null,
         CancellationToken cancellationToken = default) =>
-        EskuratuOnartutakoGastuenGuztiraBarneanAsync(null, cancellationToken);
+        EskuratuOnartutakoGastuenGuztiraBarneanAsync(null, sektoreIragazkia, cancellationToken);
 
     public Task<int> EskuratuZainTxartenKopuruaLangileAsync(
         int erabiltzaileId,
         CancellationToken cancellationToken = default) =>
-        EskuratuZainTxartenKopuruaBarneanAsync(erabiltzaileId, cancellationToken);
+        EskuratuZainTxartenKopuruaBarneanAsync(erabiltzaileId, null, cancellationToken);
 
-    public Task<int> EskuratuZainTxartenKopuruaOrguOrokorraAsync(CancellationToken cancellationToken = default) =>
-        EskuratuZainTxartenKopuruaBarneanAsync(null, cancellationToken);
+    public Task<int> EskuratuZainTxartenKopuruaOrguOrokorraAsync(
+        int? sektoreIragazkia = null,
+        CancellationToken cancellationToken = default) =>
+        EskuratuZainTxartenKopuruaBarneanAsync(null, sektoreIragazkia, cancellationToken);
 
     public async Task<IReadOnlyList<HilabetekoGastuAgregatua>> EskuratuAzkenHilabeteetakoOnartutakoGastuakLangileAsync(
         int erabiltzaileId,
@@ -93,6 +96,7 @@ public sealed partial class DatuBaseaZerbitzua
 
     public async Task<IReadOnlyList<HilabetekoGastuAgregatua>> EskuratuAzkenHilabeteetakoOnartutakoGastuakOrguOrokorraAsync(
         int hilabeteKopurua,
+        int? sektoreIragazkia = null,
         CancellationToken cancellationToken = default)
     {
         if (hilabeteKopurua <= 0)
@@ -107,42 +111,93 @@ public sealed partial class DatuBaseaZerbitzua
         {
             var zerrenda = await ExekutatuTursoanAsync(async bezeroa =>
             {
-                const string sql = """
-                    SELECT substr(gl.GastuData, 1, 7) AS Hilabetea,
-                           SUM(gl.Zenbatekoa_Guztira) AS Guztira
-                    FROM GastuLerroak gl
-                    INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
-                    WHERE bt.Egoera = ?
-                      AND length(gl.GastuData) >= 7
-                      AND substr(gl.GastuData, 1, 7) >= ?
-                    GROUP BY substr(gl.GastuData, 1, 7)
-                    ORDER BY Hilabetea ASC;
-                    """;
-                var emaitza = await bezeroa.ExekutatuAsync(
-                    sql,
-                    cancellationToken,
-                    LibsqlLoturaNormalizatua(TxostenEgoera.Onartua),
-                    LibsqlLoturaNormalizatua(minHilabetea)).ConfigureAwait(false);
+                TursoHttpExekuzioarenEmaitza emaitza;
+                if (sektoreIragazkia is > 0)
+                {
+                    const string sqlSektorea = """
+                        SELECT substr(gl.GastuData, 1, 7) AS Hilabetea,
+                               SUM(gl.Zenbatekoa_Guztira) AS Guztira
+                        FROM GastuLerroak gl
+                        INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                        INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                        WHERE bt.Egoera = ?
+                          AND e.Sektorea = ?
+                          AND length(gl.GastuData) >= 7
+                          AND substr(gl.GastuData, 1, 7) >= ?
+                        GROUP BY substr(gl.GastuData, 1, 7)
+                        ORDER BY Hilabetea ASC;
+                        """;
+                    emaitza = await bezeroa.ExekutatuAsync(
+                        sqlSektorea,
+                        cancellationToken,
+                        LibsqlLoturaNormalizatua(TxostenEgoera.Onartua),
+                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value),
+                        LibsqlLoturaNormalizatua(minHilabetea)).ConfigureAwait(false);
+                }
+                else
+                {
+                    const string sql = """
+                        SELECT substr(gl.GastuData, 1, 7) AS Hilabetea,
+                               SUM(gl.Zenbatekoa_Guztira) AS Guztira
+                        FROM GastuLerroak gl
+                        INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                        WHERE bt.Egoera = ?
+                          AND length(gl.GastuData) >= 7
+                          AND substr(gl.GastuData, 1, 7) >= ?
+                        GROUP BY substr(gl.GastuData, 1, 7)
+                        ORDER BY Hilabetea ASC;
+                        """;
+                    emaitza = await bezeroa.ExekutatuAsync(
+                        sql,
+                        cancellationToken,
+                        LibsqlLoturaNormalizatua(TxostenEgoera.Onartua),
+                        LibsqlLoturaNormalizatua(minHilabetea)).ConfigureAwait(false);
+                }
+
                 return MapeatuHilabetekoGastuAgregatuak(emaitza);
             }, cancellationToken).ConfigureAwait(false);
 
             return OsatuHilabeteenZuloak(zerrenda, hilabeteKopurua);
         }
 
-        var sqliteZerrenda = await _sqliteKonexioa!.QueryAsync<HilabetekoGastuAgregatua>(
-            """
-            SELECT substr(gl.GastuData, 1, 7) AS Hilabetea,
-                   SUM(gl.Zenbatekoa_Guztira) AS Guztira
-            FROM GastuLerroak gl
-            INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
-            WHERE bt.Egoera = ?
-              AND length(gl.GastuData) >= 7
-              AND substr(gl.GastuData, 1, 7) >= ?
-            GROUP BY substr(gl.GastuData, 1, 7)
-            ORDER BY Hilabetea ASC
-            """,
-            TxostenEgoera.Onartua,
-            minHilabetea).ConfigureAwait(false);
+        IReadOnlyList<HilabetekoGastuAgregatua> sqliteZerrenda;
+        if (sektoreIragazkia is > 0)
+        {
+            sqliteZerrenda = await _sqliteKonexioa!.QueryAsync<HilabetekoGastuAgregatua>(
+                """
+                SELECT substr(gl.GastuData, 1, 7) AS Hilabetea,
+                       SUM(gl.Zenbatekoa_Guztira) AS Guztira
+                FROM GastuLerroak gl
+                INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                WHERE bt.Egoera = ?
+                  AND e.Sektorea = ?
+                  AND length(gl.GastuData) >= 7
+                  AND substr(gl.GastuData, 1, 7) >= ?
+                GROUP BY substr(gl.GastuData, 1, 7)
+                ORDER BY Hilabetea ASC
+                """,
+                TxostenEgoera.Onartua,
+                sektoreIragazkia.Value,
+                minHilabetea).ConfigureAwait(false);
+        }
+        else
+        {
+            sqliteZerrenda = await _sqliteKonexioa!.QueryAsync<HilabetekoGastuAgregatua>(
+                """
+                SELECT substr(gl.GastuData, 1, 7) AS Hilabetea,
+                       SUM(gl.Zenbatekoa_Guztira) AS Guztira
+                FROM GastuLerroak gl
+                INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                WHERE bt.Egoera = ?
+                  AND length(gl.GastuData) >= 7
+                  AND substr(gl.GastuData, 1, 7) >= ?
+                GROUP BY substr(gl.GastuData, 1, 7)
+                ORDER BY Hilabetea ASC
+                """,
+                TxostenEgoera.Onartua,
+                minHilabetea).ConfigureAwait(false);
+        }
 
         return OsatuHilabeteenZuloak(sqliteZerrenda, hilabeteKopurua);
     }
@@ -198,6 +253,7 @@ public sealed partial class DatuBaseaZerbitzua
     }
 
     public async Task<IReadOnlyList<KategoriakoGastuAgregatua>> EskuratuKategoriakoOnartutakoGastuakOrguOrokorraAsync(
+        int? sektoreIragazkia = null,
         CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
@@ -207,22 +263,64 @@ public sealed partial class DatuBaseaZerbitzua
         {
             return await ExekutatuTursoanAsync(async bezeroa =>
             {
-                const string sql = """
-                    SELECT gk.Izena AS KontzeptuIzena,
-                           SUM(gl.Zenbatekoa_Guztira) AS Guztira
-                    FROM GastuLerroak gl
-                    INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
-                    INNER JOIN GastuKontzeptuak gk ON gk.KategoriaId = gl.KontzeptuId
-                    WHERE bt.Egoera = ?
-                    GROUP BY gk.Izena
-                    ORDER BY Guztira DESC;
-                    """;
-                var emaitza = await bezeroa.ExekutatuAsync(
-                    sql,
-                    cancellationToken,
-                    LibsqlLoturaNormalizatua(TxostenEgoera.Onartua)).ConfigureAwait(false);
+                TursoHttpExekuzioarenEmaitza emaitza;
+                if (sektoreIragazkia is > 0)
+                {
+                    const string sqlSektorea = """
+                        SELECT gk.Izena AS KontzeptuIzena,
+                               SUM(gl.Zenbatekoa_Guztira) AS Guztira
+                        FROM GastuLerroak gl
+                        INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                        INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                        INNER JOIN GastuKontzeptuak gk ON gk.KategoriaId = gl.KontzeptuId
+                        WHERE bt.Egoera = ? AND e.Sektorea = ?
+                        GROUP BY gk.Izena
+                        ORDER BY Guztira DESC;
+                        """;
+                    emaitza = await bezeroa.ExekutatuAsync(
+                        sqlSektorea,
+                        cancellationToken,
+                        LibsqlLoturaNormalizatua(TxostenEgoera.Onartua),
+                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
+                }
+                else
+                {
+                    const string sql = """
+                        SELECT gk.Izena AS KontzeptuIzena,
+                               SUM(gl.Zenbatekoa_Guztira) AS Guztira
+                        FROM GastuLerroak gl
+                        INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                        INNER JOIN GastuKontzeptuak gk ON gk.KategoriaId = gl.KontzeptuId
+                        WHERE bt.Egoera = ?
+                        GROUP BY gk.Izena
+                        ORDER BY Guztira DESC;
+                        """;
+                    emaitza = await bezeroa.ExekutatuAsync(
+                        sql,
+                        cancellationToken,
+                        LibsqlLoturaNormalizatua(TxostenEgoera.Onartua)).ConfigureAwait(false);
+                }
+
                 return MapeatuKategoriakoGastuAgregatuak(emaitza);
             }, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (sektoreIragazkia is > 0)
+        {
+            return await _sqliteKonexioa!.QueryAsync<KategoriakoGastuAgregatua>(
+                """
+                SELECT gk.Izena AS KontzeptuIzena,
+                       SUM(gl.Zenbatekoa_Guztira) AS Guztira
+                FROM GastuLerroak gl
+                INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                INNER JOIN GastuKontzeptuak gk ON gk.KategoriaId = gl.KontzeptuId
+                WHERE bt.Egoera = ? AND e.Sektorea = ?
+                GROUP BY gk.Izena
+                ORDER BY Guztira DESC
+                """,
+                TxostenEgoera.Onartua,
+                sektoreIragazkia.Value).ConfigureAwait(false);
         }
 
         return await _sqliteKonexioa!.QueryAsync<KategoriakoGastuAgregatua>(
@@ -278,6 +376,7 @@ public sealed partial class DatuBaseaZerbitzua
     }
 
     public async Task<IReadOnlyList<TxostenEgoeraKopurua>> EskuratuTxostenKopuruakEgoerarenAraberaOrguOrokorraAsync(
+        int? sektoreIragazkia = null,
         CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
@@ -287,14 +386,46 @@ public sealed partial class DatuBaseaZerbitzua
         {
             return await ExekutatuTursoanAsync(async bezeroa =>
             {
-                const string sql = """
-                    SELECT bt.Egoera AS Egoera, COUNT(*) AS Kopurua
-                    FROM BidaiaTxostenak bt
-                    GROUP BY bt.Egoera;
-                    """;
-                var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
+                TursoHttpExekuzioarenEmaitza emaitza;
+                if (sektoreIragazkia is > 0)
+                {
+                    const string sqlSektorea = """
+                        SELECT bt.Egoera AS Egoera, COUNT(*) AS Kopurua
+                        FROM BidaiaTxostenak bt
+                        INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                        WHERE e.Sektorea = ?
+                        GROUP BY bt.Egoera;
+                        """;
+                    emaitza = await bezeroa.ExekutatuAsync(
+                        sqlSektorea,
+                        cancellationToken,
+                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
+                }
+                else
+                {
+                    const string sql = """
+                        SELECT bt.Egoera AS Egoera, COUNT(*) AS Kopurua
+                        FROM BidaiaTxostenak bt
+                        GROUP BY bt.Egoera;
+                        """;
+                    emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
+                }
+
                 return MapeatuTxostenEgoeraKopuruak(emaitza);
             }, cancellationToken).ConfigureAwait(false);
+        }
+
+        if (sektoreIragazkia is > 0)
+        {
+            return await _sqliteKonexioa!.QueryAsync<TxostenEgoeraKopurua>(
+                """
+                SELECT bt.Egoera AS Egoera, COUNT(*) AS Kopurua
+                FROM BidaiaTxostenak bt
+                INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                WHERE e.Sektorea = ?
+                GROUP BY bt.Egoera
+                """,
+                sektoreIragazkia.Value).ConfigureAwait(false);
         }
 
         return await _sqliteKonexioa!.QueryAsync<TxostenEgoeraKopurua>(
@@ -307,9 +438,10 @@ public sealed partial class DatuBaseaZerbitzua
 
     private async Task<double> EskuratuOnartutakoGastuenGuztiraBarneanAsync(
         int? erabiltzaileId,
+        int? sektoreIragazkia,
         CancellationToken cancellationToken)
     {
-        if (erabiltzaileId is <= 0)
+        if (erabiltzaileId is <= 0 && erabiltzaileId is not null)
             return 0;
 
         await HasieratuAsync().ConfigureAwait(false);
@@ -335,6 +467,21 @@ public sealed partial class DatuBaseaZerbitzua
                         cancellationToken,
                         LibsqlLoturaNormalizatua(idLangile),
                         LibsqlLoturaNormalizatua(TxostenEgoera.Onartua)).ConfigureAwait(false);
+                }
+                else if (sektoreIragazkia is > 0)
+                {
+                    sql = """
+                          SELECT COALESCE(SUM(gl.Zenbatekoa_Guztira), 0) AS Guztira
+                          FROM GastuLerroak gl
+                          INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                          INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                          WHERE bt.Egoera = ? AND e.Sektorea = ?;
+                          """;
+                    emaitza = await bezeroa.ExekutatuAsync(
+                        sql,
+                        cancellationToken,
+                        LibsqlLoturaNormalizatua(TxostenEgoera.Onartua),
+                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
                 }
                 else
                 {
@@ -369,6 +516,21 @@ public sealed partial class DatuBaseaZerbitzua
             return lerroak.FirstOrDefault()?.Guztira ?? 0;
         }
 
+        if (sektoreIragazkia is > 0)
+        {
+            var guztiraSektorea = await _sqliteKonexioa!.QueryAsync<GuztiraBatuka>(
+                """
+                SELECT COALESCE(SUM(gl.Zenbatekoa_Guztira), 0) AS Guztira
+                FROM GastuLerroak gl
+                INNER JOIN BidaiaTxostenak bt ON bt.TxostenId = gl.TxostenId
+                INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                WHERE bt.Egoera = ? AND e.Sektorea = ?
+                """,
+                TxostenEgoera.Onartua,
+                sektoreIragazkia.Value).ConfigureAwait(false);
+            return guztiraSektorea.FirstOrDefault()?.Guztira ?? 0;
+        }
+
         var guztiraOrgu = await _sqliteKonexioa!.QueryAsync<GuztiraBatuka>(
             """
             SELECT COALESCE(SUM(gl.Zenbatekoa_Guztira), 0) AS Guztira
@@ -381,9 +543,12 @@ public sealed partial class DatuBaseaZerbitzua
         return guztiraOrgu.FirstOrDefault()?.Guztira ?? 0;
     }
 
-    private async Task<int> EskuratuZainTxartenKopuruaBarneanAsync(int? erabiltzaileId, CancellationToken cancellationToken)
+    private async Task<int> EskuratuZainTxartenKopuruaBarneanAsync(
+        int? erabiltzaileId,
+        int? sektoreIragazkia,
+        CancellationToken cancellationToken)
     {
-        if (erabiltzaileId is <= 0)
+        if (erabiltzaileId is <= 0 && erabiltzaileId is not null)
             return 0;
 
         await HasieratuAsync().ConfigureAwait(false);
@@ -407,6 +572,20 @@ public sealed partial class DatuBaseaZerbitzua
                         cancellationToken,
                         LibsqlLoturaNormalizatua(idLangile),
                         LibsqlLoturaNormalizatua(TxostenEgoera.Zain)).ConfigureAwait(false);
+                }
+                else if (sektoreIragazkia is > 0)
+                {
+                    const string sqlSektorea = """
+                        SELECT COUNT(*) AS Kopurua
+                        FROM BidaiaTxostenak bt
+                        INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                        WHERE bt.Egoera = ? AND e.Sektorea = ?;
+                        """;
+                    emaitza = await bezeroa.ExekutatuAsync(
+                        sqlSektorea,
+                        cancellationToken,
+                        LibsqlLoturaNormalizatua(TxostenEgoera.Zain),
+                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
                 }
                 else
                 {
@@ -437,6 +616,19 @@ public sealed partial class DatuBaseaZerbitzua
                 id,
                 TxostenEgoera.Zain).ConfigureAwait(false);
             return kop;
+        }
+
+        if (sektoreIragazkia is > 0)
+        {
+            return await _sqliteKonexioa!.ExecuteScalarAsync<int>(
+                """
+                SELECT COUNT(*)
+                FROM BidaiaTxostenak bt
+                INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = bt.ErabiltzaileId
+                WHERE bt.Egoera = ? AND e.Sektorea = ?
+                """,
+                TxostenEgoera.Zain,
+                sektoreIragazkia.Value).ConfigureAwait(false);
         }
 
         return await _sqliteKonexioa!.ExecuteScalarAsync<int>(

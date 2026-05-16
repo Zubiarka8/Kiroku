@@ -65,7 +65,7 @@ public sealed partial class DatuBaseaZerbitzua
         await HasieratuAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
 
         if (_urrunTursoModua)
         {
@@ -99,6 +99,14 @@ public sealed partial class DatuBaseaZerbitzua
         await HasieratuAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
+        txostena.HasieraData = DataOrduaBalioak.DataOrduaOsatu(txostena.HasieraData);
+        txostena.AmaieraData = DataOrduaBalioak.DataOrduaOsatu(txostena.AmaieraData);
+        txostena.SorkuntzaData = DataOrduaBalioak.DataOrduaOsatu(txostena.SorkuntzaData);
+        txostena.AzkenEguneratzea = DataOrduaBalioak.DataOrduaOsatu(txostena.AzkenEguneratzea);
+        if (!string.IsNullOrWhiteSpace(txostena.DataAprobazioa))
+            txostena.DataAprobazioa = DataOrduaBalioak.DataOrduaOsatu(txostena.DataAprobazioa);
+        gastuLerroa.GastuData = DataOrduaBalioak.DataOrduaOsatu(gastuLerroa.GastuData);
+
         if (_urrunTursoModua)
         {
             await ExekutatuTursoanAsync(async bezeroa =>
@@ -107,16 +115,16 @@ public sealed partial class DatuBaseaZerbitzua
                     INSERT INTO BidaiaTxostenak
                       (ErabiltzaileId, LangileDNI, Saila, Helmuga, BidaiaHelburua,
                        HasieraData, AmaieraData, PertsonaKopurua, JasoAurrerakina, Egoera,
-                       AdminOharra, MonetaKodea, SorkuntzaData, AzkenEguneraketa, DataAprobazioa)
-                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
+                       AdminOharra, EmpresaIbilgailua, MonetaKodea, SorkuntzaData, AzkenEguneraketa, DataAprobazioa)
+                    VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);
                     """;
 
                 // last_insert_rowid() works within the same pipeline session (single HTTP request)
                 const string gastuSql = """
                     INSERT INTO GastuLerroak
                       (TxostenId, KategoriaId, GastuData, GarraioBidea,
-                       Zenbatekoa_Guztira, Kilometroak, TicketArgazkiBidea, Oharrak, KontzeptuId)
-                    VALUES (last_insert_rowid(), ?,?,?,?,?,?,?,?);
+                       Zenbatekoa_Guztira, Kilometroak, TicketArgazkiBidea, Oharrak, KontzeptuId, IbilgailuaBeharrezkoa)
+                    VALUES (last_insert_rowid(), ?,?,?,?,?,?,?,?,?);
                     """;
 
                 await bezeroa.ExekutatuBatchAsync(
@@ -135,6 +143,7 @@ public sealed partial class DatuBaseaZerbitzua
                             LibsqlLoturaNormalizatua(txostena.JasoAurrekina),
                             LibsqlLoturaNormalizatua(txostena.Egoera),
                             LibsqlLoturaNormalizatua(txostena.AdminOharra ?? string.Empty),
+                            LibsqlLoturaNormalizatua(txostena.EmpresaIbilgailua),
                             LibsqlLoturaNormalizatua(txostena.MonetaKodea),
                             LibsqlLoturaNormalizatua(txostena.SorkuntzaData),
                             LibsqlLoturaNormalizatua(txostena.AzkenEguneratzea),
@@ -149,7 +158,8 @@ public sealed partial class DatuBaseaZerbitzua
                             LibsqlLoturaNormalizatua(gastuLerroa.Kilometroak),
                             LibsqlLoturaNormalizatua(gastuLerroa.TicketArgazkia),
                             LibsqlLoturaNormalizatua(gastuLerroa.Oharrak),
-                            LibsqlLoturaNormalizatua(gastuLerroa.KontzeptuId)
+                            LibsqlLoturaNormalizatua(gastuLerroa.KontzeptuId),
+                            LibsqlLoturaNormalizatua(gastuLerroa.IbilgailuaBeharrezkoa)
                         })
                     },
                     cancellationToken).ConfigureAwait(false);

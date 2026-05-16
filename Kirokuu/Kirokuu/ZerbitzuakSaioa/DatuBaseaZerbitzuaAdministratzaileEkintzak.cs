@@ -215,7 +215,7 @@ public sealed partial class DatuBaseaZerbitzua
                 Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
                 Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
                 GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0),
-                HasieraData = IrakurriMapaTestuaLehenetsia(mapa, "HasieraData"),
+                HasieraData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "HasieraData")),
                 AdminTestua = IrakurriMapaTestuaLehenetsia(mapa, "AdminTestua")
             });
         }
@@ -243,7 +243,7 @@ public sealed partial class DatuBaseaZerbitzua
         var zerrenda = await _sqliteKonexioa!.QueryAsync<BidaiaTxostena>(
             "SELECT * FROM BidaiaTxostenak WHERE TxostenId = ? LIMIT 1",
             txostenId).ConfigureAwait(false);
-        return zerrenda.FirstOrDefault();
+        return NormalizatuBidaiaTxostenaDataOrduak(zerrenda.FirstOrDefault());
     }
 
     public async Task<IReadOnlyList<GastuLerroa>> ZerrendatuGastuLerroakTxostenIdzAsync(int txostenId, CancellationToken cancellationToken = default)
@@ -263,9 +263,11 @@ public sealed partial class DatuBaseaZerbitzua
             }, cancellationToken).ConfigureAwait(false);
         }
 
-        return await _sqliteKonexioa!.QueryAsync<GastuLerroa>(
+        var lerroak = await _sqliteKonexioa!.QueryAsync<GastuLerroa>(
             "SELECT * FROM GastuLerroak WHERE TxostenId = ? ORDER BY GastuData DESC",
             txostenId).ConfigureAwait(false);
+        NormalizatuGastuLerroDataOrduak(lerroak);
+        return lerroak;
     }
 
     public async Task<IReadOnlyList<TxostenOnarpenLaburpena>> ZerrendatuTxostenOnarpenLaburrakAsync(
@@ -449,23 +451,50 @@ public sealed partial class DatuBaseaZerbitzua
         }, cancellationToken).ConfigureAwait(false);
     }
 
+    public async Task<BidaiaTxostena?> EskuratuBidaiaTxostenaAdministratzailearentzatAsync(
+        int txostenId,
+        int? sektoreIragazkia,
+        CancellationToken cancellationToken = default)
+    {
+        var txostena = await EskuratuBidaiaTxostenaIdzAsync(txostenId, cancellationToken).ConfigureAwait(false);
+        if (txostena is null)
+            return null;
+
+        if (sektoreIragazkia is > 0)
+        {
+            var batDator = await ErabiltzaileaSektorearekinBatDatorAsync(
+                txostena.ErabiltzaileId,
+                sektoreIragazkia.Value,
+                cancellationToken).ConfigureAwait(false);
+            if (!batDator)
+                return null;
+        }
+
+        return txostena;
+    }
+
     public async Task EguneratuTxostenEgoeraAdministratzaileAsync(
         int txostenId,
         string egoeraBerria,
         string? adminOharra,
         int administratzaileErabiltzaileId,
+        int? sektoreIragazkia = null,
         CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var txostena = await EskuratuBidaiaTxostenaIdzAsync(txostenId, cancellationToken).ConfigureAwait(false)
-            ?? throw new InvalidOperationException("Txostena ez da aurkitu.");
+        var txostena = await EskuratuBidaiaTxostenaAdministratzailearentzatAsync(
+                txostenId,
+                sektoreIragazkia,
+                cancellationToken)
+            .ConfigureAwait(false)
+            ?? throw new InvalidOperationException("Txostena ez da aurkitu edo ez duzu baimenik.");
 
         var adminErabiltzailea = await BilatuErabiltzaileaIdzAsync(administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
         var adminDNI = adminErabiltzailea?.DNI;
 
-        var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
         txostena.Egoera = egoeraBerria;
         txostena.AdminDNI = string.IsNullOrWhiteSpace(adminDNI) ? null : adminDNI.Trim();
         txostena.AdminOharra = string.Equals(egoeraBerria, TxostenEgoera.Ukatua, StringComparison.Ordinal)
@@ -507,6 +536,84 @@ public sealed partial class DatuBaseaZerbitzua
             : AuditoretzaEkintzaTxostenaUkatu;
         var deskribapena = $"{txostenId} · {egoeraBerria}";
         await IdazkiAuditoretzaLogaAsync(ekintza, deskribapena, administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task EguneratuTxostenIbilgailuaEtaKilometroakAsync(
+        int txostenId,
+        int empresaIbilgailua,
+        string garraioBidea,
+        double kilometroak,
+        CancellationToken cancellationToken = default)
+    {
+        await HasieratuAsync().ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (txostenId <= 0)
+            throw new ArgumentException("Txosten ID baliogabea.", nameof(txostenId));
+
+        var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
+        var garraioGarbia = garraioBidea.Trim();
+        var kilometroGarbiak = kilometroak < 0 ? 0 : Math.Round(kilometroak, 2, MidpointRounding.AwayFromZero);
+
+        if (_urrunTursoModua)
+        {
+            await ExekutatuTursoanAsync(async bezeroa =>
+            {
+                const string txostenSql = """
+                    UPDATE BidaiaTxostenak
+                    SET EmpresaIbilgailua = ?, AzkenEguneraketa = ?
+                    WHERE TxostenId = ?;
+                    """;
+                const string gastuSql = """
+                    UPDATE GastuLerroak
+                    SET GarraioBidea = ?, Kilometroak = ?
+                    WHERE TxostenId = ?
+                      AND (IbilgailuaBeharrezkoa = 1
+                           OR TRIM(COALESCE(GarraioBidea, '')) IN (?, ?));
+                    """;
+                await bezeroa.ExekutatuBatchAsync(
+                    new (string, object?[])[]
+                    {
+                        (txostenSql, new object?[]
+                        {
+                            LibsqlLoturaNormalizatua(empresaIbilgailua),
+                            LibsqlLoturaNormalizatua(orain),
+                            LibsqlLoturaNormalizatua(txostenId)
+                        }),
+                        (gastuSql, new object?[]
+                        {
+                            LibsqlLoturaNormalizatua(garraioGarbia),
+                            LibsqlLoturaNormalizatua(kilometroGarbiak),
+                            LibsqlLoturaNormalizatua(txostenId),
+                            LibsqlLoturaNormalizatua(GarraioBideaBalioak.EnpresakoIbilgailua),
+                            LibsqlLoturaNormalizatua(GarraioBideaBalioak.NorberarenIbilgailua)
+                        })
+                    },
+                    cancellationToken).ConfigureAwait(false);
+                return 0;
+            }, cancellationToken).ConfigureAwait(false);
+            return;
+        }
+
+        await _sqliteKonexioa!.ExecuteAsync(
+            "UPDATE BidaiaTxostenak SET EmpresaIbilgailua = ?, AzkenEguneraketa = ? WHERE TxostenId = ?",
+            empresaIbilgailua,
+            orain,
+            txostenId).ConfigureAwait(false);
+
+        await _sqliteKonexioa.ExecuteAsync(
+            """
+            UPDATE GastuLerroak
+            SET GarraioBidea = ?, Kilometroak = ?
+            WHERE TxostenId = ?
+              AND (IbilgailuaBeharrezkoa = 1
+                   OR TRIM(COALESCE(GarraioBidea, '')) IN (?, ?))
+            """,
+            garraioGarbia,
+            kilometroGarbiak,
+            txostenId,
+            GarraioBideaBalioak.EnpresakoIbilgailua,
+            GarraioBideaBalioak.NorberarenIbilgailua).ConfigureAwait(false);
     }
 
     private async Task IdazkiAuditoretzaLogaAsync(
@@ -620,8 +727,8 @@ public sealed partial class DatuBaseaZerbitzua
             Saila = IrakurriMapaTestuaLehenetsia(mapa, "Saila"),
             Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
             BidaiaHelburua = IrakurriMapaTestuaLehenetsia(mapa, "BidaiaHelburua"),
-            HasieraData = IrakurriMapaTestuaLehenetsia(mapa, "HasieraData"),
-            AmaieraData = IrakurriMapaTestuaLehenetsia(mapa, "AmaieraData"),
+            HasieraData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "HasieraData")),
+            AmaieraData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "AmaieraData")),
             PertsonaKopurua = IrakurriMapaOsoaLehenetsia(mapa, "PertsonaKopurua", 0),
             JasoAurrekina = IrakurriMapaOsoaLehenetsia(mapa, "JasoAurrerakina", 0),
             Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
@@ -633,6 +740,29 @@ public sealed partial class DatuBaseaZerbitzua
             AzkenEguneratzea = IrakurriMapaTestuaLehenetsia(mapa, "AzkenEguneraketa"),
             DataAprobazioa = IrakurriMapaTestuaLehenetsia(mapa, "DataAprobazioa")
         };
+    }
+
+    private static BidaiaTxostena? NormalizatuBidaiaTxostenaDataOrduak(BidaiaTxostena? txostena)
+    {
+        if (txostena is null)
+            return null;
+
+        txostena.HasieraData = DataOrduaBalioak.DataOrduaOsatu(txostena.HasieraData);
+        txostena.AmaieraData = DataOrduaBalioak.DataOrduaOsatu(txostena.AmaieraData);
+        if (!string.IsNullOrWhiteSpace(txostena.SorkuntzaData))
+            txostena.SorkuntzaData = DataOrduaBalioak.DataOrduaOsatu(txostena.SorkuntzaData);
+        if (!string.IsNullOrWhiteSpace(txostena.AzkenEguneratzea))
+            txostena.AzkenEguneratzea = DataOrduaBalioak.DataOrduaOsatu(txostena.AzkenEguneratzea);
+        if (!string.IsNullOrWhiteSpace(txostena.DataAprobazioa))
+            txostena.DataAprobazioa = DataOrduaBalioak.DataOrduaOsatu(txostena.DataAprobazioa);
+
+        return txostena;
+    }
+
+    private static void NormalizatuGastuLerroDataOrduak(IEnumerable<GastuLerroa> lerroak)
+    {
+        foreach (var lerroa in lerroak)
+            lerroa.GastuData = DataOrduaBalioak.DataOrduaOsatu(lerroa.GastuData);
     }
 
     private static double IrakurriMapaKomaHamarkatuaLehenetsia(Dictionary<string, string> mapa, string gakoa, double lehenetsia)
@@ -655,7 +785,7 @@ public sealed partial class DatuBaseaZerbitzua
                 GastuId = IrakurriMapaOsoaLehenetsia(mapa, "GastuId", 0),
                 TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
                 KategoriaId = IrakurriMapaOsoaLehenetsia(mapa, "KategoriaId", 0),
-                GastuData = IrakurriMapaTestuaLehenetsia(mapa, "GastuData"),
+                GastuData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "GastuData")),
                 GarraioBidea = IrakurriMapaTestuaLehenetsia(mapa, "GarraioBidea"),
                 ZenbatekoaGuztira = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Zenbatekoa_Guztira", 0),
                 Kilometroak = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Kilometroak", 0),
@@ -708,7 +838,7 @@ public sealed partial class DatuBaseaZerbitzua
                 Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
                 Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
                 GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0),
-                HasieraData = IrakurriMapaTestuaLehenetsia(mapa, "HasieraData")
+                HasieraData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "HasieraData"))
             };
             if (egoeraBerretsia is not null)
                 laburpena.Egoera = egoeraBerretsia;
@@ -734,7 +864,7 @@ public sealed partial class DatuBaseaZerbitzua
             if (langilea is null)
                 return;
 
-            var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
 
             var txostena = new BidaiaTxostena
             {
@@ -800,7 +930,7 @@ public sealed partial class DatuBaseaZerbitzua
             if (!int.TryParse(langileIdStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var langileId))
                 return;
 
-            var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
 
             var txostenEmaitza = await bezeroa.ExekutatuAsync(
                 """

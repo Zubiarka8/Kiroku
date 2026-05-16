@@ -148,6 +148,14 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
                 return;
             }
 
+            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+            if (adminId is { } aid &&
+                !await _erabiltzaileZerbitzua.AdministratzaileakErabiltzaileaIkusiDezakeAsync(aid, _erabiltzaileIdZenbakia).ConfigureAwait(true))
+            {
+                ErroreMezua = "Ez duzu baimenik erabiltzaile hau ikusteko.";
+                return;
+            }
+
             Izena = erabiltzailea.Izena;
             Abizena = erabiltzailea.Abizena;
             Abizena2 = erabiltzailea.Abizena2;
@@ -250,6 +258,15 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
         if (!ErabiltzaileDatuenBalidazioLaguntzailea.PostaBaliozkoa(Posta))
         {
             ErroreMezua = "Posta helbidearen formatua ez da zuzena.";
+            return;
+        }
+
+        var adminIdGordetzean = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+        if (adminIdGordetzean is { } aidGordetzean &&
+            !await _erabiltzaileZerbitzua.AdministratzaileakSektoreaKudeatuDezakeAsync(
+                aidGordetzean, HautatutakoSektorea.Identifikatzailea).ConfigureAwait(true))
+        {
+            ErroreMezua = "Ez duzu baimenik beste sektore baten erabiltzailea kudeatzeko.";
             return;
         }
 

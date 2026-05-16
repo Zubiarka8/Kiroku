@@ -80,10 +80,9 @@ public partial class MugimenduakViewModel : ObservableObject
             int? adminSektoreId = null;
             if (adminId is { } aid)
             {
-                var admin = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(aid).ConfigureAwait(true);
-                var sId = admin?.SektorearenIdentifikatzailea ?? 0;
-                if (sId > 0)
-                    adminSektoreId = sId;
+                adminSektoreId = await _datuBaseaZerbitzua
+                    .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
+                    .ConfigureAwait(true);
             }
 
             var txostenak = await _datuBaseaZerbitzua.ZerrendatuTxostenOnarpenLaburrakAsync(TxostenEgoera.Zain, adminSektoreId).ConfigureAwait(true);
