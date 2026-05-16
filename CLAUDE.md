@@ -153,7 +153,10 @@ GastuLerroak
 
 AuditoretzaLoga
   FK  ErabiltzaileId  → Erabiltzaileak(ErabiltzaileId)   ON DELETE RESTRICT
+  FK  TxostenId       → BidaiaTxostenak(TxostenId)       ON DELETE SET NULL  [nullable]
 ```
+
+> ⚠️ Turso/libSQL **NO fuerza FKs por defecto** en sesiones HTTP (sólo SQLite local activa `PRAGMA foreign_keys = ON` por conexión). Las FK son declarativas en el `CREATE TABLE` pero **no validan INSERT/DELETE** desde la app contra Turso. Si necesitas integridad referencial estricta en producción, activa el PRAGMA en cada llamada al pipeline.
 
 `sqlite-net-pcl` ORM does NOT generate FK DDL — use raw SQL (`CREATE TABLE IF NOT EXISTS`) for all FK tables. ORM (`CreateTableAsync`) is only used for `Erabiltzaileak` and `GastuKontzeptuak`.
 
@@ -169,18 +172,21 @@ AuditoretzaLoga
 | ErabiltzaileId | INTEGER PK AUTOINCREMENT | |
 | Izena | TEXT NOT NULL | |
 | Abizena | TEXT NOT NULL | |
-| Abizena2 | TEXT NOT NULL | |
+| Abizena2 | TEXT NOT NULL DEFAULT '' | |
 | DNI | TEXT NOT NULL UNIQUE | FK target |
-| Email (Posta) | TEXT NOT NULL UNIQUE | |
-| Kargoa | TEXT NOT NULL | |
-| Sektorea | INTEGER | |
-| KargoarenIdentifikatzailea | INTEGER | |
-| Rola | INTEGER | 0=Langilea, 1=Admin, 2=CEO |
+| Email (Posta) | TEXT NOT NULL UNIQUE | C# property is `Posta`, column is `Email` |
+| Kargoa | **TEXT** NOT NULL DEFAULT '' | Cargo name as string: `"Kontularia"`, `"Komertziala"`... — NEVER INTEGER |
+| Sektorea | **TEXT** NOT NULL DEFAULT '' | Sector name as string: `"Finantzak"` \| `"Marketina"` \| `"Salmentak"` \| `""` — NEVER INTEGER |
+| Rola | INTEGER NOT NULL | 0=Langilea, 1=Admin, 2=CEO |
 | Aktiboa | INTEGER DEFAULT 1 | |
 | SorkuntzaData | TEXT NOT NULL | ISO 8601 |
 | Pasahitza | TEXT NOT NULL | SHA256+salt |
 | SaioHasieraSaiakerak | INTEGER | |
 | SaioaBlokeoaAmaieraUtc | TEXT nullable | |
+
+> ⚠️ **`Sektorea` y `Kargoa` son TEXT, no INTEGER.** Si una query SQL hace `WHERE Sektorea = 1`, está rota — Turso/SQLite devolverá 0 filas silenciosamente. Usa los nombres legibles (`'Finantzak'`, etc.) y bindea strings. Hay un helper `SektoreaTestuaIdentifikatzailetik(int)` en `DatuBaseaZerbitzuaAdministratzaileEkintzak.cs` para convertir del enum.
+>
+> 🚫 **`KargoarenIdentifikatzailea` (columna) no existe** — fue retirada. Si la ves en código, es código muerto del esquema viejo.
 
 ### `BidaiaTxostenak`
 | Column | Type | Notes |
@@ -233,10 +239,38 @@ AuditoretzaLoga
 | Column | Type | Notes |
 |---|---|---|
 | LogId | INTEGER PK AUTOINCREMENT | |
-| ErabiltzaileId | INTEGER FK | → Erabiltzaileak, RESTRICT |
-| Ekintza | TEXT NOT NULL | |
-| DataOrdua | TEXT NOT NULL | ISO 8601 UTC |
-| IP_Helbidea | TEXT | |
+| TxostenId | INTEGER nullable FK | → BidaiaTxostenak(TxostenId), ON DELETE SET NULL — null para acciones no ligadas a un txostena (login, password, etc.) |
+| ErabiltzaileId | INTEGER FK | → Erabiltzaileak(ErabiltzaileId), ON DELETE RESTRICT |
+| Ekintza | TEXT NOT NULL DEFAULT '' | `TxostenaOnartua` \| `TxostenaEzeztatu` \| `TxostenaEskatuDu`... (constantes en `DatuBaseaZerbitzuaAdministratzaileEkintzak.cs`) |
+| DataOrdua | TEXT NOT NULL DEFAULT '' | ISO 8601 UTC |
+| Deskribapena | TEXT NOT NULL DEFAULT '' | Texto libre del evento, ej. `"{TxostenId} · Onartua"` |
+| IP_Helbidea | TEXT NOT NULL DEFAULT '' | IPv4 del dispositivo (LAN). Vacío si no se pudo resolver |
+
+> 📝 Inserción en `AuditoretzaLoga` se hace **siempre** vía `IdazkiAuditoretzaLogaAsync(...)` — nunca SQL directo desde ViewModels.
+
+---
+
+## C# Model ↔ DB column mapping
+
+Algunas propiedades del modelo son **facades calculadas** con `[Ignore]` y NO se persisten. Convierten al vuelo entre el formato de almacenamiento (string) y un alias C# (int/bool) que usa la UI. Si las confundes con columnas, romperás las queries SQL.
+
+### `Erabiltzailea.cs`
+| Propiedad C# | ¿Persiste? | Columna DB | Conversión |
+|---|---|---|---|
+| `Sektorea` (string) | ✅ Sí | `Sektorea` TEXT | directa |
+| `SektorearenIdentifikatzailea` (int) | ❌ `[Ignore]` | — | facade get/set que mapea a `EnpresakoSektorea` enum (1=Finantzak, 2=Marketina, 3=Salmentak) ↔ string |
+
+### `GastuLerroa.cs`
+| Propiedad C# | ¿Persiste? | Columna DB | Conversión |
+|---|---|---|---|
+| `GastuData` (string) | ✅ Sí | `GastuData` TEXT | ISO 8601 raw |
+| `GastuDataFormateatua` (string) | ❌ `[Ignore]` | — | parsea `GastuData` y devuelve `dd/MM/yyyy` para mostrar |
+| `Kilometroak` (double) | ✅ Sí | `Kilometroak` REAL | directa |
+| `KilometroakIkagarri` (bool) | ❌ `[Ignore]` | — | `Kilometroak > 0` (binding `IsVisible`) |
+| `IbilgailuaBeharrezkoa` (int) | ✅ Sí | `IbilgailuaBeharrezkoa` INTEGER | 0 \| 1 |
+| `IbilgailuaBeharrezkoaBai` (bool) | ❌ `[Ignore]` | — | `IbilgailuaBeharrezkoa == 1` (binding `IsVisible`) |
+
+> ⚠️ Las propiedades `[Ignore]` no aparecen en SQL ni en mappers Turso. Si añades una nueva facade, recuerda decorarla SIEMPRE con `[Ignore]` (de `using SQLite;`), si no `sqlite-net-pcl` intentará crear una columna fantasma.
 
 ---
 
@@ -342,6 +376,9 @@ GarraioBidea: set when GastuKontzeptua.IbilgailuaBeharDu = 1
 - No decorative comments, ASCII art, or border symbols (`===`, `---`) in code
 - No modifications outside agreed scope without asking first
 - No `AdminDNI = string.Empty` — must be `null` before admin decision (empty string violates FK)
+- No `WHERE Sektorea = <int>` ni `WHERE Kargoa = <int>` — ambas son TEXT. Si bindeas un int, la query devuelve 0 filas sin error visible. Bindea siempre strings (`"Finantzak"`, `"Kontularia"`, ...)
+- No referencies columnas inexistentes: `KargoarenIdentifikatzailea`, `SektorearenIdentifikatzailea` (con ese nombre exacto) **NO son columnas SQL** — son propiedades C# facade o nombres muertos. La columna real es `Sektorea` / `Kargoa`
+- No olvides `[Ignore]` en propiedades calculadas — sino sqlite-net-pcl intentará crear una columna fantasma en la primera `CreateTableAsync`
 
 ---
 

@@ -322,19 +322,11 @@ public sealed partial class DatuBaseaZerbitzua
             await BermatSqliteKonexioaSortutaAsync().ConfigureAwait(false);
 
             await SortuSqliteTaulaAsync<Erabiltzailea>("Erabiltzaileak").ConfigureAwait(false);
-            await BermatuSqliteErabiltzaileEskemaAsync().ConfigureAwait(false);
             await SortuSqliteTaulaAsync<GastuKontzeptua>("GastuKontzeptuak").ConfigureAwait(false);
             await SeedSqliteGastuKontzeptuakAsync().ConfigureAwait(false);
             await SortuSqliteBidaiaTxostenaFKrekinAsync().ConfigureAwait(false);
-            await BermatuSqliteBidaiaTxostenaAdminOharraAsync().ConfigureAwait(false);
-            await BermatuSqliteBidaiaTxostenaFKMigrazioa().ConfigureAwait(false);
             await SortuSqliteGastuLerroaFKrekinAsync().ConfigureAwait(false);
-            await BermatuSqliteGastuLerroaIbilgailuaBeharrezkoaAsync().ConfigureAwait(false);
-            await BermatuSqliteGastuLerroaFKMigrazioa().ConfigureAwait(false);
             await SortuSqliteAuditoretzaLogaFKrekinAsync().ConfigureAwait(false);
-            await BermatuSqliteAuditoretzaLogaDiruSarreraIdAsync().ConfigureAwait(false);
-            await BermatuSqliteAuditoretzaLogaFKMigrazioa().ConfigureAwait(false);
-            await BermatuSqliteDniIndizeBakarraAsync().ConfigureAwait(false);
 #if DEBUG
                     await AdministratzaileLehenarenSeedGarapeneanAsync().ConfigureAwait(false);
                     await AdministratzaileProbakoDatuakSQLiteAsync().ConfigureAwait(false);
@@ -406,238 +398,13 @@ public sealed partial class DatuBaseaZerbitzua
                 DNI TEXT NOT NULL UNIQUE DEFAULT '',
                 Email TEXT NOT NULL UNIQUE,
                 Kargoa TEXT NOT NULL DEFAULT '',
-                Sektorea INTEGER NOT NULL DEFAULT 0,
-                KargoarenIdentifikatzailea INTEGER NOT NULL DEFAULT 0,
+                Sektorea TEXT NOT NULL DEFAULT '',
                 Rola INTEGER NOT NULL,
                 SorkuntzaData TEXT NOT NULL DEFAULT '',
                 Pasahitza TEXT NOT NULL DEFAULT ''
             );
             """;
         await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
-    }
-
-    private async Task BermatuSqliteErabiltzaileEskemaAsync()
-    {
-        _logger.LogDebug("SQLite Erabiltzaileak eskema egiaztatzen hasi da.");
-        GarapenLogaDebug("SQLite Erabiltzaileak eskema egiaztatzen hasi da.");
-        var zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
-
-        if (!zutabeak.Contains("Pasahitza"))
-        {
-            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN Pasahitza TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulan Pasahitza zutabea gehitu da.");
-            GarapenLogaWarning("SQLite Erabiltzaileak taulan Pasahitza zutabea gehitu da.");
-        }
-
-        zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
-        if (!zutabeak.Contains("Aktiboa"))
-        {
-            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN Aktiboa INTEGER NOT NULL DEFAULT 1").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulan Aktiboa zutabea gehitu da.");
-            GarapenLogaWarning("SQLite Erabiltzaileak taulan Aktiboa zutabea gehitu da.");
-        }
-
-        zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
-        if (!zutabeak.Contains("Sektorea"))
-        {
-            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN Sektorea INTEGER NOT NULL DEFAULT 0").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulan Sektorea zutabea gehitu da.");
-            GarapenLogaWarning("SQLite Erabiltzaileak taulan Sektorea zutabea gehitu da.");
-        }
-
-        zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
-        if (!zutabeak.Contains("KargoarenIdentifikatzailea"))
-        {
-            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN KargoarenIdentifikatzailea INTEGER NOT NULL DEFAULT 0").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulan KargoarenIdentifikatzailea zutabea gehitu da.");
-            GarapenLogaWarning("SQLite Erabiltzaileak taulan KargoarenIdentifikatzailea zutabea gehitu da.");
-        }
-
-        zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
-        if (!zutabeak.Contains("SaioHasieraSaiakerak"))
-        {
-            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN SaioHasieraSaiakerak INTEGER NOT NULL DEFAULT 0").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulan SaioHasieraSaiakerak zutabea gehitu da.");
-            GarapenLogaWarning("SQLite Erabiltzaileak taulan SaioHasieraSaiakerak zutabea gehitu da.");
-        }
-
-        zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
-        if (!zutabeak.Contains("SaioaBlokeoaAmaieraUtc"))
-        {
-            await _sqliteKonexioa!.ExecuteAsync("ALTER TABLE Erabiltzaileak ADD COLUMN SaioaBlokeoaAmaieraUtc TEXT").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulan SaioaBlokeoaAmaieraUtc zutabea gehitu da.");
-            GarapenLogaWarning("SQLite Erabiltzaileak taulan SaioaBlokeoaAmaieraUtc zutabea gehitu da.");
-        }
-
-        zutabeak = await IrakurriSqliteErabiltzaileZutabeakAsync().ConfigureAwait(false);
-        await MigratuSqlitePasahitzZaharrakAsync(zutabeak).ConfigureAwait(false);
-        await BermatuSqliteDniIndizeBakarraAsync().ConfigureAwait(false);
-        _logger.LogDebug("SQLite Erabiltzaileak eskema egiaztatzea amaitu da.");
-        GarapenLogaDebug("SQLite Erabiltzaileak eskema egiaztatzea amaitu da.");
-    }
-
-    private async Task BermatuSqliteAuditoretzaLogaDiruSarreraIdAsync()
-    {
-        var zutabeak = await _sqliteKonexioa!.QueryAsync<SqliteZutabea>("PRAGMA table_info('AuditoretzaLoga')").ConfigureAwait(false);
-        var izenak = zutabeak
-            .Select(zutabea => zutabea.Izena)
-            .Where(izena => !string.IsNullOrWhiteSpace(izena))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (!izenak.Contains("DiruSarreraId"))
-        {
-            await _sqliteKonexioa.ExecuteAsync(
-                    "ALTER TABLE AuditoretzaLoga ADD COLUMN DiruSarreraId INTEGER")
-                .ConfigureAwait(false);
-            _logger.LogWarning("SQLite AuditoretzaLoga: DiruSarreraId zutabea gehitu da.");
-            izenak.Add("DiruSarreraId");
-        }
-
-        if (!izenak.Contains("EntitateId"))
-            return;
-
-        await _sqliteKonexioa.ExecuteAsync(
-                """
-                UPDATE AuditoretzaLoga SET DiruSarreraId = CAST(EntitateId AS INTEGER)
-                WHERE Ekintza IN ('DiruSarreraOnartu', 'DiruSarreraUkatu')
-                """)
-            .ConfigureAwait(false);
-
-        try
-        {
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE AuditoretzaLoga DROP COLUMN EntitateId").ConfigureAwait(false);
-            _logger.LogWarning("SQLite AuditoretzaLoga: EntitateId zutabea kendu da.");
-        }
-        catch (SQLiteException ex)
-        {
-            _logger.LogWarning(ex, "SQLite AuditoretzaLoga: DROP COLUMN huts; taula berreraikitzen.");
-            await BerreraikiSqliteAuditoretzaLogaEntitateIdGabeAsync().ConfigureAwait(false);
-        }
-    }
-
-    private async Task BerreraikiSqliteAuditoretzaLogaEntitateIdGabeAsync()
-    {
-        await _sqliteKonexioa!.ExecuteAsync("DROP TABLE IF EXISTS AuditoretzaLoga_migr").ConfigureAwait(false);
-
-        await _sqliteKonexioa.ExecuteAsync(
-                """
-                CREATE TABLE AuditoretzaLoga_migr (
-                    LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    DiruSarreraId INTEGER,
-                    ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
-                    Ekintza TEXT NOT NULL DEFAULT '',
-                    DataOrdua TEXT NOT NULL DEFAULT '',
-                    Deskribapena TEXT NOT NULL DEFAULT '',
-                    IP_Helbidea TEXT NOT NULL DEFAULT ''
-                );
-                """)
-            .ConfigureAwait(false);
-
-        await _sqliteKonexioa.ExecuteAsync(
-                """
-                INSERT INTO AuditoretzaLoga_migr (LogId, DiruSarreraId, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea)
-                SELECT LogId,
-                       COALESCE(DiruSarreraId,
-                         CASE WHEN Ekintza IN ('DiruSarreraOnartu', 'DiruSarreraUkatu') THEN CAST(EntitateId AS INTEGER) ELSE NULL END),
-                       ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea
-                FROM AuditoretzaLoga;
-                """)
-            .ConfigureAwait(false);
-
-        await _sqliteKonexioa.ExecuteAsync("DROP TABLE AuditoretzaLoga").ConfigureAwait(false);
-        await _sqliteKonexioa.ExecuteAsync("ALTER TABLE AuditoretzaLoga_migr RENAME TO AuditoretzaLoga").ConfigureAwait(false);
-    }
-
-    private async Task BermatuSqliteBidaiaTxostenaAdminOharraAsync()
-    {
-        var zutabeak = await _sqliteKonexioa!.QueryAsync<SqliteZutabea>("PRAGMA table_info('BidaiaTxostenak')").ConfigureAwait(false);
-        var izenak = zutabeak
-            .Select(zutabea => zutabea.Izena)
-            .Where(izena => !string.IsNullOrWhiteSpace(izena))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (!izenak.Contains("AdminOharra"))
-        {
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN AdminOharra TEXT").ConfigureAwait(false);
-            _logger.LogWarning("SQLite BidaiaTxostenak taulan AdminOharra zutabea gehitu da.");
-        }
-
-        if (!izenak.Contains("LangileDNI"))
-        {
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN LangileDNI TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
-            _logger.LogWarning("SQLite BidaiaTxostenak taulan LangileDNI zutabea gehitu da.");
-        }
-
-        if (!izenak.Contains("AdminDNI"))
-        {
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN AdminDNI TEXT").ConfigureAwait(false);
-            _logger.LogWarning("SQLite BidaiaTxostenak taulan AdminDNI zutabea gehitu da.");
-        }
-
-        if (!izenak.Contains("EmpresaIbilgailua"))
-        {
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0").ConfigureAwait(false);
-            _logger.LogWarning("SQLite BidaiaTxostenak taulan EmpresaIbilgailua zutabea gehitu da.");
-        }
-    }
-
-    private async Task<HashSet<string>> IrakurriSqliteErabiltzaileZutabeakAsync()
-    {
-        var zutabeak = await _sqliteKonexioa!.QueryAsync<SqliteZutabea>("PRAGMA table_info('Erabiltzaileak')").ConfigureAwait(false);
-        return zutabeak
-            .Select(zutabea => zutabea.Izena)
-            .Where(izena => !string.IsNullOrWhiteSpace(izena))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-    }
-
-    private async Task MigratuSqlitePasahitzZaharrakAsync(HashSet<string> zutabeak)
-    {
-        if (!zutabeak.Contains("Pasahitza"))
-            return;
-
-        var erabiltzaileak = await _sqliteKonexioa!.QueryAsync<SqlitePasahitzZaharra>(
-            """
-            SELECT ErabiltzaileId, Pasahitza FROM Erabiltzaileak
-            WHERE Pasahitza IS NOT NULL AND Pasahitza <> ''
-              AND instr(Pasahitza, '|') = 0
-            """).ConfigureAwait(false);
-
-        foreach (var erabiltzailea in erabiltzaileak)
-        {
-            var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(erabiltzailea.Pasahitza);
-            var katea = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
-            await _sqliteKonexioa.ExecuteAsync(
-                    "UPDATE Erabiltzaileak SET Pasahitza = ? WHERE ErabiltzaileId = ?",
-                    katea,
-                    erabiltzailea.Id)
-                .ConfigureAwait(false);
-        }
-
-        if (erabiltzaileak.Count > 0)
-            _logger.LogWarning("SQLite erabiltzaile zaharren pasahitzak hash+gatzaren formatu bakarrera migratu dira. Kopurua: {Kopurua}.", erabiltzaileak.Count);
-    }
-
-    private async Task KenduSqliteNanIndizeBakarraAsync()
-    {
-        var indizeak = await _sqliteKonexioa!.QueryAsync<SqliteIndizea>("PRAGMA index_list('Erabiltzaileak')").ConfigureAwait(false);
-        foreach (var indizea in indizeak)
-        {
-            if (indizea.Bakarra != 1)
-                continue;
-
-            var zutabeak = await _sqliteKonexioa.QueryAsync<SqliteIndizeZutabea>(
-                $"PRAGMA index_info({KomatxoBikoitzekin(indizea.Izena)})").ConfigureAwait(false);
-            var nanIndizeaDa = zutabeak.Any(zutabea =>
-                string.Equals(zutabea.Izena, "DNI", StringComparison.OrdinalIgnoreCase) ||
-                string.Equals(zutabea.Izena, "Nan", StringComparison.OrdinalIgnoreCase));
-
-            if (!nanIndizeaDa)
-                continue;
-
-            await _sqliteKonexioa.ExecuteAsync($"DROP INDEX IF EXISTS {KomatxoBikoitzekin(indizea.Izena)}").ConfigureAwait(false);
-            _logger.LogWarning("SQLite Erabiltzaileak taulako DNI indize bakarra kendu da: {Indizea}.", indizea.Izena);
-            GarapenLogaWarning($"SQLite Erabiltzaileak taulako DNI indize bakarra kendu da: {indizea.Izena}.");
-        }
     }
 
     private async Task SortuSqliteBidaiaTxostenaFKrekinAsync()
@@ -695,199 +462,18 @@ public sealed partial class DatuBaseaZerbitzua
         await _sqliteKonexioa!.ExecuteAsync("""
             CREATE TABLE IF NOT EXISTS AuditoretzaLoga (
                 LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                DiruSarreraId INTEGER,
+                TxostenId INTEGER,
                 ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
                 Ekintza TEXT NOT NULL DEFAULT '',
                 DataOrdua TEXT NOT NULL DEFAULT '',
                 Deskribapena TEXT NOT NULL DEFAULT '',
                 IP_Helbidea TEXT NOT NULL DEFAULT '',
-                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT
+                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
             );
             """).ConfigureAwait(false);
     }
 
-    private async Task BermatuSqliteGastuLerroaIbilgailuaBeharrezkoaAsync()
-    {
-        var zutabeak = await _sqliteKonexioa!.QueryAsync<SqliteZutabea>("PRAGMA table_info('GastuLerroak')").ConfigureAwait(false);
-        var izenak = zutabeak
-            .Select(z => z.Izena)
-            .Where(i => !string.IsNullOrWhiteSpace(i))
-            .ToHashSet(StringComparer.OrdinalIgnoreCase);
-
-        if (!izenak.Contains("IbilgailuaBeharrezkoa"))
-        {
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE GastuLerroak ADD COLUMN IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0").ConfigureAwait(false);
-            _logger.LogWarning("SQLite GastuLerroak taulan IbilgailuaBeharrezkoa zutabea gehitu da.");
-        }
-    }
-
-    private async Task BermatuSqliteDniIndizeBakarraAsync()
-    {
-        try
-        {
-            await _sqliteKonexioa!.ExecuteAsync(
-                "CREATE UNIQUE INDEX IF NOT EXISTS idx_erabiltzaileak_dni ON Erabiltzaileak(DNI)")
-                .ConfigureAwait(false);
-        }
-        catch (SQLiteException ex)
-        {
-            _logger.LogWarning(ex, "SQLite Erabiltzaileak(DNI) indize bakarra sortu ezin: DNI balio bikoiztuak existitzen dira.");
-        }
-    }
-
-    private async Task BermatuSqliteBidaiaTxostenaFKMigrazioa()
-    {
-        var fkak = await _sqliteKonexioa!.QueryAsync<SqliteFKLerroa>("PRAGMA foreign_key_list('BidaiaTxostenak')").ConfigureAwait(false);
-        if (fkak.Count > 0) return;
-
-        _logger.LogWarning("SQLite BidaiaTxostenak: FK gabe dago, taula berreraiki egingo da.");
-        GarapenLogaWarning("SQLite BidaiaTxostenak: FK gabe dago, taula berreraiki egingo da.");
-
-        await _sqliteKonexioa.ExecuteAsync("PRAGMA foreign_keys = OFF").ConfigureAwait(false);
-        try
-        {
-            await _sqliteKonexioa.ExecuteAsync("""
-                CREATE TABLE IF NOT EXISTS BidaiaTxostenak_migr (
-                    TxostenId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    ErabiltzaileId INTEGER NOT NULL,
-                    LangileDNI TEXT NOT NULL DEFAULT '',
-                    Saila TEXT NOT NULL DEFAULT '',
-                    Helmuga TEXT NOT NULL DEFAULT '',
-                    BidaiaHelburua TEXT NOT NULL DEFAULT '',
-                    HasieraData TEXT NOT NULL DEFAULT '',
-                    AmaieraData TEXT NOT NULL DEFAULT '',
-                    PertsonaKopurua INTEGER NOT NULL DEFAULT 0,
-                    JasoAurrerakina INTEGER NOT NULL DEFAULT 0,
-                    Egoera TEXT NOT NULL DEFAULT '',
-                    AdminOharra TEXT,
-                    AdminDNI TEXT,
-                    EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0,
-                    MonetaKodea TEXT NOT NULL DEFAULT '',
-                    SorkuntzaData TEXT NOT NULL DEFAULT '',
-                    AzkenEguneraketa TEXT NOT NULL DEFAULT '',
-                    DataAprobazioa TEXT NOT NULL DEFAULT '',
-                    FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
-                    FOREIGN KEY (LangileDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE,
-                    FOREIGN KEY (AdminDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE
-                );
-                """).ConfigureAwait(false);
-
-            await _sqliteKonexioa.ExecuteAsync("""
-                INSERT INTO BidaiaTxostenak_migr (
-                    TxostenId, ErabiltzaileId, LangileDNI, Saila, Helmuga, BidaiaHelburua,
-                    HasieraData, AmaieraData, PertsonaKopurua, JasoAurrerakina, Egoera,
-                    AdminOharra, AdminDNI, EmpresaIbilgailua, MonetaKodea,
-                    SorkuntzaData, AzkenEguneraketa, DataAprobazioa
-                )
-                SELECT
-                    TxostenId, ErabiltzaileId,
-                    COALESCE(LangileDNI, ''), Saila, Helmuga, BidaiaHelburua,
-                    HasieraData, AmaieraData, PertsonaKopurua,
-                    COALESCE(JasoAurrerakina, 0), Egoera,
-                    AdminOharra, AdminDNI, COALESCE(EmpresaIbilgailua, 0),
-                    COALESCE(MonetaKodea, 'EUR'), SorkuntzaData, AzkenEguneraketa,
-                    COALESCE(DataAprobazioa, '')
-                FROM BidaiaTxostenak;
-                """).ConfigureAwait(false);
-
-            await _sqliteKonexioa.ExecuteAsync("DROP TABLE BidaiaTxostenak").ConfigureAwait(false);
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak_migr RENAME TO BidaiaTxostenak").ConfigureAwait(false);
-            _logger.LogWarning("SQLite BidaiaTxostenak taula FK-rekin berreraiki da.");
-        }
-        finally
-        {
-            await _sqliteKonexioa.ExecuteAsync("PRAGMA foreign_keys = ON").ConfigureAwait(false);
-        }
-    }
-
-    private async Task BermatuSqliteGastuLerroaFKMigrazioa()
-    {
-        var fkak = await _sqliteKonexioa!.QueryAsync<SqliteFKLerroa>("PRAGMA foreign_key_list('GastuLerroak')").ConfigureAwait(false);
-        if (fkak.Count > 0) return;
-
-        _logger.LogWarning("SQLite GastuLerroak: FK gabe dago, taula berreraiki egingo da.");
-        GarapenLogaWarning("SQLite GastuLerroak: FK gabe dago, taula berreraiki egingo da.");
-
-        await _sqliteKonexioa.ExecuteAsync("PRAGMA foreign_keys = OFF").ConfigureAwait(false);
-        try
-        {
-            await _sqliteKonexioa.ExecuteAsync("""
-                CREATE TABLE IF NOT EXISTS GastuLerroak_migr (
-                    GastuId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    TxostenId INTEGER NOT NULL DEFAULT 0,
-                    KategoriaId INTEGER NOT NULL DEFAULT 0,
-                    GastuData TEXT NOT NULL DEFAULT '',
-                    GarraioBidea TEXT NOT NULL DEFAULT '',
-                    Zenbatekoa_Guztira REAL NOT NULL DEFAULT 0,
-                    Kilometroak REAL NOT NULL DEFAULT 0,
-                    TicketArgazkiBidea TEXT NOT NULL DEFAULT '',
-                    Oharrak TEXT NOT NULL DEFAULT '',
-                    KontzeptuId INTEGER NOT NULL DEFAULT 0,
-                    IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0,
-                    FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE CASCADE,
-                    FOREIGN KEY (KategoriaId) REFERENCES GastuKontzeptuak(KategoriaId) ON DELETE RESTRICT
-                );
-                """).ConfigureAwait(false);
-
-            await _sqliteKonexioa.ExecuteAsync("""
-                INSERT INTO GastuLerroak_migr
-                SELECT GastuId, TxostenId, KategoriaId, GastuData, GarraioBidea,
-                       Zenbatekoa_Guztira, Kilometroak, TicketArgazkiBidea, Oharrak,
-                       COALESCE(KontzeptuId, 0), COALESCE(IbilgailuaBeharrezkoa, 0)
-                FROM GastuLerroak;
-                """).ConfigureAwait(false);
-
-            await _sqliteKonexioa.ExecuteAsync("DROP TABLE GastuLerroak").ConfigureAwait(false);
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE GastuLerroak_migr RENAME TO GastuLerroak").ConfigureAwait(false);
-            _logger.LogWarning("SQLite GastuLerroak taula FK-rekin berreraiki da.");
-        }
-        finally
-        {
-            await _sqliteKonexioa.ExecuteAsync("PRAGMA foreign_keys = ON").ConfigureAwait(false);
-        }
-    }
-
-    private async Task BermatuSqliteAuditoretzaLogaFKMigrazioa()
-    {
-        var fkak = await _sqliteKonexioa!.QueryAsync<SqliteFKLerroa>("PRAGMA foreign_key_list('AuditoretzaLoga')").ConfigureAwait(false);
-        if (fkak.Count > 0) return;
-
-        _logger.LogWarning("SQLite AuditoretzaLoga: FK gabe dago, taula berreraiki egingo da.");
-        GarapenLogaWarning("SQLite AuditoretzaLoga: FK gabe dago, taula berreraiki egingo da.");
-
-        await _sqliteKonexioa.ExecuteAsync("PRAGMA foreign_keys = OFF").ConfigureAwait(false);
-        try
-        {
-            await _sqliteKonexioa.ExecuteAsync("""
-                CREATE TABLE IF NOT EXISTS AuditoretzaLoga_migr (
-                    LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                    DiruSarreraId INTEGER,
-                    ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
-                    Ekintza TEXT NOT NULL DEFAULT '',
-                    DataOrdua TEXT NOT NULL DEFAULT '',
-                    Deskribapena TEXT NOT NULL DEFAULT '',
-                    IP_Helbidea TEXT NOT NULL DEFAULT '',
-                    FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT
-                );
-                """).ConfigureAwait(false);
-
-            await _sqliteKonexioa.ExecuteAsync("""
-                INSERT INTO AuditoretzaLoga_migr
-                SELECT LogId, DiruSarreraId, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea
-                FROM AuditoretzaLoga;
-                """).ConfigureAwait(false);
-
-            await _sqliteKonexioa.ExecuteAsync("DROP TABLE AuditoretzaLoga").ConfigureAwait(false);
-            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE AuditoretzaLoga_migr RENAME TO AuditoretzaLoga").ConfigureAwait(false);
-            _logger.LogWarning("SQLite AuditoretzaLoga taula FK-rekin berreraiki da.");
-        }
-        finally
-        {
-            await _sqliteKonexioa.ExecuteAsync("PRAGMA foreign_keys = ON").ConfigureAwait(false);
-        }
-    }
-
-    private static string KomatxoBikoitzekin(string izena) => "\"" + izena.Replace("\"", "\"\"", StringComparison.Ordinal) + "\"";
 
     private static void GarapenLogaDebug(string mezua)
     {
@@ -917,8 +503,8 @@ public sealed partial class DatuBaseaZerbitzua
             return await ExekutatuTursoanAsync(async bezeroa =>
             {
                 const string sql = """
-                    INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Sektorea, KargoarenIdentifikatzailea, Rola, SorkuntzaData, Pasahitza, Aktiboa, SaioHasieraSaiakerak, SaioaBlokeoaAmaieraUtc)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                    INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Sektorea, Rola, SorkuntzaData, Pasahitza, Aktiboa, SaioHasieraSaiakerak, SaioaBlokeoaAmaieraUtc)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                     """;
                 var emaitza = await bezeroa.ExekutatuAsync(
                     sql,
@@ -929,8 +515,7 @@ public sealed partial class DatuBaseaZerbitzua
                     LibsqlLoturaNormalizatua(erabiltzailea.DNI),
                     LibsqlLoturaNormalizatua(erabiltzailea.Posta),
                     LibsqlLoturaNormalizatua(erabiltzailea.Kargoa),
-                    LibsqlLoturaNormalizatua(erabiltzailea.SektorearenIdentifikatzailea),
-                    LibsqlLoturaNormalizatua(erabiltzailea.KargoarenIdentifikatzailea),
+                    LibsqlLoturaNormalizatua(erabiltzailea.Sektorea),
                     LibsqlLoturaNormalizatua(erabiltzailea.Rola),
                     LibsqlLoturaNormalizatua(erabiltzailea.SorkuntzaData),
                     LibsqlLoturaNormalizatua(erabiltzailea.Pasahitza),
@@ -977,7 +562,7 @@ public sealed partial class DatuBaseaZerbitzua
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Sektorea, KargoarenIdentifikatzailea, Rola, SorkuntzaData, Pasahitza, Aktiboa, COALESCE(SaioHasieraSaiakerak, 0) AS SaioHasieraSaiakerak, SaioaBlokeoaAmaieraUtc FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
+        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Sektorea, Rola, SorkuntzaData, Pasahitza, Aktiboa, COALESCE(SaioHasieraSaiakerak, 0) AS SaioHasieraSaiakerak, SaioaBlokeoaAmaieraUtc FROM Erabiltzaileak WHERE Email = ? LIMIT 1;";
         var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(postaNormalizatua)).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
@@ -988,7 +573,7 @@ public sealed partial class DatuBaseaZerbitzua
         CancellationToken cancellationToken)
     {
         cancellationToken.ThrowIfCancellationRequested();
-        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Sektorea, KargoarenIdentifikatzailea, Rola, SorkuntzaData, Pasahitza, Aktiboa, COALESCE(SaioHasieraSaiakerak, 0) AS SaioHasieraSaiakerak, SaioaBlokeoaAmaieraUtc FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
+        const string sql = "SELECT ErabiltzaileId, Izena, Abizena, Abizena2, DNI, Email, Kargoa, Sektorea, Rola, SorkuntzaData, Pasahitza, Aktiboa, COALESCE(SaioHasieraSaiakerak, 0) AS SaioHasieraSaiakerak, SaioaBlokeoaAmaieraUtc FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;";
         var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken, id).ConfigureAwait(false);
         return MapeatuErabiltzaileLehena(emaitza);
     }
@@ -999,7 +584,7 @@ public sealed partial class DatuBaseaZerbitzua
         {
             const string sql = """
                 UPDATE Erabiltzaileak
-                SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Sektorea = ?, KargoarenIdentifikatzailea = ?, Rola = ?, SorkuntzaData = ?, Pasahitza = ?, Aktiboa = ?, SaioHasieraSaiakerak = ?, SaioaBlokeoaAmaieraUtc = ?
+                SET Izena = ?, Abizena = ?, Abizena2 = ?, DNI = ?, Email = ?, Kargoa = ?, Sektorea = ?, Rola = ?, SorkuntzaData = ?, Pasahitza = ?, Aktiboa = ?, SaioHasieraSaiakerak = ?, SaioaBlokeoaAmaieraUtc = ?
                 WHERE ErabiltzaileId = ?;
                 """;
             await bezeroa.ExekutatuAsync(
@@ -1011,8 +596,7 @@ public sealed partial class DatuBaseaZerbitzua
                 LibsqlLoturaNormalizatua(erabiltzailea.DNI),
                 LibsqlLoturaNormalizatua(erabiltzailea.Posta),
                 LibsqlLoturaNormalizatua(erabiltzailea.Kargoa),
-                LibsqlLoturaNormalizatua(erabiltzailea.SektorearenIdentifikatzailea),
-                LibsqlLoturaNormalizatua(erabiltzailea.KargoarenIdentifikatzailea),
+                LibsqlLoturaNormalizatua(erabiltzailea.Sektorea),
                 LibsqlLoturaNormalizatua(erabiltzailea.Rola),
                 LibsqlLoturaNormalizatua(erabiltzailea.SorkuntzaData),
                 LibsqlLoturaNormalizatua(erabiltzailea.Pasahitza),
@@ -1134,8 +718,7 @@ public sealed partial class DatuBaseaZerbitzua
             DNI = IrakurriMapaTestuaLehenetsia(mapa, "DNI"),
             Posta = IrakurriPostaEdoEmail(mapa),
             Kargoa = IrakurriMapaTestuaLehenetsia(mapa, "Kargoa"),
-            SektorearenIdentifikatzailea = IrakurriMapaOsoaLehenetsia(mapa, "Sektorea", 0),
-            KargoarenIdentifikatzailea = IrakurriMapaOsoaLehenetsia(mapa, "KargoarenIdentifikatzailea", 0),
+            Sektorea = IrakurriMapaTestuaLehenetsia(mapa, "Sektorea"),
             Rola = IrakurriMapaOsoa(mapa, "Rola"),
             SorkuntzaData = IrakurriMapaDataOrduaLehenetsia(mapa, "SorkuntzaData")
                 .ToString("o", CultureInfo.InvariantCulture),
@@ -1213,14 +796,14 @@ public sealed partial class DatuBaseaZerbitzua
             if (adminPosta is null)
                 return;
 
-            var (adminSektorea, adminKargoId, adminKargoTestua) = EskuratuGarapenAdminSektoreaEtaKargoarenBalioak(adminKargoa);
+            var (adminSektorea, adminKargoTestua) = EskuratuGarapenAdminSektoreaEtaKargoarenBalioak(adminKargoa);
             var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(adminPasahitza);
             var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
             var pasahitzaKatea = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
             await bezeroa.ExekutatuAsync(
                 """
-                INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Sektorea, KargoarenIdentifikatzailea, Rola, SorkuntzaData, Pasahitza, Aktiboa, SaioHasieraSaiakerak, SaioaBlokeoaAmaieraUtc)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
+                INSERT INTO Erabiltzaileak (Izena, Abizena, Abizena2, DNI, Email, Kargoa, Sektorea, Rola, SorkuntzaData, Pasahitza, Aktiboa, SaioHasieraSaiakerak, SaioaBlokeoaAmaieraUtc)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?);
                 """,
                 cancellationToken,
                 LibsqlLoturaNormalizatua(adminIzena),
@@ -1230,7 +813,6 @@ public sealed partial class DatuBaseaZerbitzua
                 LibsqlLoturaNormalizatua(adminPosta),
                 LibsqlLoturaNormalizatua(adminKargoTestua),
                 LibsqlLoturaNormalizatua(adminSektorea),
-                LibsqlLoturaNormalizatua(adminKargoId),
                 LibsqlLoturaNormalizatua((int)ErabiltzaileRola.Administratzailea),
                 LibsqlLoturaNormalizatua(orain),
                 LibsqlLoturaNormalizatua(pasahitzaKatea),
@@ -1280,7 +862,7 @@ public sealed partial class DatuBaseaZerbitzua
             if (adminPosta is null)
                 return;
 
-            var (adminSektorea, adminKargoId, adminKargoTestua) = EskuratuGarapenAdminSektoreaEtaKargoarenBalioak(adminKargoa);
+            var (adminSektorea, adminKargoTestua) = EskuratuGarapenAdminSektoreaEtaKargoarenBalioak(adminKargoa);
             var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(adminPasahitza);
             var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
             var admin = new Erabiltzailea
@@ -1292,7 +874,6 @@ public sealed partial class DatuBaseaZerbitzua
                 Posta = adminPosta,
                 Kargoa = adminKargoTestua,
                 SektorearenIdentifikatzailea = adminSektorea,
-                KargoarenIdentifikatzailea = adminKargoId,
                 SorkuntzaData = orain,
                 Pasahitza = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash),
                 Rola = (int)ErabiltzaileRola.Administratzailea,
@@ -1338,10 +919,10 @@ public sealed partial class DatuBaseaZerbitzua
         return (izena, abizena, abizena2, dni, posta, kargoa, pasahitza);
     }
 
-    private static (int Sektorea, int KargoarenIdentifikatzailea, string KargoarenTestua) EskuratuGarapenAdminSektoreaEtaKargoarenBalioak(string kargoarenTestuZaharra)
+    private static (int Sektorea, string KargoarenTestua) EskuratuGarapenAdminSektoreaEtaKargoarenBalioak(string kargoarenTestuZaharra)
     {
         var sektorLehenetsia = AdministratzaileOrganizazioLehenetsia.SektorearenIdentifikatzailea;
-        var kargoLehenetsia = AdministratzaileOrganizazioLehenetsia.KargoarenIdentifikatzailea;
+        var kargoLehenetsia = (int)EnpresakoLangileKargoa.AdministratzaileSistema;
         var sektorEnv = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_SEKTOREA")?.Trim();
         var kargoIdEnv = Environment.GetEnvironmentVariable("KIROKU_GARAPEN_ADMIN_KARGOA_ID")?.Trim();
         var sektor = int.TryParse(sektorEnv, NumberStyles.Integer, CultureInfo.InvariantCulture, out var s) ? s : sektorLehenetsia;
@@ -1360,45 +941,8 @@ public sealed partial class DatuBaseaZerbitzua
         if (string.IsNullOrWhiteSpace(testua))
             testua = SektoreaKargoarenHiztegia.LortuKargoarenEtiketa((EnpresakoLangileKargoa)kargoId);
 
-        return (sektor, kargoId, testua);
+        return (sektor, testua);
     }
 #endif
 
-    private sealed class SqliteZutabea
-    {
-        [Column("name")]
-        public string Izena { get; set; } = string.Empty;
-    }
-
-    private sealed class SqliteIndizea
-    {
-        [Column("name")]
-        public string Izena { get; set; } = string.Empty;
-
-        [Column("unique")]
-        public int Bakarra { get; set; }
-    }
-
-    private sealed class SqliteIndizeZutabea
-    {
-        [Column("name")]
-        public string Izena { get; set; } = string.Empty;
-    }
-
-    private sealed class SqliteFKLerroa
-    {
-        [Column("id")]
-        public int Id { get; set; }
-
-        [Column("table")]
-        public string Taula { get; set; } = string.Empty;
-    }
-
-    private sealed class SqlitePasahitzZaharra
-    {
-        [Column("ErabiltzaileId")]
-        public int Id { get; set; }
-
-        public string Pasahitza { get; set; } = string.Empty;
-    }
 }

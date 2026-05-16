@@ -281,7 +281,7 @@ public partial class EzarpenakViewModel : ObservableObject
                 ? AdministratzaileOrganizazioLehenetsia.SektorearenIdentifikatzailea
                 : HautatutakoSektorea!.Identifikatzailea;
             var kargoId = _daAdministratzaileTaldea
-                ? AdministratzaileOrganizazioLehenetsia.KargoarenIdentifikatzailea
+                ? (int)EnpresakoLangileKargoa.AdministratzaileSistema
                 : HautatutakoKargoa!.Identifikatzailea;
 
             await _erabiltzaileZerbitzua.NorberarenProfilaEguneratuAsync(
@@ -526,10 +526,9 @@ public partial class EzarpenakViewModel : ObservableObject
     private void HasieratuSektoreaKargoHautapenak(Erabiltzailea erabiltzailea)
     {
         var sId = erabiltzailea.SektorearenIdentifikatzailea;
-        var kId = erabiltzailea.KargoarenIdentifikatzailea;
+        var kId = 0;
         var kTestua = erabiltzailea.Kargoa;
-        if (!SektoreaKargoarenHiztegia.SektoreaEtaKargoarenIdentifikatzaileakBaliozkoa(sId, kId))
-            SektoreaKargoarenHiztegia.SaiatuLeheneratuTestutik(kTestua, ref sId, ref kId);
+        SektoreaKargoarenHiztegia.SaiatuLeheneratuTestutik(kTestua, ref sId, ref kId);
 
         _barneratzen = true;
         try

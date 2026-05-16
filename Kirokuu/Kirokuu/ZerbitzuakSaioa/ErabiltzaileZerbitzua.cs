@@ -288,7 +288,6 @@ public sealed class ErabiltzaileZerbitzua
         int kargoarenIdentifikatzailea)
     {
         erabiltzailea.SektorearenIdentifikatzailea = sektorearenIdentifikatzailea;
-        erabiltzailea.KargoarenIdentifikatzailea = kargoarenIdentifikatzailea;
         erabiltzailea.Kargoa = SektoreaKargoarenHiztegia.LortuKargoarenEtiketa((EnpresakoLangileKargoa)kargoarenIdentifikatzailea);
     }
 }

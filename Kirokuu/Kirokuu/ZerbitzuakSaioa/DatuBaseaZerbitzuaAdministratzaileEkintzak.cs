@@ -18,70 +18,17 @@ public sealed partial class DatuBaseaZerbitzua
 
     private const string AuditoretzaEkintzaTxostenaEskatuDu = "TxostenaEskatuDu";
 
-    private static bool TursoAlterBikoiztuaIgnoratu(Exception ex)
+    private static string SektoreaTestuaIdentifikatzailetik(int identifikatzailea) => identifikatzailea switch
     {
-        for (var current = ex; current is not null; current = current.InnerException)
-        {
-            var m = current.Message;
-            if (m.Contains("duplicate column", StringComparison.OrdinalIgnoreCase))
-                return true;
-            if (m.Contains("already exists", StringComparison.OrdinalIgnoreCase))
-                return true;
-            if (m.Contains("no such column", StringComparison.OrdinalIgnoreCase) &&
-                m.Contains("EntitateId", StringComparison.OrdinalIgnoreCase))
-                return true;
-        }
-
-        return false;
-    }
-
-    private async Task MigratuTursoAuditoretzaLogaDiruSarreraIdAsync(
-        ITursoSqlEgikaritzailea bezeroa,
-        CancellationToken cancellationToken)
-    {
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE AuditoretzaLoga ADD COLUMN DiruSarreraId INTEGER",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        try
-        {
-            await bezeroa.ExekutatuAsync(
-                    """
-                    UPDATE AuditoretzaLoga SET DiruSarreraId = CAST(EntitateId AS INTEGER)
-                    WHERE Ekintza IN ('DiruSarreraOnartu', 'DiruSarreraUkatu')
-                    """,
-                    cancellationToken)
-                .ConfigureAwait(false);
-        }
-        catch (Exception ex) when (ex.Message.Contains("no such column", StringComparison.OrdinalIgnoreCase))
-        {
-            _logger.LogDebug(ex, "Turso AuditoretzaLoga: EntitateId ez dago (migratuta edo eskema berria).");
-        }
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE AuditoretzaLoga DROP COLUMN EntitateId",
-                cancellationToken)
-            .ConfigureAwait(false);
-    }
-
-    private async Task SaiatuTursoAlterEtIgnoratuAsync(ITursoSqlEgikaritzailea bezeroa, string sql, CancellationToken cancellationToken)
-    {
-        try
-        {
-            await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
-        }
-        catch (Exception ex) when (TursoAlterBikoiztuaIgnoratu(ex))
-        {
-            _logger.LogDebug(ex, "Turso ALTER: zutabe dagoeneko badago (ignored).");
-        }
-    }
+        (int)EnpresakoSektorea.Finantzak => "Finantzak",
+        (int)EnpresakoSektorea.Marketina => "Marketina",
+        (int)EnpresakoSektorea.Salmentak => "Salmentak",
+        _ => string.Empty
+    };
 
     private async Task BermatuTursoGainerakoTaulakEtaZutabeakAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
     {
-        await SaiatuTursoAlterEtIgnoratuAsync(bezeroa, "PRAGMA foreign_keys = ON;", cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("PRAGMA foreign_keys = ON;", cancellationToken).ConfigureAwait(false);
 
         const string gastuKontzeptuakSql = """
             CREATE TABLE IF NOT EXISTS GastuKontzeptuak (
@@ -141,23 +88,16 @@ public sealed partial class DatuBaseaZerbitzua
         const string auditSql = """
             CREATE TABLE IF NOT EXISTS AuditoretzaLoga (
                 LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                DiruSarreraId INTEGER,
+                TxostenId INTEGER,
                 ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
                 Ekintza TEXT NOT NULL DEFAULT '',
                 DataOrdua TEXT NOT NULL DEFAULT '',
                 Deskribapena TEXT NOT NULL DEFAULT '',
                 IP_Helbidea TEXT NOT NULL DEFAULT '',
-                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT
+                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
             );
             """;
-
-        await bezeroa.ExekutatuAsync(gastuKontzeptuakSql, cancellationToken).ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE GastuKontzeptuak ADD COLUMN IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0;",
-                cancellationToken)
-            .ConfigureAwait(false);
 
         const string gastuKontzeptuakSeedSql = """
             INSERT OR IGNORE INTO GastuKontzeptuak
@@ -173,148 +113,15 @@ public sealed partial class DatuBaseaZerbitzua
               (8, 'Materialak',       'Bulego eta lan materialak',     0, 'Aktibo', 8),
               (9, 'Bestelakoa',       'Sailkatu gabeko gastuak',       0, 'Aktibo', 9);
             """;
-        await bezeroa.ExekutatuAsync(gastuKontzeptuakSeedSql, cancellationToken).ConfigureAwait(false);
 
+        await bezeroa.ExekutatuAsync(gastuKontzeptuakSql, cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync(gastuKontzeptuakSeedSql, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(bidaiaSql, cancellationToken).ConfigureAwait(false);
-        await BermatuTursoBidaiaTxostenaFKMirazioaAsync(bezeroa, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(gastuLerroSql, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(auditSql, cancellationToken).ConfigureAwait(false);
-
-        await MigratuTursoAuditoretzaLogaDiruSarreraIdAsync(bezeroa, cancellationToken).ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE Erabiltzaileak ADD COLUMN Aktiboa INTEGER NOT NULL DEFAULT 1;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE Erabiltzaileak ADD COLUMN Sektorea INTEGER NOT NULL DEFAULT 0;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE Erabiltzaileak ADD COLUMN KargoarenIdentifikatzailea INTEGER NOT NULL DEFAULT 0;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE Erabiltzaileak ADD COLUMN SaioHasieraSaiakerak INTEGER NOT NULL DEFAULT 0;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE Erabiltzaileak ADD COLUMN SaioaBlokeoaAmaieraUtc TEXT;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE BidaiaTxostenak ADD COLUMN AdminOharra TEXT;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE BidaiaTxostenak ADD COLUMN LangileDNI TEXT NOT NULL DEFAULT '';",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE BidaiaTxostenak ADD COLUMN AdminDNI TEXT;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE BidaiaTxostenak ADD COLUMN EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "ALTER TABLE GastuLerroak ADD COLUMN IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0;",
-                cancellationToken)
-            .ConfigureAwait(false);
-
-        await SaiatuTursoAlterEtIgnoratuAsync(
-                bezeroa,
-                "CREATE UNIQUE INDEX IF NOT EXISTS idx_erabiltzaileak_dni ON Erabiltzaileak(DNI);",
-                cancellationToken)
-            .ConfigureAwait(false);
-    }
-
-    private async Task BermatuTursoBidaiaTxostenaFKMirazioaAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
-    {
-        var emaitza = await bezeroa.ExekutatuAsync(
-            "SELECT sql FROM sqlite_master WHERE type='table' AND name='BidaiaTxostenak';",
+        await bezeroa.ExekutatuAsync(
+            "CREATE UNIQUE INDEX IF NOT EXISTS idx_erabiltzaileak_dni ON Erabiltzaileak(DNI);",
             cancellationToken).ConfigureAwait(false);
-
-        var lerroa = emaitza.LerroTestuBalioak.FirstOrDefault();
-        if (lerroa is null || lerroa.Count == 0)
-            return;
-
-        var sqlDefinizio = lerroa[0] ?? string.Empty;
-        if (sqlDefinizio.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase))
-            return;
-
-        _logger.LogWarning("Turso BidaiaTxostenak: FK gabe dago, taula berreraiki egingo da.");
-
-        await bezeroa.ExekutatuAsync("DROP TABLE IF EXISTS BidaiaTxostenak_migr;", cancellationToken).ConfigureAwait(false);
-
-        await bezeroa.ExekutatuAsync("""
-            CREATE TABLE BidaiaTxostenak_migr (
-                TxostenId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                ErabiltzaileId INTEGER NOT NULL,
-                LangileDNI TEXT NOT NULL DEFAULT '',
-                Saila TEXT NOT NULL DEFAULT '',
-                Helmuga TEXT NOT NULL DEFAULT '',
-                BidaiaHelburua TEXT NOT NULL DEFAULT '',
-                HasieraData TEXT NOT NULL DEFAULT '',
-                AmaieraData TEXT NOT NULL DEFAULT '',
-                PertsonaKopurua INTEGER NOT NULL DEFAULT 0,
-                JasoAurrerakina INTEGER NOT NULL DEFAULT 0,
-                Egoera TEXT NOT NULL DEFAULT '',
-                AdminOharra TEXT,
-                AdminDNI TEXT,
-                EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0,
-                MonetaKodea TEXT NOT NULL DEFAULT '',
-                SorkuntzaData TEXT NOT NULL DEFAULT '',
-                AzkenEguneraketa TEXT NOT NULL DEFAULT '',
-                DataAprobazioa TEXT NOT NULL DEFAULT '',
-                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
-                FOREIGN KEY (LangileDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE,
-                FOREIGN KEY (AdminDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE
-            );
-            """, cancellationToken).ConfigureAwait(false);
-
-        await bezeroa.ExekutatuAsync("""
-            INSERT INTO BidaiaTxostenak_migr (
-                TxostenId, ErabiltzaileId, LangileDNI, Saila, Helmuga, BidaiaHelburua,
-                HasieraData, AmaieraData, PertsonaKopurua, JasoAurrerakina, Egoera,
-                AdminOharra, AdminDNI, EmpresaIbilgailua, MonetaKodea,
-                SorkuntzaData, AzkenEguneraketa, DataAprobazioa
-            )
-            SELECT
-                TxostenId, ErabiltzaileId,
-                COALESCE(LangileDNI, ''), Saila, Helmuga, BidaiaHelburua,
-                HasieraData, AmaieraData, PertsonaKopurua,
-                COALESCE(JasoAurrerakina, 0), Egoera,
-                AdminOharra, AdminDNI, COALESCE(EmpresaIbilgailua, 0),
-                COALESCE(MonetaKodea, 'EUR'), SorkuntzaData, AzkenEguneraketa,
-                COALESCE(DataAprobazioa, '')
-            FROM BidaiaTxostenak;
-            """, cancellationToken).ConfigureAwait(false);
-
-        await bezeroa.ExekutatuAsync("DROP TABLE BidaiaTxostenak;", cancellationToken).ConfigureAwait(false);
-        await bezeroa.ExekutatuAsync("ALTER TABLE BidaiaTxostenak_migr RENAME TO BidaiaTxostenak;", cancellationToken).ConfigureAwait(false);
-
-        _logger.LogWarning("Turso BidaiaTxostenak taula FK-rekin berreraiki da.");
     }
 
     public async Task<IReadOnlyList<TxostenOnarpenLaburpena>> ZerrendatuTxostenGuztiekAsync(
@@ -507,10 +314,10 @@ public sealed partial class DatuBaseaZerbitzua
                     b.HasieraData AS HasieraData
                   FROM BidaiaTxostenak b
                   INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-                  WHERE b.Egoera = ? AND e.SektorearenIdentifikatzailea = ?
+                  WHERE b.Egoera = ? AND e.Sektorea = ?
                   ORDER BY b.SorkuntzaData DESC
                   """;
-            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, egoeraIragazkia!.Trim(), sektoreId!.Value).ConfigureAwait(false);
+            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, egoeraIragazkia!.Trim(), SektoreaTestuaIdentifikatzailetik(sektoreId!.Value)).ConfigureAwait(false);
         }
 
         if (iragazkiSektorea)
@@ -526,10 +333,10 @@ public sealed partial class DatuBaseaZerbitzua
                     b.HasieraData AS HasieraData
                   FROM BidaiaTxostenak b
                   INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-                  WHERE e.SektorearenIdentifikatzailea = ?
+                  WHERE e.Sektorea = ?
                   ORDER BY b.SorkuntzaData DESC
                   """;
-            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, sektoreId!.Value).ConfigureAwait(false);
+            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, SektoreaTestuaIdentifikatzailetik(sektoreId!.Value)).ConfigureAwait(false);
         }
 
         sql = """
@@ -592,12 +399,12 @@ public sealed partial class DatuBaseaZerbitzua
                         b.HasieraData AS HasieraData
                       FROM BidaiaTxostenak b
                       INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-                      WHERE b.Egoera = ? AND e.SektorearenIdentifikatzailea = ?
+                      WHERE b.Egoera = ? AND e.Sektorea = ?
                       ORDER BY b.SorkuntzaData DESC;
                       """;
                 emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken,
                     LibsqlLoturaNormalizatua(egoeraIragazkia!.Trim()),
-                    LibsqlLoturaNormalizatua(sektoreId!.Value)).ConfigureAwait(false);
+                    LibsqlLoturaNormalizatua(SektoreaTestuaIdentifikatzailetik(sektoreId!.Value))).ConfigureAwait(false);
             }
             else if (iragazkiSektorea)
             {
@@ -612,11 +419,11 @@ public sealed partial class DatuBaseaZerbitzua
                         b.HasieraData AS HasieraData
                       FROM BidaiaTxostenak b
                       INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-                      WHERE e.SektorearenIdentifikatzailea = ?
+                      WHERE e.Sektorea = ?
                       ORDER BY b.SorkuntzaData DESC;
                       """;
                 emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken,
-                    LibsqlLoturaNormalizatua(sektoreId!.Value)).ConfigureAwait(false);
+                    LibsqlLoturaNormalizatua(SektoreaTestuaIdentifikatzailetik(sektoreId!.Value))).ConfigureAwait(false);
             }
             else
             {
