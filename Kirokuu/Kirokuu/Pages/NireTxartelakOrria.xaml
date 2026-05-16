@@ -5,6 +5,7 @@
              xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
              xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:pages="clr-namespace:Kirokuu.Pages"
              x:Class="Kirokuu.Pages.NireTxartelakOrria"
              x:Name="NireTxartelakOrriaErreferentzia"
              x:DataType="vm:NireTxartelakViewModel"
@@ -15,7 +16,28 @@
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16,10,16,0" RowSpacing="0">
+    <ContentPage.Resources>
+        <toolkit:IsStringNotNullOrEmptyConverter x:Key="EzDaNullEdoHutsBihurgailua" />
+        <Style x:Key="IragazkiTxipEstiloa" TargetType="Border">
+            <Setter Property="Padding" Value="14,7" />
+            <Setter Property="StrokeThickness" Value="1.5" />
+            <Setter Property="StrokeShape" Value="RoundRectangle 18" />
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="MinimumHeightRequest" Value="36" />
+        </Style>
+        <Style x:Key="IragazkiTxipTestuEstiloa" TargetType="Label">
+            <Setter Property="FontSize" Value="13" />
+            <Setter Property="FontAttributes" Value="Bold" />
+            <Setter Property="VerticalOptions" Value="Center" />
+        </Style>
+        <Style x:Key="IragazkiTxipKopuruEstiloa" TargetType="Label">
+            <Setter Property="FontSize" Value="12" />
+            <Setter Property="VerticalOptions" Value="Center" />
+            <Setter Property="Opacity" Value="0.85" />
+        </Style>
+    </ContentPage.Resources>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*,Auto" Padding="16,10,16,0" RowSpacing="0">
 
         <ActivityIndicator Grid.Row="0"
                            IsRunning="{Binding IsKargatzean}"
@@ -25,10 +47,249 @@
         <Label Grid.Row="1"
                Text="{Binding ErroreMezua}"
                Style="{StaticResource ErroreEtiketaEstiloa}"
-               IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}"
+               IsVisible="{Binding ErroreMezua, Converter={StaticResource EzDaNullEdoHutsBihurgailua}}"
                Margin="0,4,0,0" />
 
-        <RefreshView Grid.Row="2"
+        <ScrollView Grid.Row="2"
+                    Orientation="Horizontal"
+                    HorizontalScrollBarVisibility="Never"
+                    Margin="0,8,0,4">
+            <HorizontalStackLayout Spacing="8">
+
+                <Border Style="{StaticResource IragazkiTxipEstiloa}"
+                        Stroke="{StaticResource EstekaNagusiaArgia}">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaGuztiakHautatua}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource EstekaNagusiaArgia}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaGuztiakHautatua}" Value="False">
+                            <Setter Property="BackgroundColor" Value="Transparent" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Command="{Binding AldatuIragazkiaCommand}"
+                            CommandParameter="Guztiak" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Guztiak" Style="{StaticResource IragazkiTxipTestuEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaGuztiakHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaGuztiakHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EstekaNagusiaArgia}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding KopuruaGuztiak, StringFormat='({0})'}"
+                               Style="{StaticResource IragazkiTxipKopuruEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaGuztiakHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaGuztiakHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EstekaNagusiaArgia}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource IragazkiTxipEstiloa}"
+                        Stroke="{StaticResource EgoeraZainAtzekoa}">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaZainHautatua}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource EgoeraZainAtzekoa}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaZainHautatua}" Value="False">
+                            <Setter Property="BackgroundColor" Value="Transparent" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Command="{Binding AldatuIragazkiaCommand}"
+                            CommandParameter="Zain" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Zain" Style="{StaticResource IragazkiTxipTestuEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaZainHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaZainHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EgoeraZainAtzekoa}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding KopuruaZain, StringFormat='({0})'}"
+                               Style="{StaticResource IragazkiTxipKopuruEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaZainHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaZainHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EgoeraZainAtzekoa}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource IragazkiTxipEstiloa}"
+                        Stroke="{StaticResource EgoeraOnartuaAtzekoa}">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaOnartuaHautatua}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaOnartuaHautatua}" Value="False">
+                            <Setter Property="BackgroundColor" Value="Transparent" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Command="{Binding AldatuIragazkiaCommand}"
+                            CommandParameter="Onartua" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Onartua" Style="{StaticResource IragazkiTxipTestuEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaOnartuaHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaOnartuaHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding KopuruaOnartua, StringFormat='({0})'}"
+                               Style="{StaticResource IragazkiTxipKopuruEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaOnartuaHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaOnartuaHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource IragazkiTxipEstiloa}"
+                        Stroke="{StaticResource EgoeraUkatuaAtzekoa}">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaUkatuaHautatua}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaUkatuaHautatua}" Value="False">
+                            <Setter Property="BackgroundColor" Value="Transparent" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Command="{Binding AldatuIragazkiaCommand}"
+                            CommandParameter="Ukatua" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Ukatua" Style="{StaticResource IragazkiTxipTestuEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaUkatuaHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaUkatuaHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding KopuruaUkatua, StringFormat='({0})'}"
+                               Style="{StaticResource IragazkiTxipKopuruEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaUkatuaHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaUkatuaHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
+
+                <Border Style="{StaticResource IragazkiTxipEstiloa}"
+                        Stroke="{StaticResource EgoeraEzeztatuaAtzekoa}">
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaEzeztatuaHautatua}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
+                        </DataTrigger>
+                        <DataTrigger TargetType="Border"
+                                     Binding="{Binding IragazkiaEzeztatuaHautatua}" Value="False">
+                            <Setter Property="BackgroundColor" Value="Transparent" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer
+                            Command="{Binding AldatuIragazkiaCommand}"
+                            CommandParameter="Ezeztatua" />
+                    </Border.GestureRecognizers>
+                    <HorizontalStackLayout Spacing="6">
+                        <Label Text="Ezeztatua" Style="{StaticResource IragazkiTxipTestuEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaEzeztatuaHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaEzeztatuaHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                        <Label Text="{Binding KopuruaEzeztatua, StringFormat='({0})'}"
+                               Style="{StaticResource IragazkiTxipKopuruEstiloa}">
+                            <Label.Triggers>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaEzeztatuaHautatua}" Value="True">
+                                    <Setter Property="TextColor" Value="{StaticResource White}" />
+                                </DataTrigger>
+                                <DataTrigger TargetType="Label"
+                                             Binding="{Binding IragazkiaEzeztatuaHautatua}" Value="False">
+                                    <Setter Property="TextColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
+                                </DataTrigger>
+                            </Label.Triggers>
+                        </Label>
+                    </HorizontalStackLayout>
+                </Border>
+
+            </HorizontalStackLayout>
+        </ScrollView>
+
+        <RefreshView Grid.Row="3"
                      Command="{Binding AgertzenDeneanCommand}"
                      IsRefreshing="{Binding IsKargatzean}">
             <CollectionView ItemsSource="{Binding Txartelak}"
@@ -40,11 +301,11 @@
                                Text="{x:Static kiro:IkonoFontIturria.HutsikIkonoGlifoa}"
                                HorizontalOptions="Center"
                                SemanticProperties.Description="Hutsik" />
-                        <Label Text="Oraindik ez daukazu txartelik."
+                        <Label Text="Ez dago txartelik iragazki honetan."
                                HorizontalTextAlignment="Center"
                                FontAttributes="Bold"
                                FontSize="16" />
-                        <Label Text="Sakatu beheko botoia zure lehen gastua sortzeko."
+                        <Label Text="Aukeratu beste iragazki bat edo sortu txartel berri bat."
                                HorizontalTextAlignment="Center"
                                FontSize="13"
                                TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
@@ -57,103 +318,77 @@
                                 Padding="0">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer
-                                    Command="{Binding Source={x:Reference NireTxartelakOrriaErreferentzia}, Path=BindingContext.IkusiXehetasunaCommand}"
+                                    Command="{Binding Path=BindingContext.IkusiXehetasunaCommand, Source={x:Reference NireTxartelakOrriaErreferentzia}, x:DataType={x:Type pages:NireTxartelakOrria}}"
                                     CommandParameter="{Binding .}" />
                             </Border.GestureRecognizers>
-                            <Grid ColumnDefinitions="4,*" ColumnSpacing="0">
+                            <VerticalStackLayout Spacing="0">
 
-                                <!-- Left accent strip colored by status -->
-                                <BoxView Grid.Column="0"
-                                         CornerRadius="8,0,0,8">
-                                    <BoxView.Triggers>
-                                        <DataTrigger TargetType="BoxView" Binding="{Binding Egoera}" Value="Zain">
-                                            <Setter Property="Color" Value="{StaticResource EgoeraZainAtzekoa}" />
-                                        </DataTrigger>
-                                        <DataTrigger TargetType="BoxView" Binding="{Binding Egoera}" Value="Onartua">
-                                            <Setter Property="Color" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
-                                        </DataTrigger>
-                                        <DataTrigger TargetType="BoxView" Binding="{Binding Egoera}" Value="Ukatua">
-                                            <Setter Property="Color" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
-                                        </DataTrigger>
-                                        <DataTrigger TargetType="BoxView" Binding="{Binding Egoera}" Value="Ezeztatua">
-                                            <Setter Property="Color" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
-                                        </DataTrigger>
-                                    </BoxView.Triggers>
-                                </BoxView>
-
-                                <VerticalStackLayout Grid.Column="1" Spacing="0">
-
-                                    <!-- Header: category + status badge -->
-                                    <Grid ColumnDefinitions="*,Auto"
-                                          ColumnSpacing="8"
-                                          Padding="12,12,12,4">
-                                        <Label Grid.Column="0"
-                                               Text="{Binding Helmuga}"
-                                               FontAttributes="Bold"
-                                               FontSize="15"
-                                               VerticalOptions="Center" />
-                                        <Border Grid.Column="1"
-                                                Padding="10,4"
-                                                StrokeThickness="0"
-                                                StrokeShape="RoundRectangle 12"
-                                                VerticalOptions="Center">
-                                            <Border.Triggers>
-                                                <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Zain">
-                                                    <Setter Property="BackgroundColor" Value="{StaticResource EgoeraZainAtzekoa}" />
-                                                </DataTrigger>
-                                                <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Onartua">
-                                                    <Setter Property="BackgroundColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
-                                                </DataTrigger>
-                                                <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ukatua">
-                                                    <Setter Property="BackgroundColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
-                                                </DataTrigger>
-                                                <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ezeztatua">
-                                                    <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
-                                                </DataTrigger>
-                                            </Border.Triggers>
-                                            <Label Text="{Binding Egoera}"
-                                                   Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
-                                                   FontSize="11"
-                                                   FontAttributes="Bold" />
-                                        </Border>
-                                    </Grid>
-
-                                    <!-- Amount (prominent) -->
-                                    <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
+                                <Grid ColumnDefinitions="*,Auto"
+                                      ColumnSpacing="8"
+                                      Padding="14,13,14,6">
+                                    <Label Grid.Column="0"
+                                           Text="{Binding Helmuga}"
                                            FontAttributes="Bold"
-                                           FontSize="26"
-                                           Padding="12,2,12,4"
-                                           TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}" />
+                                           FontSize="16"
+                                           VerticalOptions="Center" />
+                                    <Border Grid.Column="1"
+                                            Padding="10,4"
+                                            StrokeThickness="0"
+                                            StrokeShape="RoundRectangle 12"
+                                            VerticalOptions="Center">
+                                        <Border.Triggers>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Zain">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraZainAtzekoa}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Onartua">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraOnartuaAtzekoa}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ukatua">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
+                                            </DataTrigger>
+                                            <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ezeztatua">
+                                                <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
+                                            </DataTrigger>
+                                        </Border.Triggers>
+                                        <Label Text="{Binding Egoera}"
+                                               Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
+                                               FontSize="11"
+                                               FontAttributes="Bold" />
+                                    </Border>
+                                </Grid>
 
-                                    <!-- Date -->
-                                    <Label Text="{Binding DataFormateatua}"
-                                           FontSize="12"
-                                           Padding="12,0,12,10"
-                                           TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}"
-                                           IsVisible="{Binding DataFormateatua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
+                                <Label Text="{Binding DataFormateatua}"
+                                       FontSize="12"
+                                       Padding="14,0,14,0"
+                                       TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}"
+                                       IsVisible="{Binding DataFormateatua, Converter={StaticResource EzDaNullEdoHutsBihurgailua}}" />
 
-                                    <!-- Cancel zone (only if cancellable) -->
-                                    <BoxView HeightRequest="1"
-                                             IsVisible="{Binding EzeztatuDaiteke}"
-                                             Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}" />
-                                    <Button Text="Ezeztatu"
-                                            IsVisible="{Binding EzeztatuDaiteke}"
-                                            Command="{Binding Source={x:Reference NireTxartelakOrriaErreferentzia}, Path=BindingContext.EzeztatuTxartelaCommand}"
-                                            CommandParameter="{Binding .}"
-                                            Style="{StaticResource BotoiArriskuEstiloa}"
-                                            Margin="12,6,12,10"
-                                            HeightRequest="40"
-                                            FontSize="13" />
+                                <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
+                                       FontAttributes="Bold"
+                                       FontSize="22"
+                                       Padding="14,6,14,13"
+                                       TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}" />
 
-                                </VerticalStackLayout>
-                            </Grid>
+                                <BoxView HeightRequest="1"
+                                         IsVisible="{Binding EzeztatuDaiteke}"
+                                         Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}" />
+                                <Button Text="Ezeztatu"
+                                        IsVisible="{Binding EzeztatuDaiteke}"
+                                        Command="{Binding Path=BindingContext.EzeztatuTxartelaCommand, Source={x:Reference NireTxartelakOrriaErreferentzia}, x:DataType={x:Type pages:NireTxartelakOrria}}"
+                                        CommandParameter="{Binding .}"
+                                        Style="{StaticResource BotoiArriskuEstiloa}"
+                                        Margin="14,8,14,10"
+                                        HeightRequest="40"
+                                        FontSize="13" />
+
+                            </VerticalStackLayout>
                         </Border>
                     </DataTemplate>
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </RefreshView>
 
-        <Button Grid.Row="3"
+        <Button Grid.Row="4"
                 Text="Gastu berria gehitu"
                 Command="{Binding TxartelBerriaSortuCommand}"
                 Margin="0,10,0,16"

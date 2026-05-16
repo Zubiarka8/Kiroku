@@ -37,4 +37,24 @@ public sealed class GastuLerroa
 
     [Column("IbilgailuaBeharrezkoa")]
     public int IbilgailuaBeharrezkoa { get; set; }
+
+    [Ignore]
+    public string GastuDataFormateatua
+    {
+        get
+        {
+            if (string.IsNullOrWhiteSpace(GastuData))
+                return string.Empty;
+            if (DateTime.TryParse(GastuData, System.Globalization.CultureInfo.InvariantCulture,
+                    System.Globalization.DateTimeStyles.RoundtripKind | System.Globalization.DateTimeStyles.AllowWhiteSpaces, out var d))
+                return d.ToString("dd/MM/yyyy", System.Globalization.CultureInfo.InvariantCulture);
+            return GastuData;
+        }
+    }
+
+    [Ignore]
+    public bool KilometroakIkagarri => Kilometroak > 0;
+
+    [Ignore]
+    public bool IbilgailuaBeharrezkoaBai => IbilgailuaBeharrezkoa == 1;
 }
