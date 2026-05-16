@@ -25,6 +25,24 @@ public static class SektoreaKargoarenHiztegia
         return string.Empty;
     }
 
+    /// <summary>
+    /// BidaiaTxostena.Saila gordetzeko testu baliozkoa: Finantzak, Marketina edo Salmentak.
+    /// </summary>
+    public static string LortuBaliozkotutakoSailaTestua(string? sektoreaEdoSailaTestua)
+    {
+        if (string.IsNullOrWhiteSpace(sektoreaEdoSailaTestua))
+            return string.Empty;
+
+        var garbia = sektoreaEdoSailaTestua.Trim();
+        foreach (var s in SektoreenZerrenda)
+        {
+            if (string.Equals(s.Etiketa, garbia, StringComparison.Ordinal))
+                return s.Etiketa;
+        }
+
+        return string.Empty;
+    }
+
     public static IReadOnlyList<HautapenElementua> SortuKargoenZerrenda(int sektorearenIdentifikatzailea)
     {
         return (EnpresakoSektorea)sektorearenIdentifikatzailea switch

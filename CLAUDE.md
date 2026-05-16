@@ -21,12 +21,13 @@
 |---|---|
 | Language | C# 13 / .NET 9 |
 | UI | .NET MAUI + XAML |
-| Local DB | SQLite via sqlite-net-pcl + SQLCipher |
-| Online DB | Turso (libSQL) — drop-in swap when ready |
+| Local DB | SQLite via sqlite-net-pcl + SQLCipher (`SQLitePCLRaw.bundle_e_sqlcipher`) |
+| Online DB | Turso (libSQL) — HTTP pipeline via `TursoHttpsPipelineEgikaritzailea` |
 | MVVM | CommunityToolkit.Mvvm |
 | DI | Microsoft.Extensions.DependencyInjection |
 | Images | MediaPicker + Cloudinary (URL stored in DB) |
 | Auth | SecureStorage + SHA256 + salt (local) / JWT (online) |
+| Env | `.env` via `InguruneKargatzailea` (Turso, Cloudinary) |
 
 ---
 
@@ -46,10 +47,10 @@ ALL code identifiers must be in Basque (Euskara). No exceptions for:
 AuditoretzaLoga       Erabiltzailea         GastuLerroa
 BidaiaTxostena        GastuKontzeptua       ErabiltzaileId
 Ekintza               DataOrdua             Deskribapena
-IP_Helbidea           Administratzailea     Langilea
-OnartuEgin()          UkatuEgin()           ZenbatekoGarbia
-BidaliData            TxartelEgoera         ArgazkiUrl
-ArgazkiIgotzeZerbitzua ZuzendariNagusia
+IP_Helbidea           LangileId             Administratzailea
+Langilea              TxartelEgoera         ArgazkiIgotzeZerbitzua
+DataOrduaBalioak      SektoreaKargoarenHiztegia
+TicketArgazkia        ZuzendariNagusia
 ```
 
 ---
@@ -57,9 +58,9 @@ ArgazkiIgotzeZerbitzua ZuzendariNagusia
 ## Project Structure
 
 ```
-Kirokuu/                         ← git root / solution root
+Kirokuu/                              ← git root / solution root
   Kirokuu.sln
-  Kirokuu/                       ← MAUI project
+  Kirokuu/                            ← MAUI project
     DatuBasea/
       Ereduak/
         AuditoretzaLoga.cs
@@ -70,17 +71,27 @@ Kirokuu/                         ← git root / solution root
         GastuLerroa.cs
       SortzeAginduak/
         TursoGarapenBerrezarpena.sql
+    DatuEreduak/
     Pages/
     ViewModels/
     Zerbitzuak/
+      SektoreaKargoarenHiztegia.cs
+      ArgazkiIgotzeZerbitzua.cs
+      GarraioBideaBalioak.cs
+      InguruneKargatzailea.cs
     ZerbitzuakSaioa/
       AutorizazioZerbitzua.cs
-      DatuBaseaZerbitzua.cs
-      DatuBaseaZerbitzuaAdministratzaileEkintzak.cs
-      DatuBaseaZerbitzuaLangileEkintzak.cs
+      DatuBaseaZerbitzua.cs              (+ partials: Administratzaile, Langile, Hasiera)
+      DatuBaseaZifraketaLaguntzailea.cs
+      ErabiltzaileZerbitzua.cs
       ShellFitxaEraikitzailea.cs
+      NabigazioNagusia.cs
   Kirokuu.Tests/
-  Kirokuu.Zerbitzuak/
+  Kirokuu.Zerbitzuak/                  ← shared library (referenced by MAUI)
+    DataOrduaBalioak.cs
+    TursoHttpsPipelineEgikaritzailea.cs
+    ArgazkiIgotzeZerbitzua.cs
+    ...
 ```
 
 Never create files outside this structure without asking first.
@@ -95,9 +106,9 @@ Never create files outside this structure without asking first.
 - Code-behind: ONLY `InitializeComponent()` — zero business logic in Views
 - Services injected via DI, never `new()`
 
-**DI registration (MauiProgram.cs):**
-- Singleton: `DatuBaseaZerbitzua`, `AutorizazioZerbitzua`, `ArgazkiIgotzeZerbitzua`, `EncryptionZerbitzua`
-- Transient: ViewModels
+**DI registration (`MauiProgram.cs`):**
+- Singleton: `ArgazkiIgotzeZerbitzua`, `KredentzialEgiaztapenZerbitzua`, `PasahitzaZerbitzua`, `DatuBaseaZerbitzua`, `ErabiltzaileZerbitzua`, `SaioaGordetzeZerbitzua`, `AutorizazioZerbitzua`, `BerrespenLeihoZerbitzua`, `ShellFitxaEraikitzailea`, `INabigazioNagusia`
+- Transient: all ViewModels and Pages
 
 ---
 
@@ -126,6 +137,39 @@ Employee settings: Izena, Abizena, Abizena2, DNI fields are **read-only** (`IsEn
 
 ---
 
+## Date and Time (`DataOrduaBalioak`)
+
+All persisted date-time **TEXT** columns use **ISO 8601 UTC** (`"o"` format). Never write raw `DateTime.ToString()` without normalization.
+
+| API | Use when |
+|---|---|
+| `DataOrduaOrain()` | Insert/update TEXT columns (`HasieraData`, `SorkuntzaData`, `GastuData`, Turso binds, …) |
+| `OrduaUtcOrain()` | C# `DateTime` fields (`AuditoretzaLoga.DataOrdua` on SQLite insert) |
+| `DataOrduaOsatu(...)` | Normalize existing string or `DateTime` before save |
+| `DataOrduaOsatuHautatutakoEguna(date)` | DatePicker: selected calendar day + current UTC time |
+| `DataOrduaBistaratu(text)` | UI display: `dd/MM/yyyy HH:mm:ss` (local from UTC) |
+| `MapatikDataOrdua(mapa, column)` | Turso/libSQL row → normalized TEXT |
+| `MapatikOrduaUtc(mapa, column)` | Turso row → `DateTime` UTC |
+
+**TEXT columns** (normalize on write/read in `DatuBaseaZerbitzua*`): `HasieraData`, `AmaieraData`, `SorkuntzaData`, `AzkenEguneraketa`, `DataAprobazioa`, `GastuData`, `Erabiltzaileak.SorkuntzaData`, audit `DataOrdua` on Turso.
+
+**C# `DateTime` in model:** `AuditoretzaLoga.DataOrdua` — SQLite ORM stores as TEXT; Turso INSERT uses `DataOrduaOsatu(loga.DataOrdua)`.
+
+---
+
+## Sector and Cargo (`SektoreaKargoarenHiztegia`)
+
+Single source for sector/cargo pickers, labels, and validation. Prefer this over duplicating switch tables in ViewModels.
+
+- `SortuSektoreenZerrenda()` / `SortuKargoenZerrenda(sektoreId)` — UI lists (`HautapenElementua`)
+- `LortuSektorearenEtiketa(id)` / `LortuKargoarenEtiketa(enum)` — display strings
+- `LortuBaliozkotutakoSailaTestua(text)` — valid `BidaiaTxostena.Saila` / sector TEXT for DB
+- `SektoreaEtaKargoarenIdentifikatzaileakBaliozkoa(...)` — registration/edit validation
+
+`DatuBaseaZerbitzuaAdministratzaileEkintzak` still has private `SektoreaTestuaIdentifikatzailetik(int)` for SQL `WHERE e.Sektorea = ?` filters only.
+
+---
+
 ## Database Rules
 
 - Single connection (singleton) in `DatuBaseaZerbitzua`
@@ -133,9 +177,10 @@ Employee settings: Izena, Abizena, Abizena2, DNI fields are **read-only** (`IsEn
 - NEVER access DB on the UI thread
 - Parameterized queries only — never string concatenation in SQL
 - Indexes required on: `ErabiltzaileId`, `TxartelEgoera`, `DNI` (UNIQUE)
-- `PRAGMA foreign_keys = ON` set per-connection in `EgiaztatuSqliteKonezioaAsync` (SQLite does not persist this setting)
+- `PRAGMA foreign_keys = ON` per SQLite connection in `EgiaztatuSqliteKonezioaAsync`
+- Turso bootstrap runs `PRAGMA foreign_keys = ON` in `BermatuTursoGainerakoTaulakEtaZutabeakAsync` — HTTP session behavior may still differ from local SQLite
 
-**FK constraints (SQLite + Turso):**
+**FK constraints (SQLite + Turso DDL):**
 
 ```
 Erabiltzaileak
@@ -152,15 +197,16 @@ GastuLerroak
   FK  KategoriaId     → GastuKontzeptuak(KategoriaId)    ON DELETE RESTRICT
 
 AuditoretzaLoga
-  FK  ErabiltzaileId  → Erabiltzaileak(ErabiltzaileId)   ON DELETE RESTRICT
-  FK  TxostenId       → BidaiaTxostenak(TxostenId)       ON DELETE SET NULL  [nullable]
+  FK  ErabiltzaileId  → Erabiltzaileak(ErabiltzaileId)   ON DELETE RESTRICT   (actor)
+  FK  LangileId       → Erabiltzaileak(ErabiltzaileId)   ON DELETE SET NULL   (ticket owner / affected employee)
+  FK  TxostenId       → BidaiaTxostenak(TxostenId)       ON DELETE SET NULL
 ```
-
-> ⚠️ Turso/libSQL **NO fuerza FKs por defecto** en sesiones HTTP (sólo SQLite local activa `PRAGMA foreign_keys = ON` por conexión). Las FK son declarativas en el `CREATE TABLE` pero **no validan INSERT/DELETE** desde la app contra Turso. Si necesitas integridad referencial estricta en producción, activa el PRAGMA en cada llamada al pipeline.
 
 `sqlite-net-pcl` ORM does NOT generate FK DDL — use raw SQL (`CREATE TABLE IF NOT EXISTS`) for all FK tables. ORM (`CreateTableAsync`) is only used for `Erabiltzaileak` and `GastuKontzeptuak`.
 
 **Turso migration (when ready):** replace `sqlite-net-pcl` → `LibSQL.Client`, `SQLiteAsyncConnection` → `LibSQLConnection`. Connection string from env vars only, never hardcoded.
+
+**SQLite migrations:** `MigraAuditoretzaLogaLangileIdGehituSqliteAsync` / Turso equivalent add `LangileId` to existing DBs.
 
 ---
 
@@ -169,24 +215,24 @@ AuditoretzaLoga
 ### `Erabiltzaileak`
 | Column | Type | Notes |
 |---|---|---|
-| ErabiltzaileId | INTEGER PK AUTOINCREMENT | |
+| ErabiltzaileId | INTEGER PK AUTOINCREMENT | C# property `Id` |
 | Izena | TEXT NOT NULL | |
 | Abizena | TEXT NOT NULL | |
 | Abizena2 | TEXT NOT NULL DEFAULT '' | |
 | DNI | TEXT NOT NULL UNIQUE | FK target |
 | Email (Posta) | TEXT NOT NULL UNIQUE | C# property is `Posta`, column is `Email` |
-| Kargoa | **TEXT** NOT NULL DEFAULT '' | Cargo name as string: `"Kontularia"`, `"Komertziala"`... — NEVER INTEGER |
-| Sektorea | **TEXT** NOT NULL DEFAULT '' | Sector name as string: `"Finantzak"` \| `"Marketina"` \| `"Salmentak"` \| `""` — NEVER INTEGER |
+| Kargoa | **TEXT** NOT NULL DEFAULT '' | Cargo label: `"Kontularia"`, `"Komertziala"`… — NEVER INTEGER |
+| Sektorea | **TEXT** NOT NULL DEFAULT '' | `"Finantzak"` \| `"Marketina"` \| `"Salmentak"` \| `""` — NEVER INTEGER |
 | Rola | INTEGER NOT NULL | 0=Langilea, 1=Admin, 2=CEO |
 | Aktiboa | INTEGER DEFAULT 1 | |
-| SorkuntzaData | TEXT NOT NULL | ISO 8601 |
+| SorkuntzaData | TEXT NOT NULL | ISO 8601 UTC via `DataOrduaBalioak` |
 | Pasahitza | TEXT NOT NULL | SHA256+salt |
 | SaioHasieraSaiakerak | INTEGER | |
 | SaioaBlokeoaAmaieraUtc | TEXT nullable | |
 
-> ⚠️ **`Sektorea` y `Kargoa` son TEXT, no INTEGER.** Si una query SQL hace `WHERE Sektorea = 1`, está rota — Turso/SQLite devolverá 0 filas silenciosamente. Usa los nombres legibles (`'Finantzak'`, etc.) y bindea strings. Hay un helper `SektoreaTestuaIdentifikatzailetik(int)` en `DatuBaseaZerbitzuaAdministratzaileEkintzak.cs` para convertir del enum.
+> ⚠️ **`Sektorea` and `Kargoa` are TEXT, not INTEGER.** `WHERE Sektorea = 1` returns 0 rows silently. Bind string labels. Use `SektoreaKargoarenHiztegia` for UI/validation.
 >
-> 🚫 **`KargoarenIdentifikatzailea` (columna) no existe** — fue retirada. Si la ves en código, es código muerto del esquema viejo.
+> 🚫 **`KargoarenIdentifikatzailea` (column) does not exist** — dead schema name.
 
 ### `BidaiaTxostenak`
 | Column | Type | Notes |
@@ -196,18 +242,18 @@ AuditoretzaLoga
 | LangileDNI | TEXT NOT NULL FK | → Erabiltzaileak(DNI), CASCADE on update |
 | AdminDNI | TEXT nullable FK | → Erabiltzaileak(DNI), set when approved/rejected |
 | EmpresaIbilgailua | INTEGER NOT NULL DEFAULT 0 | 1 if company vehicle used |
-| Saila | TEXT NOT NULL | |
+| Saila | TEXT NOT NULL | sector on ticket (`Finantzak`, …) — not `Sektorea` column |
 | Helmuga | TEXT NOT NULL | category name |
 | BidaiaHelburua | TEXT NOT NULL | description |
-| HasieraData | TEXT NOT NULL | ISO 8601 |
-| AmaieraData | TEXT NOT NULL | ISO 8601 |
+| HasieraData | TEXT NOT NULL | ISO 8601 UTC |
+| AmaieraData | TEXT NOT NULL | ISO 8601 UTC |
 | PertsonaKopurua | INTEGER | |
-| JasoAurrerakina | INTEGER DEFAULT 0 | |
+| JasoAurrerakina | INTEGER DEFAULT 0 | C# property `JasoAurrekina` |
 | Egoera | TEXT NOT NULL | Zain / Onartua / Ukatua |
 | AdminOharra | TEXT nullable | |
 | MonetaKodea | TEXT NOT NULL DEFAULT 'EUR' | |
 | SorkuntzaData | TEXT NOT NULL | ISO 8601 UTC |
-| AzkenEguneraketa | TEXT NOT NULL | ISO 8601 UTC |
+| AzkenEguneraketa | TEXT NOT NULL | C# property `AzkenEguneratzea` |
 | DataAprobazioa | TEXT NOT NULL | ISO 8601 or empty |
 
 ### `GastuLerroak`
@@ -217,13 +263,13 @@ AuditoretzaLoga
 | TxostenId | INTEGER FK | → BidaiaTxostenak, CASCADE delete |
 | KategoriaId | INTEGER FK | → GastuKontzeptuak |
 | KontzeptuId | INTEGER | denormalized copy, no FK |
-| GastuData | TEXT NOT NULL | ISO 8601 |
+| GastuData | TEXT NOT NULL | ISO 8601 UTC |
 | GarraioBidea | TEXT NOT NULL | transport mode text |
-| Zenbatekoa_Guztira | REAL | |
+| Zenbatekoa_Guztira | REAL | C# `ZenbatekoaGuztira` |
 | Kilometroak | REAL | |
-| TicketArgazkiBidea | TEXT NOT NULL | Cloudinary HTTPS URL or empty |
+| TicketArgazkiBidea | TEXT NOT NULL | C# `TicketArgazkia` — Cloudinary HTTPS URL or empty |
 | Oharrak | TEXT NOT NULL | |
-| IbilgailuaBeharrezkoa | INTEGER NOT NULL DEFAULT 0 | mirrors GastuKontzeptuak flag at time of creation |
+| IbilgailuaBeharrezkoa | INTEGER NOT NULL DEFAULT 0 | mirrors category flag at creation |
 
 ### `GastuKontzeptuak`
 | Column | Type | Notes |
@@ -239,38 +285,54 @@ AuditoretzaLoga
 | Column | Type | Notes |
 |---|---|---|
 | LogId | INTEGER PK AUTOINCREMENT | |
-| TxostenId | INTEGER nullable FK | → BidaiaTxostenak(TxostenId), ON DELETE SET NULL — null para acciones no ligadas a un txostena (login, password, etc.) |
-| ErabiltzaileId | INTEGER FK | → Erabiltzaileak(ErabiltzaileId), ON DELETE RESTRICT |
-| Ekintza | TEXT NOT NULL DEFAULT '' | `TxostenaOnartua` \| `TxostenaEzeztatu` \| `TxostenaEskatuDu`... (constantes en `DatuBaseaZerbitzuaAdministratzaileEkintzak.cs`) |
-| DataOrdua | TEXT NOT NULL DEFAULT '' | ISO 8601 UTC |
-| Deskribapena | TEXT NOT NULL DEFAULT '' | Texto libre del evento, ej. `"{TxostenId} · Onartua"` |
-| IP_Helbidea | TEXT NOT NULL DEFAULT '' | IPv4 del dispositivo (LAN). Vacío si no se pudo resolver |
+| TxostenId | INTEGER nullable FK | ON DELETE SET NULL |
+| ErabiltzaileId | INTEGER FK | **Actor** (who performed the action) |
+| LangileId | INTEGER nullable FK | **Affected employee** (ticket owner); nullable for non-ticket actions |
+| Ekintza | TEXT NOT NULL DEFAULT '' | `TxostenaOnartua` \| `TxostenaEzeztatu` \| `TxostenaEskatuDu` \| `TxostenaBertanBehera` (constants in `DatuBaseaZerbitzuaAdministratzaileEkintzak.cs`) |
+| DataOrdua | TEXT NOT NULL (DB) / `DateTime` (C# model) | ISO 8601 UTC; Turso INSERT via `DataOrduaOsatu` |
+| Deskribapena | TEXT NOT NULL DEFAULT '' | e.g. `"{TxostenId} · Onartua"` |
+| IP_Helbidea | TEXT NOT NULL DEFAULT '' | C# `IpHelbidea` — device LAN IPv4 |
 
-> 📝 Inserción en `AuditoretzaLoga` se hace **siempre** vía `IdazkiAuditoretzaLogaAsync(...)` — nunca SQL directo desde ViewModels.
+> 📝 Inserts **only** via private `IdatziAuditoretzaLogaAsync(ekintza, deskribapena, erabiltzaileId, txostenId?, langileId?)` in `DatuBaseaZerbitzua` — never raw SQL from ViewModels.
+>
+> Admin approve/reject: `ErabiltzaileId` = admin, `LangileId` = ticket's `ErabiltzaileId`. Employee submit/cancel: both often equal the employee id.
 
 ---
 
 ## C# Model ↔ DB column mapping
 
-Algunas propiedades del modelo son **facades calculadas** con `[Ignore]` y NO se persisten. Convierten al vuelo entre el formato de almacenamiento (string) y un alias C# (int/bool) que usa la UI. Si las confundes con columnas, romperás las queries SQL.
+Computed properties use `[Ignore]` and are **not** persisted. Never use them in SQL or Turso mappers.
 
 ### `Erabiltzailea.cs`
 | Propiedad C# | ¿Persiste? | Columna DB | Conversión |
 |---|---|---|---|
+| `Id` | ✅ Sí | `ErabiltzaileId` | |
 | `Sektorea` (string) | ✅ Sí | `Sektorea` TEXT | directa |
-| `SektorearenIdentifikatzailea` (int) | ❌ `[Ignore]` | — | facade get/set que mapea a `EnpresakoSektorea` enum (1=Finantzak, 2=Marketina, 3=Salmentak) ↔ string |
+| `SektorearenIdentifikatzailea` (int) | ❌ `[Ignore]` | — | ↔ `EnpresakoSektorea` enum strings |
+
+### `BidaiaTxostena.cs`
+| Propiedad C# | ¿Persiste? | Columna DB | Conversión |
+|---|---|---|---|
+| `Saila` (string) | ✅ Sí | `Saila` TEXT | sector on ticket |
+| `SailarenIdentifikatzailea` (int) | ❌ `[Ignore]` | — | ↔ `Finantzak` / `Marketina` / `Salmentak` |
+| `JasoAurrekina` | ✅ Sí | `JasoAurrerakina` | |
+| `AzkenEguneratzea` | ✅ Sí | `AzkenEguneraketa` | normalized with `DataOrduaBalioak` on write |
 
 ### `GastuLerroa.cs`
 | Propiedad C# | ¿Persiste? | Columna DB | Conversión |
 |---|---|---|---|
-| `GastuData` (string) | ✅ Sí | `GastuData` TEXT | ISO 8601 raw |
-| `GastuDataFormateatua` (string) | ❌ `[Ignore]` | — | parsea `GastuData` y devuelve `dd/MM/yyyy` para mostrar |
-| `Kilometroak` (double) | ✅ Sí | `Kilometroak` REAL | directa |
-| `KilometroakIkagarri` (bool) | ❌ `[Ignore]` | — | `Kilometroak > 0` (binding `IsVisible`) |
-| `IbilgailuaBeharrezkoa` (int) | ✅ Sí | `IbilgailuaBeharrezkoa` INTEGER | 0 \| 1 |
-| `IbilgailuaBeharrezkoaBai` (bool) | ❌ `[Ignore]` | — | `IbilgailuaBeharrezkoa == 1` (binding `IsVisible`) |
+| `GastuData` (string) | ✅ Sí | `GastuData` TEXT | ISO 8601 UTC |
+| `GastuDataFormateatua` (string) | ❌ `[Ignore]` | — | `DataOrduaBalioak.DataOrduaBistaratu(GastuData)` |
+| `TicketArgazkia` | ✅ Sí | `TicketArgazkiBidea` | URL only |
+| `KilometroakIkagarri` / `IbilgailuaBeharrezkoaBai` | ❌ `[Ignore]` | — | UI visibility |
 
-> ⚠️ Las propiedades `[Ignore]` no aparecen en SQL ni en mappers Turso. Si añades una nueva facade, recuerda decorarla SIEMPRE con `[Ignore]` (de `using SQLite;`), si no `sqlite-net-pcl` intentará crear una columna fantasma.
+### `AuditoretzaLoga.cs`
+| Propiedad C# | ¿Persiste? | Columna DB | Conversión |
+|---|---|---|---|
+| `DataOrdua` (`DateTime`) | ✅ Sí | `DataOrdua` TEXT | ORM/Turso bridge via `DataOrduaBalioak` |
+| `IpHelbidea` | ✅ Sí | `IP_Helbidea` | |
+
+> ⚠️ New facades **must** use `[Ignore]` or sqlite-net-pcl will create ghost columns.
 
 ---
 
@@ -281,26 +343,26 @@ Algunas propiedades del modelo son **facades calculadas** con `[Ignore]` y NO se
 - Auto-logout after inactivity; lock after 5 failed login attempts
 - **Data isolation:** every query fetching user data MUST include `WHERE ErabiltzaileId = [currentUserId]`
 - Role verified on every navigation — check BEFORE loading data, fail fast
-- SQLite encrypted via SQLCipher — key derived from device value + app secret, stored in SecureStorage, never hardcoded
+- SQLite encrypted via SQLCipher — key in `DatuBaseaZifraketaLaguntzailea` / SecureStorage (`kiroku_datubase_sqlcipher_gako_hex`), never hardcoded in source
 - HTTPS only — no HTTP allowed
 - Never log tokens, request bodies, or user data
-- Audit every approve/reject in `AuditoretzaLoga` — logs are read-only
+- Audit every approve/reject (and related ticket actions) in `AuditoretzaLoga` — logs are read-only
 - External secrets (Turso URL/token, Cloudinary keys) in `.env` only — `.env` must be in `.gitignore`
 
 ---
 
 ## Photo Upload Architecture
 
-Photos are **never** stored as blobs in SQLite. The DB stores the URL only (`GastuLerroa.TicketArgazkia`, `string`).
+Photos are **never** stored as blobs in SQLite. The DB stores the URL only (`GastuLerroa.TicketArgazkia` → column `TicketArgazkiBidea`).
 
 Flow:
 1. User picks photo via `MediaPicker`
-2. Show local thumbnail immediately (`LokalArgazkiBidea`)
+2. Show local thumbnail immediately (`LokalArgazkiBidea` on ViewModel)
 3. On submit: `ArgazkiIgotzeZerbitzua` uploads to Cloudinary
 4. Store returned HTTPS URL in `TicketArgazkia`
 5. If upload fails: show error Toast, allow retry — never silently save empty string
 
-Rules: JPEG/PNG only, max 10 MB, 30s timeout, inject `IHttpClientFactory` (never `new HttpClient()`).
+Rules: JPEG/PNG only, max 10 MB, 30s timeout, inject `IHttpClientFactory` when added (service currently singleton factory in `ArgazkiIgotzeZerbitzua`).
 
 ---
 
@@ -338,11 +400,12 @@ catch (Exception ex)
 - Confirmation dialogs for destructive actions
 - Toast/Snackbar feedback after every user action
 - Status badges color-coded: Zain → amber | Onartua → green | Ukatua → red
-- Lists sorted by `DataOrdua DESC`, pull-to-refresh on all lists
+- Ticket lists sorted by `SorkuntzaData DESC`; audit/history by `DataOrdua DESC`
+- Pull-to-refresh on all lists
 - Phone: StackLayout vertical, min 44px touch targets
 - Tablet: Grid 2-column master-detail via `OnIdiom`
 - Role labels in Spanish: "Administrador", "Empleado", "Director general (CEO)"
-- Sector/cargo labels in Basque: "Finantzak", "Marketina", "Salmentak", "Kontularia", etc.
+- Sector/cargo labels in Basque via `SektoreaKargoarenHiztegia`
 
 ---
 
@@ -352,9 +415,9 @@ catch (Exception ex)
 GastuMota (KategoriaIzenak): Bazkaria | Gasolina | Garraio publikoa | Hotela |
                               Peajea | Aparkalekua | Bidaia | Materialak | Bestelakoa
 
-TxartelEgoera: Zain | Onartua | Ukatua
+TxartelEgoera / Egoera column: Zain | Onartua | Ukatua
 
-GarraioBidea: set when GastuKontzeptua.IbilgailuaBeharDu = 1
+GarraioBidea: set when GastuKontzeptua.IbilgailuaBeharrezkoa = 1
               values from GarraioBideaBalioak.AukeraEstadioak
 ```
 
@@ -366,19 +429,20 @@ GarraioBidea: set when GastuKontzeptua.IbilgailuaBeharDu = 1
 - No `new()` for services — use DI
 - No plain-text passwords
 - No DB queries on the UI thread
-- No English identifiers (see exceptions in §Basque rule)
+- No English identifiers (see exceptions in Basque rule)
 - No empty catch blocks
 - No generic-only catch
 - No `Thread.Sleep` — use `Task.Delay`
 - No DB queries in ViewModel constructors — use `OnAppearing`/`LoadAsync`
-- No photo blobs in SQLite — URL only
+- No photo blobs in SQLite — URL only (`TicketArgazkiBidea`)
 - No hardcoded secrets or encryption keys
 - No decorative comments, ASCII art, or border symbols (`===`, `---`) in code
 - No modifications outside agreed scope without asking first
 - No `AdminDNI = string.Empty` — must be `null` before admin decision (empty string violates FK)
-- No `WHERE Sektorea = <int>` ni `WHERE Kargoa = <int>` — ambas son TEXT. Si bindeas un int, la query devuelve 0 filas sin error visible. Bindea siempre strings (`"Finantzak"`, `"Kontularia"`, ...)
-- No referencies columnas inexistentes: `KargoarenIdentifikatzailea`, `SektorearenIdentifikatzailea` (con ese nombre exacto) **NO son columnas SQL** — son propiedades C# facade o nombres muertos. La columna real es `Sektorea` / `Kargoa`
-- No olvides `[Ignore]` en propiedades calculadas — sino sqlite-net-pcl intentará crear una columna fantasma en la primera `CreateTableAsync`
+- No `WHERE Sektorea = <int>` or `WHERE Kargoa = <int>` — both are TEXT; bind `"Finantzak"`, `"Kontularia"`, etc.
+- No ghost SQL columns: `KargoarenIdentifikatzailea`, `SektorearenIdentifikatzailea` on tickets are `[Ignore]` facades only; ticket sector column is `Saila`
+- No raw date strings to DB — always `DataOrduaBalioak` for TEXT date columns
+- No `[Ignore]` omitted on computed properties
 
 ---
 

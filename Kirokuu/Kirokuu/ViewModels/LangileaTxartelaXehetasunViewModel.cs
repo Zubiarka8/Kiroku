@@ -56,6 +56,9 @@ public partial class LangileaTxartelaXehetasunViewModel : ObservableObject
     private string _helmuga = string.Empty;
 
     [ObservableProperty]
+    private string _sailarenEtiketa = string.Empty;
+
+    [ObservableProperty]
     private string _egoera = string.Empty;
 
     [ObservableProperty]
@@ -137,6 +140,7 @@ public partial class LangileaTxartelaXehetasunViewModel : ObservableObject
             }
 
             Helmuga = txostena.Helmuga;
+            SailarenEtiketa = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(txostena.Saila);
             Egoera = txostena.Egoera;
             AdminOharra = txostena.AdminOharra;
             AdminOharraIkagarri = !string.IsNullOrWhiteSpace(txostena.AdminOharra);

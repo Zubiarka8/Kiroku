@@ -18,6 +18,8 @@ public sealed partial class DatuBaseaZerbitzua
 
     private const string AuditoretzaEkintzaTxostenaEskatuDu = "TxostenaEskatuDu";
 
+    private const string AuditoretzaEkintzaTxostenaBertanBehera = "TxostenaBertanBehera";
+
     private static string SektoreaTestuaIdentifikatzailetik(int identifikatzailea) => identifikatzailea switch
     {
         (int)EnpresakoSektorea.Finantzak => "Finantzak",
@@ -90,11 +92,13 @@ public sealed partial class DatuBaseaZerbitzua
                 LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 TxostenId INTEGER,
                 ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
+                LangileId INTEGER,
                 Ekintza TEXT NOT NULL DEFAULT '',
                 DataOrdua TEXT NOT NULL DEFAULT '',
                 Deskribapena TEXT NOT NULL DEFAULT '',
                 IP_Helbidea TEXT NOT NULL DEFAULT '',
                 FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+                FOREIGN KEY (LangileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE SET NULL,
                 FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
             );
             """;
@@ -119,9 +123,138 @@ public sealed partial class DatuBaseaZerbitzua
         await bezeroa.ExekutatuAsync(bidaiaSql, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(gastuLerroSql, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(auditSql, cancellationToken).ConfigureAwait(false);
+        await MigraAuditoretzaLogaDiruSarreraIdTxostenIdraTursoAsync(bezeroa, cancellationToken).ConfigureAwait(false);
+        await MigraAuditoretzaLogaLangileIdGehituTursoAsync(bezeroa, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(
             "CREATE UNIQUE INDEX IF NOT EXISTS idx_erabiltzaileak_dni ON Erabiltzaileak(DNI);",
             cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task MigraAuditoretzaLogaDiruSarreraIdTxostenIdraSqliteAsync()
+    {
+        var dagoDiruSarrera = await _sqliteKonexioa!.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM pragma_table_info('AuditoretzaLoga') WHERE name = 'DiruSarreraId'").ConfigureAwait(false);
+        if (dagoDiruSarrera == 0)
+            return;
+
+        await _sqliteKonexioa.ExecuteAsync("PRAGMA foreign_keys = OFF").ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync("""
+            CREATE TABLE AuditoretzaLoga_berria (
+                LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                TxostenId INTEGER,
+                ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
+                Ekintza TEXT NOT NULL DEFAULT '',
+                DataOrdua TEXT NOT NULL DEFAULT '',
+                Deskribapena TEXT NOT NULL DEFAULT '',
+                IP_Helbidea TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
+            );
+            """).ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync("""
+            INSERT INTO AuditoretzaLoga_berria (LogId, TxostenId, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea)
+            SELECT LogId, NULL, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea
+            FROM AuditoretzaLoga;
+            """).ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync("DROP TABLE AuditoretzaLoga").ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync("ALTER TABLE AuditoretzaLoga_berria RENAME TO AuditoretzaLoga").ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync("PRAGMA foreign_keys = ON").ConfigureAwait(false);
+    }
+
+    private static async Task MigraAuditoretzaLogaDiruSarreraIdTxostenIdraTursoAsync(
+        ITursoSqlEgikaritzailea bezeroa,
+        CancellationToken cancellationToken)
+    {
+        const string egiaztapenSql = """
+            SELECT COUNT(*) AS Kopurua
+            FROM pragma_table_info('AuditoretzaLoga')
+            WHERE name = 'DiruSarreraId';
+            """;
+        var emaitza = await bezeroa.ExekutatuAsync(egiaztapenSql, cancellationToken).ConfigureAwait(false);
+        var dagoDiruSarrera = emaitza.LerroTestuBalioak.FirstOrDefault() is { Count: > 0 } lerroa
+            && long.TryParse(lerroa[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var kopurua)
+            && kopurua > 0;
+        if (!dagoDiruSarrera)
+            return;
+
+        await bezeroa.ExekutatuAsync("PRAGMA foreign_keys = OFF;", cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("""
+            CREATE TABLE AuditoretzaLoga_berria (
+                LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                TxostenId INTEGER,
+                ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
+                Ekintza TEXT NOT NULL DEFAULT '',
+                DataOrdua TEXT NOT NULL DEFAULT '',
+                Deskribapena TEXT NOT NULL DEFAULT '',
+                IP_Helbidea TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+                FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
+            );
+            """, cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("""
+            INSERT INTO AuditoretzaLoga_berria (LogId, TxostenId, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea)
+            SELECT LogId, NULL, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea
+            FROM AuditoretzaLoga;
+            """, cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("DROP TABLE AuditoretzaLoga;", cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("ALTER TABLE AuditoretzaLoga_berria RENAME TO AuditoretzaLoga;", cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("PRAGMA foreign_keys = ON;", cancellationToken).ConfigureAwait(false);
+    }
+
+    private async Task MigraAuditoretzaLogaLangileIdGehituSqliteAsync()
+    {
+        var dagoLangileId = await _sqliteKonexioa!.ExecuteScalarAsync<int>(
+            "SELECT COUNT(*) FROM pragma_table_info('AuditoretzaLoga') WHERE name = 'LangileId'").ConfigureAwait(false);
+        if (dagoLangileId > 0)
+            return;
+
+        await _sqliteKonexioa.ExecuteAsync("ALTER TABLE AuditoretzaLoga ADD COLUMN LangileId INTEGER").ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync("""
+            UPDATE AuditoretzaLoga
+            SET LangileId = (
+                SELECT ErabiltzaileId FROM BidaiaTxostenak
+                WHERE BidaiaTxostenak.TxostenId = AuditoretzaLoga.TxostenId
+            )
+            WHERE TxostenId IS NOT NULL;
+            """).ConfigureAwait(false);
+        await _sqliteKonexioa.ExecuteAsync("""
+            UPDATE AuditoretzaLoga
+            SET LangileId = ErabiltzaileId
+            WHERE LangileId IS NULL AND ErabiltzaileId > 0;
+            """).ConfigureAwait(false);
+    }
+
+    private static async Task MigraAuditoretzaLogaLangileIdGehituTursoAsync(
+        ITursoSqlEgikaritzailea bezeroa,
+        CancellationToken cancellationToken)
+    {
+        const string egiaztapenSql = """
+            SELECT COUNT(*) AS Kopurua
+            FROM pragma_table_info('AuditoretzaLoga')
+            WHERE name = 'LangileId';
+            """;
+        var emaitza = await bezeroa.ExekutatuAsync(egiaztapenSql, cancellationToken).ConfigureAwait(false);
+        var dagoLangileId = emaitza.LerroTestuBalioak.FirstOrDefault() is { Count: > 0 } lerroa
+            && long.TryParse(lerroa[0], NumberStyles.Integer, CultureInfo.InvariantCulture, out var kopurua)
+            && kopurua > 0;
+        if (dagoLangileId)
+            return;
+
+        await bezeroa.ExekutatuAsync("ALTER TABLE AuditoretzaLoga ADD COLUMN LangileId INTEGER;", cancellationToken)
+            .ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("""
+            UPDATE AuditoretzaLoga
+            SET LangileId = (
+                SELECT ErabiltzaileId FROM BidaiaTxostenak
+                WHERE BidaiaTxostenak.TxostenId = AuditoretzaLoga.TxostenId
+            )
+            WHERE TxostenId IS NOT NULL;
+            """, cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("""
+            UPDATE AuditoretzaLoga
+            SET LangileId = ErabiltzaileId
+            WHERE LangileId IS NULL AND ErabiltzaileId > 0;
+            """, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<TxostenOnarpenLaburpena>> ZerrendatuTxostenGuztiekAsync(
@@ -215,7 +348,7 @@ public sealed partial class DatuBaseaZerbitzua
                 Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
                 Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
                 GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0),
-                HasieraData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "HasieraData")),
+                HasieraData = DataOrduaBalioak.MapatikDataOrdua(mapa, "HasieraData"),
                 AdminTestua = IrakurriMapaTestuaLehenetsia(mapa, "AdminTestua")
             });
         }
@@ -494,7 +627,7 @@ public sealed partial class DatuBaseaZerbitzua
         var adminErabiltzailea = await BilatuErabiltzaileaIdzAsync(administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
         var adminDNI = adminErabiltzailea?.DNI;
 
-        var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
+        var orain = DataOrduaBalioak.DataOrduaOrain();
         txostena.Egoera = egoeraBerria;
         txostena.AdminDNI = string.IsNullOrWhiteSpace(adminDNI) ? null : adminDNI.Trim();
         txostena.AdminOharra = string.Equals(egoeraBerria, TxostenEgoera.Ukatua, StringComparison.Ordinal)
@@ -535,7 +668,13 @@ public sealed partial class DatuBaseaZerbitzua
             ? AuditoretzaEkintzaTxostenaOnartu
             : AuditoretzaEkintzaTxostenaUkatu;
         var deskribapena = $"{txostenId} · {egoeraBerria}";
-        await IdazkiAuditoretzaLogaAsync(ekintza, deskribapena, administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
+        await IdatziAuditoretzaLogaAsync(
+            ekintza,
+            deskribapena,
+            administratzaileErabiltzaileId,
+            txostenId,
+            txostena.ErabiltzaileId,
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task EguneratuTxostenIbilgailuaEtaKilometroakAsync(
@@ -551,7 +690,7 @@ public sealed partial class DatuBaseaZerbitzua
         if (txostenId <= 0)
             throw new ArgumentException("Txosten ID baliogabea.", nameof(txostenId));
 
-        var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
+        var orain = DataOrduaBalioak.DataOrduaOrain();
         var garraioGarbia = garraioBidea.Trim();
         var kilometroGarbiak = kilometroak < 0 ? 0 : Math.Round(kilometroak, 2, MidpointRounding.AwayFromZero);
 
@@ -616,18 +755,21 @@ public sealed partial class DatuBaseaZerbitzua
             GarraioBideaBalioak.NorberarenIbilgailua).ConfigureAwait(false);
     }
 
-    private async Task IdazkiAuditoretzaLogaAsync(
+    private async Task IdatziAuditoretzaLogaAsync(
         string ekintza,
         string deskribapena,
         int erabiltzaileId,
-        CancellationToken cancellationToken)
+        int? txostenId = null,
+        int? langileId = null,
+        CancellationToken cancellationToken = default)
     {
         var loga = new AuditoretzaLoga
         {
-            DiruSarreraId = null,
+            TxostenId = txostenId,
             ErabiltzaileId = erabiltzaileId,
+            LangileId = langileId,
             Ekintza = ekintza,
-            DataOrdua = DateTime.UtcNow,
+            DataOrdua = DataOrduaBalioak.OrduaUtcOrain(),
             Deskribapena = deskribapena,
             IpHelbidea = LortuGailuIpHelbidea()
         };
@@ -637,16 +779,17 @@ public sealed partial class DatuBaseaZerbitzua
             await ExekutatuTursoanAsync(async bezeroa =>
             {
                 const string sql = """
-                    INSERT INTO AuditoretzaLoga (DiruSarreraId, ErabiltzaileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea)
-                    VALUES (?, ?, ?, ?, ?, ?);
+                    INSERT INTO AuditoretzaLoga (TxostenId, ErabiltzaileId, LangileId, Ekintza, DataOrdua, Deskribapena, IP_Helbidea)
+                    VALUES (?, ?, ?, ?, ?, ?, ?);
                     """;
                 await bezeroa.ExekutatuAsync(
                         sql,
                         cancellationToken,
-                        LibsqlLoturaNormalizatua(loga.DiruSarreraId),
+                        LibsqlLoturaNormalizatua(loga.TxostenId),
                         LibsqlLoturaNormalizatua(loga.ErabiltzaileId),
+                        LibsqlLoturaNormalizatua(loga.LangileId),
                         LibsqlLoturaNormalizatua(loga.Ekintza),
-                        LibsqlLoturaNormalizatua(loga.DataOrdua.ToString("o", CultureInfo.InvariantCulture)),
+                        LibsqlLoturaNormalizatua(DataOrduaBalioak.DataOrduaOsatu(loga.DataOrdua)),
                         LibsqlLoturaNormalizatua(loga.Deskribapena),
                         LibsqlLoturaNormalizatua(loga.IpHelbidea))
                     .ConfigureAwait(false);
@@ -727,8 +870,8 @@ public sealed partial class DatuBaseaZerbitzua
             Saila = IrakurriMapaTestuaLehenetsia(mapa, "Saila"),
             Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
             BidaiaHelburua = IrakurriMapaTestuaLehenetsia(mapa, "BidaiaHelburua"),
-            HasieraData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "HasieraData")),
-            AmaieraData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "AmaieraData")),
+            HasieraData = DataOrduaBalioak.MapatikDataOrdua(mapa, "HasieraData"),
+            AmaieraData = DataOrduaBalioak.MapatikDataOrdua(mapa, "AmaieraData"),
             PertsonaKopurua = IrakurriMapaOsoaLehenetsia(mapa, "PertsonaKopurua", 0),
             JasoAurrekina = IrakurriMapaOsoaLehenetsia(mapa, "JasoAurrerakina", 0),
             Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
@@ -785,7 +928,7 @@ public sealed partial class DatuBaseaZerbitzua
                 GastuId = IrakurriMapaOsoaLehenetsia(mapa, "GastuId", 0),
                 TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
                 KategoriaId = IrakurriMapaOsoaLehenetsia(mapa, "KategoriaId", 0),
-                GastuData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "GastuData")),
+                GastuData = DataOrduaBalioak.MapatikDataOrdua(mapa, "GastuData"),
                 GarraioBidea = IrakurriMapaTestuaLehenetsia(mapa, "GarraioBidea"),
                 ZenbatekoaGuztira = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Zenbatekoa_Guztira", 0),
                 Kilometroak = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "Kilometroak", 0),
@@ -838,7 +981,7 @@ public sealed partial class DatuBaseaZerbitzua
                 Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
                 Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
                 GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0),
-                HasieraData = DataOrduaBalioak.DataOrduaOsatu(IrakurriMapaTestuaLehenetsia(mapa, "HasieraData"))
+                HasieraData = DataOrduaBalioak.MapatikDataOrdua(mapa, "HasieraData")
             };
             if (egoeraBerretsia is not null)
                 laburpena.Egoera = egoeraBerretsia;
@@ -864,13 +1007,15 @@ public sealed partial class DatuBaseaZerbitzua
             if (langilea is null)
                 return;
 
-            var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
+            var orain = DataOrduaBalioak.DataOrduaOrain();
 
             var txostena = new BidaiaTxostena
             {
                 ErabiltzaileId = langilea.Id,
                 LangileDNI = langilea.DNI,
-                Saila = "Garapena",
+                Saila = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(langilea.Sektorea) is { Length: > 0 } saila
+                    ? saila
+                    : "Finantzak",
                 Helmuga = "Donostia",
                 BidaiaHelburua = "Probako txostena",
                 HasieraData = orain,
@@ -930,7 +1075,24 @@ public sealed partial class DatuBaseaZerbitzua
             if (!int.TryParse(langileIdStr, NumberStyles.Integer, CultureInfo.InvariantCulture, out var langileId))
                 return;
 
-            var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
+            var langileEmaitza = await bezeroa.ExekutatuAsync(
+                "SELECT DNI, Sektorea FROM Erabiltzaileak WHERE ErabiltzaileId = ? LIMIT 1;",
+                cancellationToken,
+                LibsqlLoturaNormalizatua(langileId)).ConfigureAwait(false);
+            var langileLerroMapa = langileEmaitza.LerroTestuBalioak.FirstOrDefault();
+            Dictionary<string, string>? langileMapa = null;
+            if (langileLerroMapa is not null && langileLerroMapa.Count > 0)
+                langileMapa = SortuTursoLerroMapa(langileEmaitza.ZutabeIzenak, langileLerroMapa);
+            var langileDni = langileMapa is not null
+                ? IrakurriMapaTestuaLehenetsia(langileMapa, "DNI")
+                : string.Empty;
+            var sailaProbako = langileMapa is not null
+                ? SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(IrakurriMapaTestuaLehenetsia(langileMapa, "Sektorea"))
+                : string.Empty;
+            if (string.IsNullOrEmpty(sailaProbako))
+                sailaProbako = "Finantzak";
+
+            var orain = DataOrduaBalioak.DataOrduaOrain();
 
             var txostenEmaitza = await bezeroa.ExekutatuAsync(
                 """
@@ -938,10 +1100,12 @@ public sealed partial class DatuBaseaZerbitzua
                   ErabiltzaileId, LangileDNI, Saila, Helmuga, BidaiaHelburua,
                   HasieraData, AmaieraData, PertsonaKopurua, JasoAurrerakina, Egoera, AdminOharra,
                   MonetaKodea, SorkuntzaData, AzkenEguneraketa, DataAprobazioa
-                ) VALUES (?, '', 'Garapena', 'Donostia', 'Probako txostena', ?, ?, 1, 0, ?, NULL, 'EUR', ?, ?, '');
+                ) VALUES (?, ?, ?, 'Donostia', 'Probako txostena', ?, ?, 1, 0, ?, NULL, 'EUR', ?, ?, '');
                 """,
                 cancellationToken,
                 LibsqlLoturaNormalizatua(langileId),
+                LibsqlLoturaNormalizatua(langileDni),
+                LibsqlLoturaNormalizatua(sailaProbako),
                 LibsqlLoturaNormalizatua(orain),
                 LibsqlLoturaNormalizatua(orain),
                 LibsqlLoturaNormalizatua(TxostenEgoera.Zain),

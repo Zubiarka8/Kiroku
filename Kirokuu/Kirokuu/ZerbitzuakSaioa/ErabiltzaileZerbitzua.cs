@@ -41,7 +41,7 @@ public sealed class ErabiltzaileZerbitzua
         var pasahitzaGarbia = pasahitza.Trim();
         ArgumentException.ThrowIfNullOrWhiteSpace(pasahitzaGarbia);
         var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitzaGarbia);
-        var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        var orain = DataOrduaBalioak.DataOrduaOrain();
         var erabiltzailea = new Erabiltzailea
         {
             Izena = izena.Trim(),

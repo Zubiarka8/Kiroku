@@ -9,11 +9,14 @@ public sealed class AuditoretzaLoga
     [Column("LogId")]
     public int LogId { get; set; }
 
-    [Column("DiruSarreraId")]
-    public int? DiruSarreraId { get; set; }
+    [Column("TxostenId")]
+    public int? TxostenId { get; set; }
 
     [Column("ErabiltzaileId")]
     public int ErabiltzaileId { get; set; }
+
+    [Column("LangileId")]
+    public int? LangileId { get; set; }
 
     [NotNull]
     public string Ekintza { get; set; } = string.Empty;

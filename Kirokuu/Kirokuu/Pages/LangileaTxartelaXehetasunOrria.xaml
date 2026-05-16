@@ -77,6 +77,15 @@
                     <BoxView HeightRequest="1"
                              Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}" />
 
+                    <VerticalStackLayout Spacing="3"
+                                         IsVisible="{Binding SailarenEtiketa, Converter={toolkit:IsStringNotNullOrEmptyConverter}}">
+                        <Label Text="Saila"
+                               Style="{StaticResource EremuEtiketaEstiloa}" />
+                        <Label Text="{Binding SailarenEtiketa}"
+                               FontSize="14"
+                               FontAttributes="Bold" />
+                    </VerticalStackLayout>
+
                     <VerticalStackLayout Spacing="3" IsVisible="{Binding IbilgailuaXehetasunakIkagarri}">
                         <Label Text="Ibilgailua"
                                Style="{StaticResource EremuEtiketaEstiloa}" />

@@ -24,6 +24,13 @@
                    Style="{StaticResource ErroreEtiketaEstiloa}"
                    IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
 
+            <VerticalStackLayout Spacing="4"
+                                 IsVisible="{Binding SailarenEtiketa, Converter={toolkit:IsStringNotNullOrEmptyConverter}}">
+                <Label Text="Saila" FontAttributes="Bold" />
+                <Label Text="{Binding SailarenEtiketa}"
+                       FontSize="15" />
+            </VerticalStackLayout>
+
             <VerticalStackLayout Spacing="4">
                 <Label Text="Kategoria" FontAttributes="Bold" />
                 <Picker x:Name="KategoriaHautapena"

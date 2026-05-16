@@ -87,6 +87,9 @@ public partial class TxartelBerriaViewModel : ObservableObject
     [ObservableProperty]
     private bool _kilometroakIkagarri;
 
+    [ObservableProperty]
+    private string _sailarenEtiketa = string.Empty;
+
     partial void OnHautatutakoKategoriaIndizeaChanged(int value)
     {
         HautatutakoGarraioIndizea = -1;
@@ -156,10 +159,24 @@ public partial class TxartelBerriaViewModel : ObservableObject
         IbilgailuaAukeraketaIkagarri = false;
         KilometroakTestua = string.Empty;
         KilometroakIkagarri = false;
+        SailarenEtiketa = string.Empty;
         _ibilgailuaBeharDuKategoriaIdz = new Dictionary<int, int>();
 
         try
         {
+            var erabiltzaileId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+            if (erabiltzaileId is not null)
+            {
+                var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId.Value).ConfigureAwait(true);
+                if (erabiltzailea is not null)
+                {
+                    var saila = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(erabiltzailea.Sektorea);
+                    SailarenEtiketa = string.IsNullOrEmpty(saila)
+                        ? SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(erabiltzailea.SektorearenIdentifikatzailea)
+                        : saila;
+                }
+            }
+
             var kontzeptuak = await _datuBaseaZerbitzua.ZerrendatuGastuKontzeptuakAsync().ConfigureAwait(true);
             foreach (var k in kontzeptuak)
                 _ibilgailuaBeharDuKategoriaIdz[k.KategoriaId] = k.IbilgailuaBeharDu;
@@ -409,7 +426,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 return;
             }
 
-            var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
+            var orain = DataOrduaBalioak.DataOrduaOrain();
             var dataTestua = DataOrduaBalioak.DataOrduaOsatuHautatutakoEguna(HautatutakoData);
             var kategoriaIzena = KategoriaIzenak[HautatutakoKategoriaIndizea];
 
@@ -420,6 +437,13 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 return;
             }
             var langileDni = erabiltzailea.DNI;
+
+            var sailaGordetzeko = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(erabiltzailea.Sektorea);
+            if (string.IsNullOrEmpty(sailaGordetzeko))
+            {
+                ErroreMezua = "Zure saila ez dago ezarrita. Joan ezarpenetara eta hautatu Finantzak, Marketina edo Salmentak.";
+                return;
+            }
 
             string ticketArgazkiaUrl = string.Empty;
             if (!string.IsNullOrWhiteSpace(LokalArgazkiBidea))
@@ -460,7 +484,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
             {
                 ErabiltzaileId = erabiltzaileId.Value,
                 LangileDNI = langileDni,
-                Saila = string.Empty,
+                Saila = sailaGordetzeko,
                 Helmuga = kategoriaIzena,
                 BidaiaHelburua = deskribapenaGarbia,
                 HasieraData = dataTestua,

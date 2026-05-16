@@ -367,6 +367,8 @@ public sealed partial class DatuBaseaZerbitzua
             await SortuSqliteBidaiaTxostenaFKrekinAsync().ConfigureAwait(false);
             await SortuSqliteGastuLerroaFKrekinAsync().ConfigureAwait(false);
             await SortuSqliteAuditoretzaLogaFKrekinAsync().ConfigureAwait(false);
+            await MigraAuditoretzaLogaDiruSarreraIdTxostenIdraSqliteAsync().ConfigureAwait(false);
+            await MigraAuditoretzaLogaLangileIdGehituSqliteAsync().ConfigureAwait(false);
 #if DEBUG
                     await AdministratzaileLehenarenSeedGarapeneanAsync().ConfigureAwait(false);
                     await AdministratzaileProbakoDatuakSQLiteAsync().ConfigureAwait(false);
@@ -504,11 +506,13 @@ public sealed partial class DatuBaseaZerbitzua
                 LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
                 TxostenId INTEGER,
                 ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
+                LangileId INTEGER,
                 Ekintza TEXT NOT NULL DEFAULT '',
                 DataOrdua TEXT NOT NULL DEFAULT '',
                 Deskribapena TEXT NOT NULL DEFAULT '',
                 IP_Helbidea TEXT NOT NULL DEFAULT '',
                 FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+                FOREIGN KEY (LangileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE SET NULL,
                 FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
             );
             """).ConfigureAwait(false);
@@ -782,8 +786,7 @@ public sealed partial class DatuBaseaZerbitzua
             Kargoa = IrakurriMapaTestuaLehenetsia(mapa, "Kargoa"),
             Sektorea = IrakurriMapaTestuaLehenetsia(mapa, "Sektorea"),
             Rola = IrakurriMapaOsoa(mapa, "Rola"),
-            SorkuntzaData = IrakurriMapaDataOrduaLehenetsia(mapa, "SorkuntzaData")
-                .ToString("o", CultureInfo.InvariantCulture),
+            SorkuntzaData = DataOrduaBalioak.MapatikDataOrdua(mapa, "SorkuntzaData"),
             Pasahitza = IrakurriMapaTestuaLehenetsia(mapa, "Pasahitza"),
             Aktiboa = IrakurriMapaOsoaLehenetsia(mapa, "Aktiboa", 1),
             SaioHasieraSaiakerak = IrakurriMapaOsoaLehenetsia(mapa, "SaioHasieraSaiakerak", 0),
@@ -798,21 +801,6 @@ public sealed partial class DatuBaseaZerbitzua
 
         var garbia = TursoTestuaIrakurri(testua);
         return string.IsNullOrEmpty(garbia) ? null : garbia;
-    }
-
-    private static DateTime IrakurriMapaDataOrduaLehenetsia(Dictionary<string, string> mapa, string gakoa)
-    {
-        if (!mapa.TryGetValue(gakoa, out var testua) || string.IsNullOrWhiteSpace(testua))
-            return DateTime.UtcNow;
-
-        if (DateTime.TryParse(
-                testua,
-                CultureInfo.InvariantCulture,
-                DateTimeStyles.RoundtripKind | DateTimeStyles.AllowWhiteSpaces,
-                out var dataOrdua))
-            return dataOrdua;
-
-        return DateTime.UtcNow;
     }
 
     private static IReadOnlyList<ErabiltzaileLaburpena> MapeatuLangileLaburpenak(TursoHttpExekuzioarenEmaitza emaitza)
@@ -860,7 +848,7 @@ public sealed partial class DatuBaseaZerbitzua
 
             var (adminSektorea, adminKargoTestua) = EskuratuGarapenAdminSektoreaEtaKargoarenBalioak(adminKargoa);
             var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(adminPasahitza);
-            var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var orain = DataOrduaBalioak.DataOrduaOrain();
             var pasahitzaKatea = _pasahitzaZerbitzua.LotuGatzaEtaHashKatean(gatza, hash);
             await bezeroa.ExekutatuAsync(
                 """
@@ -926,7 +914,7 @@ public sealed partial class DatuBaseaZerbitzua
 
             var (adminSektorea, adminKargoTestua) = EskuratuGarapenAdminSektoreaEtaKargoarenBalioak(adminKargoa);
             var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(adminPasahitza);
-            var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+            var orain = DataOrduaBalioak.DataOrduaOrain();
             var admin = new Erabiltzailea
             {
                 Izena = adminIzena,

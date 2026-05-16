@@ -63,6 +63,9 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     private string _helmuga = string.Empty;
 
     [ObservableProperty]
+    private string _sailarenEtiketa = string.Empty;
+
+    [ObservableProperty]
     private string _egoera = string.Empty;
 
     [ObservableProperty]
@@ -134,6 +137,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
             }
 
             Helmuga = txostena.Helmuga;
+            SailarenEtiketa = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(txostena.Saila);
             Egoera = txostena.Egoera;
             OnarpenEkintzakIkagarri = string.Equals(txostena.Egoera, TxostenEgoera.Zain, StringComparison.Ordinal);
 

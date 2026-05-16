@@ -65,30 +65,48 @@ public sealed partial class DatuBaseaZerbitzua
         await HasieratuAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
-        var orain = DataOrduaBalioak.DataOrduaOsatu(DateTime.UtcNow);
+        if (txostenId <= 0)
+            throw new ArgumentException("Txosten ID baliogabea.", nameof(txostenId));
+        if (erabiltzaileId <= 0)
+            throw new ArgumentException("Erabiltzaile ID baliogabea.", nameof(erabiltzaileId));
+
+        var orain = DataOrduaBalioak.DataOrduaOrain();
+        int eragindakoErrenkadak;
 
         if (_urrunTursoModua)
         {
-            await ExekutatuTursoanAsync(async bezeroa =>
+            eragindakoErrenkadak = await ExekutatuTursoanAsync(async bezeroa =>
             {
                 const string sql = """
                     UPDATE BidaiaTxostenak SET Egoera = ?, AzkenEguneraketa = ?
                     WHERE TxostenId = ? AND ErabiltzaileId = ? AND Egoera = ?;
                     """;
-                await bezeroa.ExekutatuAsync(sql, cancellationToken,
+                var emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken,
                     LibsqlLoturaNormalizatua(TxostenEgoera.Ezeztatua),
                     LibsqlLoturaNormalizatua(orain),
                     LibsqlLoturaNormalizatua(txostenId),
                     LibsqlLoturaNormalizatua(erabiltzaileId),
                     LibsqlLoturaNormalizatua(TxostenEgoera.Zain)).ConfigureAwait(false);
-                return 0;
+                return (int)emaitza.EragindakoErrenkadaKopurua;
             }, cancellationToken).ConfigureAwait(false);
-            return;
+        }
+        else
+        {
+            eragindakoErrenkadak = await _sqliteKonexioa!.ExecuteAsync(
+                "UPDATE BidaiaTxostenak SET Egoera = ?, AzkenEguneraketa = ? WHERE TxostenId = ? AND ErabiltzaileId = ? AND Egoera = ?",
+                TxostenEgoera.Ezeztatua, orain, txostenId, erabiltzaileId, TxostenEgoera.Zain).ConfigureAwait(false);
         }
 
-        await _sqliteKonexioa!.ExecuteAsync(
-            "UPDATE BidaiaTxostenak SET Egoera = ?, AzkenEguneraketa = ? WHERE TxostenId = ? AND ErabiltzaileId = ? AND Egoera = ?",
-            TxostenEgoera.Ezeztatua, orain, txostenId, erabiltzaileId, TxostenEgoera.Zain).ConfigureAwait(false);
+        if (eragindakoErrenkadak <= 0)
+            return;
+
+        await IdatziAuditoretzaLogaAsync(
+            AuditoretzaEkintzaTxostenaBertanBehera,
+            $"{txostenId} · {TxostenEgoera.Ezeztatua}",
+            erabiltzaileId,
+            txostenId,
+            erabiltzaileId,
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task TxertatuBidaiaTxostenaEtaGastuLerroa(
@@ -109,7 +127,7 @@ public sealed partial class DatuBaseaZerbitzua
 
         if (_urrunTursoModua)
         {
-            await ExekutatuTursoanAsync(async bezeroa =>
+            var txostenIdBerria = await ExekutatuTursoanAsync(async bezeroa =>
             {
                 const string txostenSql = """
                     INSERT INTO BidaiaTxostenak
@@ -127,7 +145,7 @@ public sealed partial class DatuBaseaZerbitzua
                     VALUES (last_insert_rowid(), ?,?,?,?,?,?,?,?,?);
                     """;
 
-                await bezeroa.ExekutatuBatchAsync(
+                var emaitzak = await bezeroa.ExekutatuBatchAsync(
                     new (string, object?[])[]
                     {
                         (txostenSql, new object?[]
@@ -164,16 +182,32 @@ public sealed partial class DatuBaseaZerbitzua
                     },
                     cancellationToken).ConfigureAwait(false);
 
-                return 0;
+                return emaitzak.Count > 0 ? (int)emaitzak[0].AzkenTxertatutakoErrenkadaId : 0;
             }, cancellationToken).ConfigureAwait(false);
-            await IdazkiAuditoretzaLogaAsync(AuditoretzaEkintzaTxostenaEskatuDu, txostena.Helmuga, txostena.ErabiltzaileId, cancellationToken).ConfigureAwait(false);
+
+            var deskribapena = txostenIdBerria > 0
+                ? $"{txostenIdBerria} · {txostena.Helmuga}"
+                : txostena.Helmuga;
+            await IdatziAuditoretzaLogaAsync(
+                AuditoretzaEkintzaTxostenaEskatuDu,
+                deskribapena,
+                txostena.ErabiltzaileId,
+                txostenIdBerria > 0 ? txostenIdBerria : null,
+                txostena.ErabiltzaileId,
+                cancellationToken).ConfigureAwait(false);
             return;
         }
 
         await _sqliteKonexioa!.InsertAsync(txostena).ConfigureAwait(false);
         gastuLerroa.TxostenId = txostena.TxostenId;
         await _sqliteKonexioa.InsertAsync(gastuLerroa).ConfigureAwait(false);
-        await IdazkiAuditoretzaLogaAsync(AuditoretzaEkintzaTxostenaEskatuDu, $"{txostena.TxostenId} · {txostena.Helmuga}", txostena.ErabiltzaileId, cancellationToken).ConfigureAwait(false);
+        await IdatziAuditoretzaLogaAsync(
+            AuditoretzaEkintzaTxostenaEskatuDu,
+            $"{txostena.TxostenId} · {txostena.Helmuga}",
+            txostena.ErabiltzaileId,
+            txostena.TxostenId,
+            txostena.ErabiltzaileId,
+            cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<GastuKontzeptua>> ZerrendatuGastuKontzeptuakAsync(

@@ -17,6 +17,9 @@
 
             <Label Text="{Binding Helmuga}" Style="{StaticResource Headline}" />
             <Label Text="{Binding LangileTestua}" FontSize="14" />
+            <Label Text="{Binding SailarenEtiketa, StringFormat='Saila: {0}'}"
+                   FontSize="14"
+                   IsVisible="{Binding SailarenEtiketa, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
             <Label Text="{Binding Egoera, StringFormat='Egoera: {0}'}" FontSize="14" />
             <Label Text="{Binding GastuenGuztira, StringFormat='Gastuen guztira: {0:N2} €'}" FontSize="14" />
             <Label Text="{Binding JasoAurrerakina, StringFormat='Jasotako aurrerakina: {0} €'}"
