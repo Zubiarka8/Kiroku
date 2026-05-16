@@ -41,6 +41,7 @@ public partial class NireTxartelakViewModel : ObservableObject
     [RelayCommand]
     private async Task AgertzenDeneanAsync()
     {
+        if (IsKargatzean) return;
         ErroreMezua = null;
         Txartelak.Clear();
 

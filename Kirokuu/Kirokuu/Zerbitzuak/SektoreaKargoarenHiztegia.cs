@@ -7,9 +7,9 @@ public static class SektoreaKargoarenHiztegia
 {
     private static readonly HautapenElementua[] SektoreenZerrenda =
     {
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Finantzak, Etiketa = "Finanzas" },
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Marketina, Etiketa = "Marketing" },
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Salmentak, Etiketa = "Ventas" }
+        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Finantzak, Etiketa = "Finantzak" },
+        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Marketina, Etiketa = "Marketina" },
+        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Salmentak, Etiketa = "Salmentak" }
     };
 
     public static IReadOnlyList<HautapenElementua> SortuSektoreenZerrenda() => SektoreenZerrenda;
@@ -31,24 +31,24 @@ public static class SektoreaKargoarenHiztegia
         {
             EnpresakoSektorea.Finantzak =>
             [
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Kontularia, Etiketa = "Contable" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.FinantzaAnalista, Etiketa = "Analista financiero" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Auditorra, Etiketa = "Auditor" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.AholkulariFiskala, Etiketa = "Asesor fiscal" }
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Kontularia, Etiketa = "Kontularia" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.FinantzaAnalista, Etiketa = "Finantza analista" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Auditorra, Etiketa = "Auditatzailea" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.AholkulariFiskala, Etiketa = "Zerga aholkularia" }
             ],
             EnpresakoSektorea.Marketina =>
             [
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.KomunitateKudeatzailea, Etiketa = "Community Manager" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.DiseinatzaileGrafikoa, Etiketa = "Diseñador gráfico" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.SeoEspezialista, Etiketa = "SEO Specialist" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Copywriter, Etiketa = "Copywriter" }
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.KomunitateKudeatzailea, Etiketa = "Komunitate kudeatzailea" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.DiseinatzaileGrafikoa, Etiketa = "Diseinu grafikoa" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.SeoEspezialista, Etiketa = "SEO espezialista" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Copywriter, Etiketa = "Idazle sortzailea" }
             ],
             EnpresakoSektorea.Salmentak =>
             [
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Komertziala, Etiketa = "Comercial" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.AccountManager, Etiketa = "Account Manager" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.SalmentenArduraduna, Etiketa = "Sales Manager" },
-                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.BezeroArreta, Etiketa = "Atención al cliente" }
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Komertziala, Etiketa = "Komertziala" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.AccountManager, Etiketa = "Kontu kudeatzailea" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.SalmentenArduraduna, Etiketa = "Salmenta kudeatzailea" },
+                new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.BezeroArreta, Etiketa = "Bezero arreta" }
             ],
             _ => []
         };
@@ -72,7 +72,7 @@ public static class SektoreaKargoarenHiztegia
     public static string LortuKargoarenEtiketa(EnpresakoLangileKargoa kargo)
     {
         if (kargo == EnpresakoLangileKargoa.AdministratzaileSistema)
-            return "Administrador";
+            return "Sistema administratzailea";
 
         foreach (var sektorea in new[] { EnpresakoSektorea.Finantzak, EnpresakoSektorea.Marketina, EnpresakoSektorea.Salmentak })
         {

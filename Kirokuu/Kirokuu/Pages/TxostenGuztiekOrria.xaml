@@ -5,17 +5,17 @@
              xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
              xmlns:kiro="clr-namespace:Kirokuu"
              xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
-             x:Class="Kirokuu.Pages.NireTxartelakOrria"
-             x:Name="NireTxartelakOrriaErreferentzia"
-             x:DataType="vm:NireTxartelakViewModel"
-             Title="Nire txartelak">
+             x:Class="Kirokuu.Pages.TxostenGuztiekOrria"
+             x:Name="TxostenGuztiekOrriaErreferentzia"
+             x:DataType="vm:TxostenGuztiekViewModel"
+             Title="Txosten guztiak">
 
     <ContentPage.Behaviors>
         <toolkit:EventToCommandBehavior EventName="Appearing"
                                         Command="{Binding AgertzenDeneanCommand}" />
     </ContentPage.Behaviors>
 
-    <Grid RowDefinitions="Auto,Auto,*,Auto" Padding="16,10,16,0" RowSpacing="0">
+    <Grid RowDefinitions="Auto,Auto,*" Padding="16,10,16,0" RowSpacing="0">
 
         <ActivityIndicator Grid.Row="0"
                            IsRunning="{Binding IsKargatzean}"
@@ -31,7 +31,7 @@
         <RefreshView Grid.Row="2"
                      Command="{Binding AgertzenDeneanCommand}"
                      IsRefreshing="{Binding IsKargatzean}">
-            <CollectionView ItemsSource="{Binding Txartelak}"
+            <CollectionView ItemsSource="{Binding TxostenGuztiak}"
                             Margin="0,6,0,0">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout VerticalOptions="Center" HorizontalOptions="Center"
@@ -40,14 +40,10 @@
                                Text="{x:Static kiro:IkonoFontIturria.HutsikIkonoGlifoa}"
                                HorizontalOptions="Center"
                                SemanticProperties.Description="Hutsik" />
-                        <Label Text="Oraindik ez daukazu txartelik."
+                        <Label Text="Ez dago txostenik."
                                HorizontalTextAlignment="Center"
                                FontAttributes="Bold"
                                FontSize="16" />
-                        <Label Text="Sakatu beheko botoia zure lehen gastua sortzeko."
-                               HorizontalTextAlignment="Center"
-                               FontSize="13"
-                               TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
                     </VerticalStackLayout>
                 </CollectionView.EmptyView>
                 <CollectionView.ItemTemplate>
@@ -57,12 +53,12 @@
                                 Padding="0">
                             <Border.GestureRecognizers>
                                 <TapGestureRecognizer
-                                    Command="{Binding Source={x:Reference NireTxartelakOrriaErreferentzia}, Path=BindingContext.IkusiXehetasunaCommand}"
+                                    Command="{Binding Source={x:Reference TxostenGuztiekOrriaErreferentzia}, Path=BindingContext.IrekiTxostenXehetasunaCommand}"
                                     CommandParameter="{Binding .}" />
                             </Border.GestureRecognizers>
                             <Grid ColumnDefinitions="4,*" ColumnSpacing="0">
 
-                                <!-- Left accent strip colored by status -->
+                                <!-- Banda lateral con color de estado -->
                                 <BoxView Grid.Column="0"
                                          CornerRadius="8,0,0,8">
                                     <BoxView.Triggers>
@@ -75,15 +71,12 @@
                                         <DataTrigger TargetType="BoxView" Binding="{Binding Egoera}" Value="Ukatua">
                                             <Setter Property="Color" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
                                         </DataTrigger>
-                                        <DataTrigger TargetType="BoxView" Binding="{Binding Egoera}" Value="Ezeztatua">
-                                            <Setter Property="Color" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
-                                        </DataTrigger>
                                     </BoxView.Triggers>
                                 </BoxView>
 
                                 <VerticalStackLayout Grid.Column="1" Spacing="0">
 
-                                    <!-- Header: category + status badge -->
+                                    <!-- Cabecera: destino + badge estado -->
                                     <Grid ColumnDefinitions="*,Auto"
                                           ColumnSpacing="8"
                                           Padding="12,12,12,4">
@@ -107,9 +100,6 @@
                                                 <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ukatua">
                                                     <Setter Property="BackgroundColor" Value="{StaticResource EgoeraUkatuaAtzekoa}" />
                                                 </DataTrigger>
-                                                <DataTrigger TargetType="Border" Binding="{Binding Egoera}" Value="Ezeztatua">
-                                                    <Setter Property="BackgroundColor" Value="{StaticResource EgoeraEzeztatuaAtzekoa}" />
-                                                </DataTrigger>
                                             </Border.Triggers>
                                             <Label Text="{Binding Egoera}"
                                                    Style="{StaticResource EgoeraEtiketaTestuaEstiloa}"
@@ -118,32 +108,33 @@
                                         </Border>
                                     </Grid>
 
-                                    <!-- Amount (prominent) -->
+                                    <!-- Nombre del empleado -->
+                                    <Label Text="{Binding LangileTestua}"
+                                           FontSize="13"
+                                           Padding="12,0,12,2"
+                                           TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
+
+                                    <!-- Importe total -->
                                     <Label Text="{Binding GastuenBatuketakoZenbatekoa, StringFormat='{0:N2} €'}"
                                            FontAttributes="Bold"
-                                           FontSize="26"
+                                           FontSize="22"
                                            Padding="12,2,12,4"
                                            TextColor="{AppThemeBinding Light={StaticResource EstekaNagusiaArgia}, Dark={StaticResource EstekaNagusiaIluna}}" />
 
-                                    <!-- Date -->
+                                    <!-- Fecha -->
                                     <Label Text="{Binding DataFormateatua}"
                                            FontSize="12"
-                                           Padding="12,0,12,10"
+                                           Padding="12,0,12,6"
                                            TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}"
                                            IsVisible="{Binding DataFormateatua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
 
-                                    <!-- Cancel zone (only if cancellable) -->
-                                    <BoxView HeightRequest="1"
-                                             IsVisible="{Binding EzeztatuDaiteke}"
-                                             Color="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}" />
-                                    <Button Text="Ezeztatu"
-                                            IsVisible="{Binding EzeztatuDaiteke}"
-                                            Command="{Binding Source={x:Reference NireTxartelakOrriaErreferentzia}, Path=BindingContext.EzeztatuTxartelaCommand}"
-                                            CommandParameter="{Binding .}"
-                                            Style="{StaticResource BotoiArriskuEstiloa}"
-                                            Margin="12,6,12,10"
-                                            HeightRequest="40"
-                                            FontSize="13" />
+                                    <!-- Admin que actuó (sólo si existe) -->
+                                    <Label Text="{Binding AdminTestua, StringFormat='Arduraduna: {0}'}"
+                                           FontSize="12"
+                                           FontAttributes="Italic"
+                                           Padding="12,0,12,10"
+                                           IsVisible="{Binding AdminTestuaIkagarri}"
+                                           TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
 
                                 </VerticalStackLayout>
                             </Grid>
@@ -152,19 +143,6 @@
                 </CollectionView.ItemTemplate>
             </CollectionView>
         </RefreshView>
-
-        <Button Grid.Row="3"
-                Text="Gastu berria gehitu"
-                Command="{Binding TxartelBerriaSortuCommand}"
-                Margin="0,10,0,16"
-                HorizontalOptions="Fill">
-            <Button.ImageSource>
-                <FontImageSource FontFamily="MaterialIcons"
-                                 Glyph="{x:Static kiro:IkonoFontIturria.GehituIkonoGlifoa}"
-                                 Size="22"
-                                 Color="{StaticResource White}" />
-            </Button.ImageSource>
-        </Button>
 
     </Grid>
 </ContentPage>

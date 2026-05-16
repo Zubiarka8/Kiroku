@@ -40,6 +40,15 @@
                         SelectedIndex="{Binding HautatutakoGarraioIndizea}" />
             </VerticalStackLayout>
 
+            <VerticalStackLayout Spacing="4"
+                                 IsVisible="{Binding KilometroakIkagarri}">
+                <Label Text="Kilometroak (km)" FontAttributes="Bold" />
+                <Entry Text="{Binding KilometroakTestua}"
+                       Keyboard="Numeric"
+                       Placeholder="0"
+                       ReturnType="Next" />
+            </VerticalStackLayout>
+
             <VerticalStackLayout Spacing="4">
                 <Label Text="Zenbatekoa (€)" FontAttributes="Bold" />
                 <Entry Text="{Binding ZenbatekoaTestua}"

@@ -39,29 +39,12 @@
                 <Label Text="Posta elektronikoa"
                        Style="{StaticResource EremuEtiketaEstiloa}" />
                 <Border Style="{StaticResource SaioSarreraEremuaEstiloa}">
-                    <Grid ColumnDefinitions="*,Auto"
-                          ColumnSpacing="0"
-                          VerticalOptions="Center">
-                        <Entry x:Name="PostaSarrera"
-                               Grid.Column="0"
-                               Style="{StaticResource SaioSarreraEntryEstiloa}"
-                               Text="{Binding Posta}"
-                               Placeholder="izena@adibidea.eus"
-                               Keyboard="Email"
-                               SemanticProperties.Hint="Posta elektronikoa" />
-                        <ImageButton Grid.Column="1"
-                                     Command="{Binding TxertaturikArobaCommand}"
-                                     Style="{StaticResource SaioIkonoLaguntzaTeklaEstiloa}"
-                                     SemanticProperties.Hint="Txertatu @ ikurra"
-                                     SemanticProperties.Description="Txertatu @ ikurra">
-                            <ImageButton.Source>
-                                <FontImageSource FontFamily="{x:Static kiro:IkonoFontIturria.MaterialIconsFamilia}"
-                                                 Glyph="{x:Static kiro:IkonoFontIturria.PostaArrobaIkonoGlifoa}"
-                                                 Size="22"
-                                                 Color="{AppThemeBinding Light={StaticResource Primary}, Dark={StaticResource PrimaryDark}}" />
-                            </ImageButton.Source>
-                        </ImageButton>
-                    </Grid>
+                    <Entry x:Name="PostaSarrera"
+                           Style="{StaticResource SaioSarreraEntryEstiloa}"
+                           Text="{Binding Posta}"
+                           Placeholder="izena@adibidea.eus"
+                           Keyboard="Email"
+                           SemanticProperties.Hint="Posta elektronikoa" />
                 </Border>
             </VerticalStackLayout>
 
@@ -96,7 +79,13 @@
             <Button x:Name="SaioaHasiTekla"
                     Text="Sartu"
                     Command="{Binding SaioaHasiCommand}"
+                    IsEnabled="{Binding KontuaBlokeatuta, Converter={toolkit:InvertedBoolConverter}}"
                     Margin="0,8,0,0" />
+
+            <Label Text="{Binding BlokeoKontadorea, StringFormat='Desblokeatzeko: {0}'}"
+                   HorizontalTextAlignment="Center"
+                   FontSize="13"
+                   IsVisible="{Binding BlokeoKontadoraIkagarri}" />
 
             <Button x:Name="ErregistroJoanTekla"
                     Text="Kontua sortu"

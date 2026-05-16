@@ -80,10 +80,30 @@ public partial class TxartelBerriaViewModel : ObservableObject
     [ObservableProperty]
     private int _hautatutakoGarraioIndizea = -1;
 
+    [ObservableProperty]
+    private string _kilometroakTestua = string.Empty;
+
+    [ObservableProperty]
+    private bool _kilometroakIkagarri;
+
     partial void OnHautatutakoKategoriaIndizeaChanged(int value)
     {
         HautatutakoGarraioIndizea = -1;
+        KilometroakIkagarri = false;
+        KilometroakTestua = string.Empty;
         EguneratuIbilgailuaAukeraketaIkagarri();
+    }
+
+    partial void OnHautatutakoGarraioIndizeaChanged(int value)
+    {
+        if (!IbilgailuaAukeraketaIkagarri || value < 0 || value >= GarraioBideaBalioak.AukeraEstadioak.Count)
+        {
+            KilometroakIkagarri = false;
+            return;
+        }
+        KilometroakIkagarri = GarraioBideaBalioak.IbilgailuaErabiltzenDu(GarraioBideaBalioak.AukeraEstadioak[value]);
+        if (!KilometroakIkagarri)
+            KilometroakTestua = string.Empty;
     }
 
     private void EguneratuIbilgailuaAukeraketaIkagarri()
@@ -93,6 +113,12 @@ public partial class TxartelBerriaViewModel : ObservableObject
             IbilgailuaAukeraketaIkagarri = bandera != 0;
         else
             IbilgailuaAukeraketaIkagarri = false;
+
+        if (!IbilgailuaAukeraketaIkagarri)
+        {
+            KilometroakIkagarri = false;
+            KilometroakTestua = string.Empty;
+        }
     }
 
     partial void OnZenbatekoaTestuaChanged(string value)
@@ -127,6 +153,8 @@ public partial class TxartelBerriaViewModel : ObservableObject
         ArgazkiHautatua = false;
         HautatutakoGarraioIndizea = -1;
         IbilgailuaAukeraketaIkagarri = false;
+        KilometroakTestua = string.Empty;
+        KilometroakIkagarri = false;
         _ibilgailuaBeharDuKategoriaIdz = new Dictionary<int, int>();
 
         try
@@ -215,7 +243,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
             var aukeraKopurua = GarraioBideaBalioak.AukeraEstadioak.Count;
             if (HautatutakoGarraioIndizea < 0 || HautatutakoGarraioIndizea >= aukeraKopurua)
             {
-                ErroreMezua = "Hautatu garraio modua: enpresako ibilgailua edo garraio publikoa.";
+                ErroreMezua = "Hautatu garraio modua: enpresako ibilgailua, norberaren ibilgailua edo garraio publikoa.";
                 return;
             }
         }
@@ -223,6 +251,9 @@ public partial class TxartelBerriaViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
+
+            if (await _autorizazioZerbitzua.DaZuzendariNagusiaAsync().ConfigureAwait(true))
+                throw new UnauthorizedAccessException();
 
             var erabiltzaileId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
             if (erabiltzaileId is null)
@@ -232,7 +263,7 @@ public partial class TxartelBerriaViewModel : ObservableObject
             }
 
             var orain = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
-            var dataTestua = HautatutakoData.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
+            var dataTestua = HautatutakoData.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
             var kategoriaIzena = KategoriaIzenak[HautatutakoKategoriaIndizea];
 
             var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId.Value).ConfigureAwait(true);
@@ -288,13 +319,22 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 ? GarraioBideaBalioak.AukeraEstadioak[HautatutakoGarraioIndizea]
                 : string.Empty;
 
+            double kilometroak = 0;
+            if (KilometroakIkagarri && !string.IsNullOrWhiteSpace(KilometroakTestua))
+            {
+                double.TryParse(KilometroakTestua.Replace(',', '.'),
+                    System.Globalization.NumberStyles.Any,
+                    System.Globalization.CultureInfo.InvariantCulture,
+                    out kilometroak);
+            }
+
             var gastuLerroa = new GastuLerroa
             {
                 KategoriaId = HautatutakoKategoriaIndizea + 1,
                 GastuData = dataTestua,
                 GarraioBidea = garraioTestua,
                 ZenbatekoaGuztira = zenbatekoa,
-                Kilometroak = 0,
+                Kilometroak = kilometroak,
                 TicketArgazkia = ticketArgazkiaUrl,
                 Oharrak = deskribapenaGarbia,
                 KontzeptuId = HautatutakoKategoriaIndizea + 1

@@ -19,6 +19,13 @@
             <Label Text="{Binding LangileTestua}" FontSize="14" />
             <Label Text="{Binding Egoera, StringFormat='Egoera: {0}'}" FontSize="14" />
             <Label Text="{Binding GastuenGuztira, StringFormat='Gastuen guztira: {0:N2} €'}" FontSize="14" />
+            <Label Text="{Binding JasoAurrerakina, StringFormat='Jasotako aurrerakina: {0} €'}"
+                   FontSize="14"
+                   IsVisible="{Binding JasoAurrerakinaIkagarri}" />
+            <Label Text="{Binding OrdaintzekoBidea, StringFormat='Ordaintzeko: {0:N2} €'}"
+                   FontSize="14"
+                   FontAttributes="Bold"
+                   IsVisible="{Binding JasoAurrerakinaIkagarri}" />
 
             <Label Text="Gastu lerroak" Style="{StaticResource SubHeadline}" />
 

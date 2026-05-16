@@ -20,6 +20,8 @@ public partial class SaioHasieraViewModel : ObservableObject
     private readonly IServiceProvider _zerbitzuHornitzailea;
     private readonly ILogger<SaioHasieraViewModel> _logger;
 
+    private CancellationTokenSource? _blokeoKontadoraKts;
+
     public SaioHasieraViewModel(
         ErabiltzaileZerbitzua erabiltzaileZerbitzua,
         SaioaGordetzeZerbitzua saioaGordetzeZerbitzua,
@@ -47,6 +49,15 @@ public partial class SaioHasieraViewModel : ObservableObject
     private string? _erroreMezua;
 
     [ObservableProperty]
+    private bool _kontuaBlokeatuta;
+
+    [ObservableProperty]
+    private string _blokeoKontadorea = string.Empty;
+
+    [ObservableProperty]
+    private bool _blokeoKontadoraIkagarri;
+
+    [ObservableProperty]
     private bool _pasahitzaMaskaratuta = true;
 
     [ObservableProperty]
@@ -60,9 +71,6 @@ public partial class SaioHasieraViewModel : ObservableObject
         PasahitzaBegiarenIrudiarenIzena = value ? "begia_irekita" : "begia_itxita";
         PasahitzaBegiarenDeskribapena = value ? "Erakutsi pasahitza" : "Ezkutatu pasahitza";
     }
-
-    [RelayCommand]
-    private void TxertaturikAroba() => Posta += "@";
 
     [RelayCommand]
     private void AlderantzikatuPasahitzaMaska() => PasahitzaMaskaratuta = !PasahitzaMaskaratuta;
@@ -129,6 +137,9 @@ public partial class SaioHasieraViewModel : ObservableObject
     [RelayCommand]
     private async Task SaioaHasiAsync()
     {
+        if (KontuaBlokeatuta)
+            return;
+
         ErroreMezua = null;
         if (string.IsNullOrWhiteSpace(Posta) || string.IsNullOrWhiteSpace(Pasahitza))
         {
@@ -164,8 +175,12 @@ public partial class SaioHasieraViewModel : ObservableObject
                     {
                         var geratzen = blokeoaGeratzen ?? TimeSpan.FromMinutes(ErabiltzaileZerbitzua.SaioBlokeoaIraupenaMinutuak);
                         var minutuak = Math.Max(1, (int)Math.Ceiling(geratzen.TotalMinutes));
-                        ErroreMezua =
-                            $"Saio askotan okerrak direla eta, kontua blokeatu egin da {minutuak} minutu arte.";
+                        ErroreMezua = $"Saio askotan okerrak direla eta, kontua blokeatu egin da {minutuak} minutu arte.";
+                        KontuaBlokeatuta = true;
+                        BlokeoKontadoraIkagarri = true;
+                        _blokeoKontadoraKts?.Cancel();
+                        _blokeoKontadoraKts = new CancellationTokenSource();
+                        _ = KontadoraJarriAsync(geratzen, _blokeoKontadoraKts.Token);
                         break;
                     }
                 case SaioHasieraEmaitzaMota.KontuaDesaktibatuta:
@@ -240,6 +255,36 @@ public partial class SaioHasieraViewModel : ObservableObject
         finally
         {
             IsKargatzean = false;
+        }
+    }
+
+    private async Task KontadoraJarriAsync(TimeSpan geratzen, CancellationToken ezeztapena)
+    {
+        try
+        {
+            var amaieraUtc = DateTime.UtcNow + geratzen;
+            while (!ezeztapena.IsCancellationRequested)
+            {
+                var oraindikGeratzen = amaieraUtc - DateTime.UtcNow;
+                if (oraindikGeratzen <= TimeSpan.Zero)
+                    break;
+
+                var min = (int)oraindikGeratzen.TotalMinutes;
+                var sek = oraindikGeratzen.Seconds;
+                BlokeoKontadorea = $"{min}:{sek:D2}";
+
+                await Task.Delay(1000, ezeztapena).ConfigureAwait(true);
+            }
+        }
+        catch (TaskCanceledException) { }
+        catch (OperationCanceledException) { }
+
+        if (!ezeztapena.IsCancellationRequested)
+        {
+            KontuaBlokeatuta = false;
+            BlokeoKontadoraIkagarri = false;
+            BlokeoKontadorea = string.Empty;
+            ErroreMezua = null;
         }
     }
 

@@ -60,23 +60,11 @@
                     SelectedItem="{Binding HautatutakoKargoa}"
                     Title="Aukeratu kargoa" />
 
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
-                <Entry x:Name="PostaErregistroSarrera"
-                       Grid.Column="0"
-                       Text="{Binding Posta}"
-                       Placeholder="Posta"
-                       Keyboard="Email"
-                       SemanticProperties.Hint="Posta elektronikoa" />
-                <Button Grid.Column="1"
-                        Text="@"
-                        Command="{Binding TxertaturikArobaCommand}"
-                        Style="{StaticResource BotoiBigarrenMailakoaEstiloa}"
-                        FontSize="16"
-                        Padding="12,0"
-                        WidthRequest="48"
-                        HeightRequest="44"
-                        VerticalOptions="Center" />
-            </Grid>
+            <Entry x:Name="PostaErregistroSarrera"
+                   Text="{Binding Posta}"
+                   Placeholder="Posta"
+                   Keyboard="Email"
+                   SemanticProperties.Hint="Posta elektronikoa" />
 
             <Grid ColumnDefinitions="*,Auto"
                   ColumnSpacing="4"

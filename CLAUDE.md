@@ -307,7 +307,8 @@ catch (Exception ex)
 - Lists sorted by `DataOrdua DESC`, pull-to-refresh on all lists
 - Phone: StackLayout vertical, min 44px touch targets
 - Tablet: Grid 2-column master-detail via `OnIdiom`
-- Role/sector/cargo labels displayed in Spanish (e.g. "Administrador", "Empleado", "Finanzas")
+- Role labels in Spanish: "Administrador", "Empleado", "Director general (CEO)"
+- Sector/cargo labels in Basque: "Finantzak", "Marketina", "Salmentak", "Kontularia", etc.
 
 ---
 

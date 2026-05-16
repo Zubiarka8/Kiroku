@@ -44,6 +44,7 @@ public partial class TxartelKanbanViewModel : ObservableObject
     [RelayCommand]
     private async Task AgertzenDeneanAsync()
     {
+        if (IsKargatzean) return;
         ErroreMezua = null;
         ZainZerrenda.Clear();
         OnartuaZerrenda.Clear();

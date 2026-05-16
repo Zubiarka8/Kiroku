@@ -269,6 +269,11 @@ public sealed class ErabiltzaileZerbitzua
         return true;
     }
 
+    public async Task<bool> NANErabilitaDagoaAsync(string nan, int? ezezErabiltzaileId = null, CancellationToken cancellationToken = default)
+    {
+        return await _datuBaseaZerbitzua.NANErabilitaDagoaAsync(nan, ezezErabiltzaileId, cancellationToken).ConfigureAwait(false);
+    }
+
     public async Task<IReadOnlyList<ErabiltzaileLaburpena>> EskuratuLangileenLaburpenakAsync(
         CancellationToken cancellationToken = default)
     {
