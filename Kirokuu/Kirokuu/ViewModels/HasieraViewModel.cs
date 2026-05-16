@@ -17,28 +17,6 @@ namespace Kirokuu.ViewModels;
 
 public partial class HasieraViewModel : ObservableObject
 {
-    private const int HilabeteKopuruaGrafikoan = 6;
-
-    private const int KategoriaGehienezkoKopuruaGrafikoan = 8;
-
-    private const int KategoriaBarraGutxienezkoZatituak = 6;
-
-    private const int KategoriaLegendokoIzenGehienezkoLuzera = 38;
-
-    private static readonly CultureInfo KulturaZenbakietarako = CultureInfo.GetCultureInfo("eu-ES");
-
-    private static readonly SKColor[] KategoriaKoloreak =
-    {
-        new(33, 150, 243),
-        new(255, 152, 0),
-        new(76, 175, 80),
-        new(171, 71, 188),
-        new(236, 64, 122),
-        new(0, 150, 136),
-        new(255, 193, 7),
-        new(121, 85, 72)
-    };
-
     private readonly SaioaGordetzeZerbitzua _saioaGordetzeZerbitzua;
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
@@ -138,14 +116,14 @@ public partial class HasieraViewModel : ObservableObject
             var onartutakoGuztira =
                 await _datuBaseaZerbitzua.EskuratuOnartutakoGastuenGuztiraLangileAsync(erabiltzaileId.Value).ConfigureAwait(true);
             OnartutakoGastuenTestua =
-                $"{onartutakoGuztira.ToString("N2", KulturaZenbakietarako)} €";
+                $"{onartutakoGuztira.ToString("N2", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} €";
 
             var zainKop =
                 await _datuBaseaZerbitzua.EskuratuZainTxartenKopuruaLangileAsync(erabiltzaileId.Value).ConfigureAwait(true);
-            ZainTxartelenTestua = zainKop.ToString(KulturaZenbakietarako);
+            ZainTxartelenTestua = zainKop.ToString(HasieraGrafikoEraikitzailea.KulturaZenbakietarako);
 
             var hilabetekoak = await _datuBaseaZerbitzua
-                .EskuratuAzkenHilabeteetakoOnartutakoGastuakLangileAsync(erabiltzaileId.Value, HilabeteKopuruaGrafikoan)
+                .EskuratuAzkenHilabeteetakoOnartutakoGastuakLangileAsync(erabiltzaileId.Value, HasieraGrafikoEraikitzailea.HilabeteKopuruaGrafikoan)
                 .ConfigureAwait(true);
             EraikiHilabetekoGrafikoa(hilabetekoak);
 
@@ -214,47 +192,16 @@ public partial class HasieraViewModel : ObservableObject
 
     private void EraikiHilabetekoGrafikoa(IReadOnlyList<HilabetekoGastuAgregatua> datuak)
     {
-        var balioak = datuak.Select(d => d.Guztira).ToArray();
-        var etiketak = datuak.Select(d => d.Hilabetea).ToArray();
-        var lerroKolorea = new SolidColorPaint(SKColors.DodgerBlue) { StrokeThickness = 2.5f };
-        var eremuKolorea = new SolidColorPaint(SKColors.DodgerBlue.WithAlpha(90));
-        HilabetekoGastuSerieak = new ISeries[]
-        {
-            new LineSeries<double>
-            {
-                Name = "Onartutako gastua",
-                Values = balioak,
-                Fill = eremuKolorea,
-                Stroke = lerroKolorea,
-                GeometryFill = new SolidColorPaint(SKColors.White),
-                GeometryStroke = lerroKolorea,
-                GeometrySize = 7,
-                LineSmoothness = 0.35
-            }
-        };
-        HilabetekoXArdatzak = new Axis[]
-        {
-            new Axis
-            {
-                Labels = etiketak,
-                LabelsRotation = -35,
-                ForceStepToMin = true,
-                MinStep = 1,
-                SeparatorsPaint = new SolidColorPaint(new SKColor(210, 210, 210)),
-                TicksPaint = new SolidColorPaint(new SKColor(35, 35, 35))
-            }
-        };
+        HasieraGrafikoEraikitzailea.EraikiHilabetekoGrafikoa(
+            datuak,
+            out var serieak,
+            out var xArdatzak);
+        HilabetekoGastuSerieak = serieak;
+        HilabetekoXArdatzak = xArdatzak;
     }
 
-    private static string MoztuTestuaElipsis(string? testua, int gehienezkoLuzera)
-    {
-        if (string.IsNullOrWhiteSpace(testua))
-            return "?";
-        var t = testua.Trim();
-        if (t.Length <= gehienezkoLuzera)
-            return t;
-        return t[..(gehienezkoLuzera - 1)] + "…";
-    }
+    private static string MoztuTestuaElipsis(string? testua, int gehienezkoLuzera) =>
+        HasieraGrafikoEraikitzailea.MoztuTestuaElipsis(testua, gehienezkoLuzera);
 
     private void GarbituKategoriaGrafikoEgoera()
     {
@@ -273,7 +220,7 @@ public partial class HasieraViewModel : ObservableObject
     {
         GarbituKategoriaGrafikoEgoera();
 
-        var moztuta = datuak.Take(KategoriaGehienezkoKopuruaGrafikoan).ToList();
+        var moztuta = datuak.Take(HasieraGrafikoEraikitzailea.KategoriaGehienezkoKopuruaGrafikoan).ToList();
         if (moztuta.Count == 0)
         {
             ErakutsiKategoriaHutsikMezua = true;
@@ -286,11 +233,11 @@ public partial class HasieraViewModel : ObservableObject
             var d = moztuta[0];
             var izena = string.IsNullOrWhiteSpace(d.KontzeptuIzena) ? "?" : d.KontzeptuIzena.Trim();
             KategoriaBakarXehetasuna =
-                $"{izena}: {d.Guztira.ToString("N2", KulturaZenbakietarako)} € (100%)";
+                $"{izena}: {d.Guztira.ToString("N2", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} € (100%)";
             return;
         }
 
-        if (moztuta.Count >= KategoriaBarraGutxienezkoZatituak)
+        if (moztuta.Count >= HasieraGrafikoEraikitzailea.KategoriaBarraGutxienezkoZatituak)
         {
             ErakutsiKategoriaBarraGrafikoa = true;
             EraikiKategoriaBarraGrafikoa(moztuta);
@@ -313,9 +260,9 @@ public partial class HasieraViewModel : ObservableObject
             var izenaOsoa = string.IsNullOrWhiteSpace(d.KontzeptuIzena) ? "?" : d.KontzeptuIzena.Trim();
             var ehunekoa = guztira > 0 ? zenbatekoa / guztira * 100.0 : 0;
             var legendaTestua =
-                $"{MoztuTestuaElipsis(izenaOsoa, KategoriaLegendokoIzenGehienezkoLuzera)} · " +
-                $"{zenbatekoa.ToString("N2", KulturaZenbakietarako)} € · {ehunekoa:0}%";
-            var kolorea = KategoriaKoloreak[i % KategoriaKoloreak.Length];
+                $"{MoztuTestuaElipsis(izenaOsoa, HasieraGrafikoEraikitzailea.KategoriaLegendokoIzenGehienezkoLuzera)} · " +
+                $"{zenbatekoa.ToString("N2", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} € · {ehunekoa:0}%";
+            var kolorea = HasieraGrafikoEraikitzailea.KategoriaKoloreak[i % HasieraGrafikoEraikitzailea.KategoriaKoloreak.Length];
             var izKopia = izenaOsoa;
             var zbKopia = zenbatekoa;
             var ehKopia = ehunekoa;
@@ -335,7 +282,7 @@ public partial class HasieraViewModel : ObservableObject
                     return $"{pct:0}%";
                 },
                 ToolTipLabelFormatter = _ =>
-                    $"{izKopia}: {zbKopia.ToString("N2", KulturaZenbakietarako)} € ({ehKopia:0}%)"
+                    $"{izKopia}: {zbKopia.ToString("N2", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} € ({ehKopia:0}%)"
             });
         }
 
@@ -368,7 +315,7 @@ public partial class HasieraViewModel : ObservableObject
                     var i = pu.Index;
                     var z = pu.Coordinate.PrimaryValue;
                     var pct = guztira > 0 ? z / guztira * 100.0 : 0;
-                    return $"{z.ToString("N0", KulturaZenbakietarako)} € · {pct:0}%";
+                    return $"{z.ToString("N0", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} € · {pct:0}%";
                 }
             }
         };
@@ -392,50 +339,16 @@ public partial class HasieraViewModel : ObservableObject
             new Axis
             {
                 MinLimit = 0,
-                Labeler = v => $"{v.ToString("N0", KulturaZenbakietarako)} €"
+                Labeler = v => $"{v.ToString("N0", HasieraGrafikoEraikitzailea.KulturaZenbakietarako)} €"
             }
         };
     }
 
     private void EraikiEgoeraGrafikoa(IReadOnlyList<TxostenEgoeraKopurua> datuak)
     {
-        var mapa = datuak.ToDictionary(x => x.Egoera, x => x.Kopurua, StringComparer.Ordinal);
-        var ordena = new[]
-        {
-            TxostenEgoera.Zain,
-            TxostenEgoera.Onartua,
-            TxostenEgoera.Ukatua,
-            TxostenEgoera.Ezeztatua
-        };
-        var balioak = ordena.Select(e => (double)(mapa.TryGetValue(e, out var k) ? k : 0)).ToArray();
-        EgoeraSerieak = new ISeries[]
-        {
-            new RowSeries<double>
-            {
-                Name = "Txartel kopurua",
-                Values = balioak,
-                Fill = new SolidColorPaint(SKColors.DarkOrange),
-                MaxBarWidth = 22,
-                Rx = 4,
-                Ry = 4,
-                DataLabelsPaint = new SolidColorPaint(SKColors.White),
-                DataLabelsSize = 13,
-                DataLabelsPosition = DataLabelsPosition.End
-            }
-        };
-        EgoeraYArdatzak = new Axis[]
-        {
-            new Axis
-            {
-                Labels = ordena,
-                ForceStepToMin = true,
-                MinStep = 1,
-                SeparatorsPaint = new SolidColorPaint(new SKColor(210, 210, 210))
-            }
-        };
-        EgoeraXArdatzak = new Axis[]
-        {
-            new Axis { MinLimit = 0 }
-        };
+        HasieraGrafikoEraikitzailea.EraikiEgoeraGrafikoa(datuak, out var serieak, out var y, out var x);
+        EgoeraSerieak = serieak;
+        EgoeraYArdatzak = y;
+        EgoeraXArdatzak = x;
     }
 }

@@ -65,6 +65,7 @@
 		<PackageReference Include="LiveChartsCore.SkiaSharpView.Maui" Version="2.0.0-rc2" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
+		<PackageReference Include="Microsoft.Extensions.Http" Version="9.0.8" />
 		<PackageReference Include="Plugin.Maui.Audio" Version="4.0.0" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
 		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.2" />
@@ -79,6 +80,10 @@
 			<ExcludeAssets>all</ExcludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
+	</ItemGroup>
+
+	<ItemGroup>
+		<EmbeddedResource Include="DatuBasea\SortzeAginduak\*.sql" />
 	</ItemGroup>
 
 	<ItemGroup>

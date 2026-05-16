@@ -31,40 +31,28 @@ public sealed class ShellFitxaEraikitzailea
 
         if (administratzaileOsoaDa)
         {
-            tabBar.Items.Add(SortuAdministratzaileOrria<AdministratzaileHasieraOrria>("Hasiera", IkonoFontIturria.FitxaHasieraAdministratzaile()));
-            tabBar.Items.Add(SortuAdministratzaileOrria<LangileZerrendaOrria>("Erabiltzaileak", IkonoFontIturria.FitxaErabiltzaileZerrenda()));
-            tabBar.Items.Add(SortuAdministratzaileOrria<MugimenduakOrria>("Mugimenduak", IkonoFontIturria.FitxaMugimenduak()));
-            tabBar.Items.Add(SortuAdministratzaileOrria<TxostenGuztiekOrria>("Txosten guztiak", IkonoFontIturria.FitxaTxostenGuztiak()));
+            tabBar.Items.Add(SortuFitxaOrria<AdministratzaileHasieraOrria>("Hasiera", IkonoFontIturria.FitxaHasieraAdministratzaile()));
+            tabBar.Items.Add(SortuFitxaOrria<LangileZerrendaOrria>("Erabiltzaileak", IkonoFontIturria.FitxaErabiltzaileZerrenda()));
+            tabBar.Items.Add(SortuFitxaOrria<MugimenduakOrria>("Mugimenduak", IkonoFontIturria.FitxaMugimenduak()));
+            tabBar.Items.Add(SortuFitxaOrria<TxostenGuztiekOrria>("Txosten guztiak", IkonoFontIturria.FitxaTxostenGuztiak()));
             tabBar.Items.Add(SortuEzarpenak());
         }
         else if (zuzendariNagusiaDa)
         {
-            tabBar.Items.Add(SortuAdministratzaileOrria<AdministratzaileHasieraOrria>("Hasiera", IkonoFontIturria.FitxaHasieraAdministratzaile()));
+            tabBar.Items.Add(SortuFitxaOrria<AdministratzaileHasieraOrria>("Hasiera", IkonoFontIturria.FitxaHasieraAdministratzaile()));
             tabBar.Items.Add(SortuEzarpenak());
         }
         else
         {
-            tabBar.Items.Add(SortuLangileOrria<HasieraOrria>("Hasiera", IkonoFontIturria.FitxaHasieraLangile()));
-            tabBar.Items.Add(SortuLangileOrria<NireTxartelakOrria>("Nire txartelak", IkonoFontIturria.FitxaNireTxartelak()));
+            tabBar.Items.Add(SortuFitxaOrria<HasieraOrria>("Hasiera", IkonoFontIturria.FitxaHasieraLangile()));
+            tabBar.Items.Add(SortuFitxaOrria<NireTxartelakOrria>("Nire txartelak", IkonoFontIturria.FitxaNireTxartelak()));
             tabBar.Items.Add(SortuEzarpenak());
         }
 
         shell.Items.Add(tabBar);
     }
 
-    private ShellContent SortuAdministratzaileOrria<T>(string titulua, FontImageSource ikonoa) where T : Page
-    {
-        var orria = _zerbitzuHornitzailea.GetRequiredService<T>();
-        return new ShellContent
-        {
-            Title = titulua,
-            Content = orria,
-            Route = typeof(T).Name,
-            Icon = ikonoa
-        };
-    }
-
-    private ShellContent SortuLangileOrria<T>(string titulua, FontImageSource ikonoa) where T : Page
+    private ShellContent SortuFitxaOrria<T>(string titulua, FontImageSource ikonoa) where T : Page
     {
         var orria = _zerbitzuHornitzailea.GetRequiredService<T>();
         return new ShellContent

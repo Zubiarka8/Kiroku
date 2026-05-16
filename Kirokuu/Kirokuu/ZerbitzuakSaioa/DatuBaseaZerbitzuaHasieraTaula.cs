@@ -131,7 +131,8 @@ public sealed partial class DatuBaseaZerbitzua
                         sqlSektorea,
                         cancellationToken,
                         LibsqlLoturaNormalizatua(TxostenEgoera.Onartua),
-                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value),
+                        LibsqlLoturaNormalizatua(
+                            SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value)),
                         LibsqlLoturaNormalizatua(minHilabetea)).ConfigureAwait(false);
                 }
                 else
@@ -178,7 +179,7 @@ public sealed partial class DatuBaseaZerbitzua
                 ORDER BY Hilabetea ASC
                 """,
                 TxostenEgoera.Onartua,
-                sektoreIragazkia.Value,
+                SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value),
                 minHilabetea).ConfigureAwait(false);
         }
         else
@@ -281,7 +282,8 @@ public sealed partial class DatuBaseaZerbitzua
                         sqlSektorea,
                         cancellationToken,
                         LibsqlLoturaNormalizatua(TxostenEgoera.Onartua),
-                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
+                        LibsqlLoturaNormalizatua(
+                            SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value))).ConfigureAwait(false);
                 }
                 else
                 {
@@ -320,7 +322,7 @@ public sealed partial class DatuBaseaZerbitzua
                 ORDER BY Guztira DESC
                 """,
                 TxostenEgoera.Onartua,
-                sektoreIragazkia.Value).ConfigureAwait(false);
+                SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value)).ConfigureAwait(false);
         }
 
         return await _sqliteKonexioa!.QueryAsync<KategoriakoGastuAgregatua>(
@@ -399,7 +401,8 @@ public sealed partial class DatuBaseaZerbitzua
                     emaitza = await bezeroa.ExekutatuAsync(
                         sqlSektorea,
                         cancellationToken,
-                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
+                        LibsqlLoturaNormalizatua(
+                            SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value))).ConfigureAwait(false);
                 }
                 else
                 {
@@ -425,7 +428,7 @@ public sealed partial class DatuBaseaZerbitzua
                 WHERE e.Sektorea = ?
                 GROUP BY bt.Egoera
                 """,
-                sektoreIragazkia.Value).ConfigureAwait(false);
+                SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value)).ConfigureAwait(false);
         }
 
         return await _sqliteKonexioa!.QueryAsync<TxostenEgoeraKopurua>(
@@ -481,7 +484,8 @@ public sealed partial class DatuBaseaZerbitzua
                         sql,
                         cancellationToken,
                         LibsqlLoturaNormalizatua(TxostenEgoera.Onartua),
-                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
+                        LibsqlLoturaNormalizatua(
+                            SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value))).ConfigureAwait(false);
                 }
                 else
                 {
@@ -527,7 +531,7 @@ public sealed partial class DatuBaseaZerbitzua
                 WHERE bt.Egoera = ? AND e.Sektorea = ?
                 """,
                 TxostenEgoera.Onartua,
-                sektoreIragazkia.Value).ConfigureAwait(false);
+                SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value)).ConfigureAwait(false);
             return guztiraSektorea.FirstOrDefault()?.Guztira ?? 0;
         }
 
@@ -585,7 +589,8 @@ public sealed partial class DatuBaseaZerbitzua
                         sqlSektorea,
                         cancellationToken,
                         LibsqlLoturaNormalizatua(TxostenEgoera.Zain),
-                        LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
+                        LibsqlLoturaNormalizatua(
+                            SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value))).ConfigureAwait(false);
                 }
                 else
                 {
@@ -628,7 +633,7 @@ public sealed partial class DatuBaseaZerbitzua
                 WHERE bt.Egoera = ? AND e.Sektorea = ?
                 """,
                 TxostenEgoera.Zain,
-                sektoreIragazkia.Value).ConfigureAwait(false);
+                SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value)).ConfigureAwait(false);
         }
 
         return await _sqliteKonexioa!.ExecuteScalarAsync<int>(

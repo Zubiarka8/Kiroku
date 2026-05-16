@@ -7,23 +7,15 @@ public static class SektoreaKargoarenHiztegia
 {
     private static readonly HautapenElementua[] SektoreenZerrenda =
     {
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Finantzak, Etiketa = "Finantzak" },
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Marketina, Etiketa = "Marketina" },
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Salmentak, Etiketa = "Salmentak" }
+        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Finantzak, Etiketa = SektoreaBalioak.Finantzak },
+        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Marketina, Etiketa = SektoreaBalioak.Marketina },
+        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Salmentak, Etiketa = SektoreaBalioak.Salmentak }
     };
 
     public static IReadOnlyList<HautapenElementua> SortuSektoreenZerrenda() => SektoreenZerrenda;
 
-    public static string LortuSektorearenEtiketa(int sektorearenIdentifikatzailea)
-    {
-        foreach (var s in SektoreenZerrenda)
-        {
-            if (s.Identifikatzailea == sektorearenIdentifikatzailea)
-                return s.Etiketa;
-        }
-
-        return string.Empty;
-    }
+    public static string LortuSektorearenEtiketa(int sektorearenIdentifikatzailea) =>
+        SektoreaBalioak.LortuSektorearenEtiketa(sektorearenIdentifikatzailea);
 
     /// <summary>
     /// BidaiaTxostena.Saila gordetzeko testu baliozkoa: Finantzak, Marketina edo Salmentak.

@@ -17,7 +17,6 @@ namespace Kirokuu.ViewModels;
 
 public partial class AdministratzaileHasieraViewModel : ObservableObject
 {
-    private const int HilabeteKopuruaGrafikoan = 6;
 
     private const int KategoriaGehienezkoKopuruaGrafikoan = 8;
 
@@ -134,12 +133,9 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
             if (!zuzendariNagusiaDa)
             {
                 var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
-                if (adminId is { } aid)
-                {
-                    sektoreIragazkia = await _datuBaseaZerbitzua
-                        .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
-                        .ConfigureAwait(true);
-                }
+                sektoreIragazkia = await _autorizazioZerbitzua
+                    .EskuratuAdminSektoreIragazkiaAsync()
+                    .ConfigureAwait(true);
             }
 
             var langileak = await _datuBaseaZerbitzua.ZerrendatuLangileLaburpenakAsync(sektoreIragazkia).ConfigureAwait(true);
@@ -155,7 +151,7 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
             ZainTxartelenTestua = zainKop.ToString(KulturaZenbakietarako);
 
             var hilabetekoak = await _datuBaseaZerbitzua
-                .EskuratuAzkenHilabeteetakoOnartutakoGastuakOrguOrokorraAsync(HilabeteKopuruaGrafikoan, sektoreIragazkia)
+                .EskuratuAzkenHilabeteetakoOnartutakoGastuakOrguOrokorraAsync(HasieraGrafikoEraikitzailea.HilabeteKopuruaGrafikoan, sektoreIragazkia)
                 .ConfigureAwait(true);
             EraikiHilabetekoGrafikoa(hilabetekoak);
 
@@ -220,36 +216,13 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
 
     private void EraikiHilabetekoGrafikoa(IReadOnlyList<HilabetekoGastuAgregatua> datuak)
     {
-        var balioak = datuak.Select(d => d.Guztira).ToArray();
-        var etiketak = datuak.Select(d => d.Hilabetea).ToArray();
-        var lerroKolorea = new SolidColorPaint(SKColors.RoyalBlue) { StrokeThickness = 2.5f };
-        var eremuKolorea = new SolidColorPaint(SKColors.RoyalBlue.WithAlpha(88));
-        HilabetekoGastuSerieak = new ISeries[]
-        {
-            new LineSeries<double>
-            {
-                Name = "Onartutako gastua (org.)",
-                Values = balioak,
-                Fill = eremuKolorea,
-                Stroke = lerroKolorea,
-                GeometryFill = new SolidColorPaint(SKColors.White),
-                GeometryStroke = lerroKolorea,
-                GeometrySize = 7,
-                LineSmoothness = 0.35
-            }
-        };
-        HilabetekoXArdatzak = new Axis[]
-        {
-            new Axis
-            {
-                Labels = etiketak,
-                LabelsRotation = -35,
-                ForceStepToMin = true,
-                MinStep = 1,
-                SeparatorsPaint = new SolidColorPaint(new SKColor(210, 210, 210)),
-                TicksPaint = new SolidColorPaint(new SKColor(35, 35, 35))
-            }
-        };
+        HasieraGrafikoEraikitzailea.EraikiHilabetekoGrafikoa(
+            datuak,
+            out var serieak,
+            out var xArdatzak,
+            "Onartutako gastua (org.)");
+        HilabetekoGastuSerieak = serieak;
+        HilabetekoXArdatzak = xArdatzak;
     }
 
     private static string MoztuTestuaElipsis(string? testua, int gehienezkoLuzera)
@@ -405,43 +378,9 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
 
     private void EraikiEgoeraGrafikoa(IReadOnlyList<TxostenEgoeraKopurua> datuak)
     {
-        var mapa = datuak.ToDictionary(x => x.Egoera, x => x.Kopurua, StringComparer.Ordinal);
-        var ordena = new[]
-        {
-            TxostenEgoera.Zain,
-            TxostenEgoera.Onartua,
-            TxostenEgoera.Ukatua,
-            TxostenEgoera.Ezeztatua
-        };
-        var balioak = ordena.Select(e => (double)(mapa.TryGetValue(e, out var k) ? k : 0)).ToArray();
-        EgoeraSerieak = new ISeries[]
-        {
-            new RowSeries<double>
-            {
-                Name = "Txartel kopurua (org.)",
-                Values = balioak,
-                Fill = new SolidColorPaint(SKColors.DarkOrange),
-                MaxBarWidth = 22,
-                Rx = 4,
-                Ry = 4,
-                DataLabelsPaint = new SolidColorPaint(SKColors.White),
-                DataLabelsSize = 13,
-                DataLabelsPosition = DataLabelsPosition.End
-            }
-        };
-        EgoeraYArdatzak = new Axis[]
-        {
-            new Axis
-            {
-                Labels = ordena,
-                ForceStepToMin = true,
-                MinStep = 1,
-                SeparatorsPaint = new SolidColorPaint(new SKColor(210, 210, 210))
-            }
-        };
-        EgoeraXArdatzak = new Axis[]
-        {
-            new Axis { MinLimit = 0 }
-        };
+        HasieraGrafikoEraikitzailea.EraikiEgoeraGrafikoa(datuak, out var serieak, out var y, out var x);
+        EgoeraSerieak = serieak;
+        EgoeraYArdatzak = y;
+        EgoeraXArdatzak = x;
     }
 }

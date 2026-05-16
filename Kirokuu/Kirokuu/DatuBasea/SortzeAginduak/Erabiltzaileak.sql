@@ -1,0 +1,16 @@
+CREATE TABLE IF NOT EXISTS Erabiltzaileak (
+    ErabiltzaileId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+    Izena TEXT NOT NULL,
+    Abizena TEXT NOT NULL,
+    Abizena2 TEXT NOT NULL DEFAULT '',
+    DNI TEXT NOT NULL UNIQUE DEFAULT '',
+    Email TEXT NOT NULL UNIQUE,
+    Kargoa TEXT NOT NULL DEFAULT '',
+    Sektorea TEXT NOT NULL DEFAULT '',
+    Rola INTEGER NOT NULL,
+    SorkuntzaData TEXT NOT NULL DEFAULT '',
+    Pasahitza TEXT NOT NULL DEFAULT '',
+    Aktiboa INTEGER NOT NULL DEFAULT 1,
+    SaioHasieraSaiakerak INTEGER NOT NULL DEFAULT 0,
+    SaioaBlokeoaAmaieraUtc TEXT
+);

@@ -1,3 +1,4 @@
+using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.Zerbitzuak;
 
 namespace Kirokuu.DatuEreduak;
@@ -20,7 +21,7 @@ public sealed class TxostenOnarpenLaburpena
 
     public string DataFormateatua => DataOrduaBalioak.DataOrduaBistaratu(HasieraData);
 
-    public bool EzeztatuDaiteke => string.Equals(Egoera, "Zain", StringComparison.Ordinal);
+    public bool EzeztatuDaiteke => string.Equals(Egoera, TxostenEgoera.Zain, StringComparison.Ordinal);
 
     public string AdminTestua { get; set; } = string.Empty;
 

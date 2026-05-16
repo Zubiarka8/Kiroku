@@ -46,7 +46,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(value))
             return;
 
-        if (!int.TryParse(Uri.UnescapeDataString(value.Trim()), out var id) || id <= 0)
+        if (!ShellQueryLaguntzailea.SaiatuParseatuId(value, out var id))
             return;
 
         _txostenIdGordeta = id;
@@ -118,14 +118,9 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
                 return;
             }
 
-            _adminSektoreIragazkia = null;
-            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
-            if (adminId is { } aid)
-            {
-                _adminSektoreIragazkia = await _datuBaseaZerbitzua
-                    .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
-                    .ConfigureAwait(true);
-            }
+            _adminSektoreIragazkia = await _autorizazioZerbitzua
+                .EskuratuAdminSektoreIragazkiaAsync()
+                .ConfigureAwait(true);
 
             var txostena = await _datuBaseaZerbitzua
                 .EskuratuBidaiaTxostenaAdministratzailearentzatAsync(_txostenIdGordeta, _adminSektoreIragazkia)

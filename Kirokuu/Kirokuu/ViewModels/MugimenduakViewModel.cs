@@ -4,17 +4,14 @@ using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuBasea.Ereduak;
 using Kirokuu.DatuEreduak;
 using Kirokuu.Pages;
-using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Controls;
-using SQLite;
-using System.Net.Http;
 
 namespace Kirokuu.ViewModels;
 
-public partial class MugimenduakViewModel : ObservableObject
+public partial class MugimenduakViewModel : TxostenZerrendaViewModelOinarria
 {
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
@@ -57,81 +54,19 @@ public partial class MugimenduakViewModel : ObservableObject
         }
         catch (Exception ex)
         {
+            ErroreMezua = "Ezin izan da xehetasuna ireki. Saiatu berriro.";
             _logger.LogError(ex, "Mugimenduak: txosten xehetasunera nabigazio errorea.");
         }
     }
 
     [RelayCommand]
-    private async Task AgertzenDeneanAsync()
-    {
-        ErroreMezua = null;
-        TxostenZainak.Clear();
-
-        try
-        {
-            IsKargatzean = true;
-            if (!await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true))
-            {
-                ErroreMezua = "Ez duzu baimenik atal honetan.";
-                return;
-            }
-
-            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
-            int? adminSektoreId = null;
-            if (adminId is { } aid)
-            {
-                adminSektoreId = await _datuBaseaZerbitzua
-                    .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
-                    .ConfigureAwait(true);
-            }
-
-            var txostenak = await _datuBaseaZerbitzua.ZerrendatuTxostenOnarpenLaburrakAsync(TxostenEgoera.Zain, adminSektoreId).ConfigureAwait(true);
-            foreach (var t in txostenak)
-                TxostenZainak.Add(t);
-        }
-        catch (TursoExekuzioSalbuespena libEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
-                ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(libEx, "Mugimenduak: Turso errorea.");
-        }
-        catch (KeyNotFoundException knfEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Mugimenduak: mapa errorea.");
-        }
-        catch (FormatException fmtEx)
-        {
-            ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Mugimenduak: formatu errorea.");
-        }
-        catch (SQLiteException sqlEx)
-        {
-            ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Mugimenduak: SQLite errorea.");
-        }
-        catch (HttpRequestException httpEx)
-        {
-            ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Mugimenduak: sare errorea.");
-        }
-        catch (InvalidOperationException opEx)
-        {
-            ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Mugimenduak: eragiketa baliogabea.");
-        }
-        catch (TaskCanceledException)
-        {
-            ErroreMezua = "Eskaerak denbora muga gainditu du. Saiatu berriro.";
-        }
-        catch (Exception ex)
-        {
-            ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Mugimenduak: ustekabeko errorea.");
-        }
-        finally
-        {
-            IsKargatzean = false;
-        }
-    }
+    private Task AgertzenDeneanAsync() =>
+        KargatuAdminTxostenZerrendaAsync(
+            _autorizazioZerbitzua,
+            (sektoreId, ct) => _datuBaseaZerbitzua.ZerrendatuTxostenOnarpenLaburrakAsync(TxostenEgoera.Zain, sektoreId, ct),
+            TxostenZainak,
+            m => ErroreMezua = m,
+            v => IsKargatzean = v,
+            _logger,
+            "Mugimenduak");
 }

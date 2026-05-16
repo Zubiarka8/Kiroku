@@ -3,6 +3,7 @@ using SQLite;
 
 namespace Kirokuu.DatuBasea.Ereduak;
 
+// Persistitzen diren propietateak bakarrik; bistaratze/ikusgarritasun facades [Ignore] erabili.
 [Table("GastuLerroak")]
 public sealed class GastuLerroa
 {

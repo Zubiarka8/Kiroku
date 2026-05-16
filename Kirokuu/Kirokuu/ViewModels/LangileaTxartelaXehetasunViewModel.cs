@@ -39,7 +39,7 @@ public partial class LangileaTxartelaXehetasunViewModel : ObservableObject
         if (string.IsNullOrWhiteSpace(value))
             return;
 
-        if (!int.TryParse(Uri.UnescapeDataString(value.Trim()), out var id) || id <= 0)
+        if (!ShellQueryLaguntzailea.SaiatuParseatuId(value, out var id))
             return;
 
         _txostenIdGordeta = id;

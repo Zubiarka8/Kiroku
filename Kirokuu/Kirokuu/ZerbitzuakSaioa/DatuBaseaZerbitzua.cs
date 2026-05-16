@@ -263,7 +263,7 @@ public sealed partial class DatuBaseaZerbitzua
                 ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE
                 """,
                 (int)ErabiltzaileRola.Langilea,
-                sektoreIragazkia.Value).ConfigureAwait(false);
+                SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value)).ConfigureAwait(false);
         }
 
         var zerrenda = await _sqliteKonexioa!.QueryAsync<ErabiltzaileLaburpena>(
@@ -431,22 +431,47 @@ public sealed partial class DatuBaseaZerbitzua
 
     private static async Task BermatErabiltzaileaTaulaTursoAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
     {
-        const string sql = """
-            CREATE TABLE IF NOT EXISTS Erabiltzaileak (
-                ErabiltzaileId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-                Izena TEXT NOT NULL,
-                Abizena TEXT NOT NULL,
-                Abizena2 TEXT NOT NULL DEFAULT '',
-                DNI TEXT NOT NULL UNIQUE DEFAULT '',
-                Email TEXT NOT NULL UNIQUE,
-                Kargoa TEXT NOT NULL DEFAULT '',
-                Sektorea TEXT NOT NULL DEFAULT '',
-                Rola INTEGER NOT NULL,
-                SorkuntzaData TEXT NOT NULL DEFAULT '',
-                Pasahitza TEXT NOT NULL DEFAULT ''
-            );
-            """;
+        var sql = DatuBasea.DatuBaseaSortzeAginduak.IrakurriSortzeAgindua("Erabiltzaileak.sql");
         await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
+        await BermatuTursoErabiltzaileaZutabeGehigarriakAsync(bezeroa, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task BermatuTursoErabiltzaileaZutabeGehigarriakAsync(
+        ITursoSqlEgikaritzailea bezeroa,
+        CancellationToken cancellationToken)
+    {
+        await GehituTursoZutabeaBeharrezkoaBadaAsync(
+            bezeroa, "Erabiltzaileak", "Aktiboa",
+            "ALTER TABLE Erabiltzaileak ADD COLUMN Aktiboa INTEGER NOT NULL DEFAULT 1;",
+            cancellationToken).ConfigureAwait(false);
+        await GehituTursoZutabeaBeharrezkoaBadaAsync(
+            bezeroa, "Erabiltzaileak", "SaioHasieraSaiakerak",
+            "ALTER TABLE Erabiltzaileak ADD COLUMN SaioHasieraSaiakerak INTEGER NOT NULL DEFAULT 0;",
+            cancellationToken).ConfigureAwait(false);
+        await GehituTursoZutabeaBeharrezkoaBadaAsync(
+            bezeroa, "Erabiltzaileak", "SaioaBlokeoaAmaieraUtc",
+            "ALTER TABLE Erabiltzaileak ADD COLUMN SaioaBlokeoaAmaieraUtc TEXT;",
+            cancellationToken).ConfigureAwait(false);
+    }
+
+    private static async Task GehituTursoZutabeaBeharrezkoaBadaAsync(
+        ITursoSqlEgikaritzailea bezeroa,
+        string taulaIzena,
+        string zutabeIzena,
+        string alterSql,
+        CancellationToken cancellationToken)
+    {
+        var emaitza = await bezeroa.ExekutatuAsync(
+            $"SELECT COUNT(*) FROM pragma_table_info('{taulaIzena}') WHERE name = ?;",
+            cancellationToken,
+            zutabeIzena).ConfigureAwait(false);
+        var dago = emaitza.LerroTestuBalioak.FirstOrDefault() is { Count: > 0 } lerroa
+            && int.TryParse(lerroa[0], out var kopurua)
+            && kopurua > 0;
+        if (dago)
+            return;
+
+        await bezeroa.ExekutatuAsync(alterSql, cancellationToken).ConfigureAwait(false);
     }
 
     private async Task SortuSqliteBidaiaTxostenaFKrekinAsync()
@@ -688,7 +713,8 @@ public sealed partial class DatuBaseaZerbitzua
                     sqlSektorea,
                     cancellationToken,
                     (int)ErabiltzaileRola.Langilea,
-                    LibsqlLoturaNormalizatua(sektoreIragazkia.Value)).ConfigureAwait(false);
+                    LibsqlLoturaNormalizatua(
+                        SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(sektoreIragazkia.Value))).ConfigureAwait(false);
             }
             else
             {

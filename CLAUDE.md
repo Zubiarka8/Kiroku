@@ -123,7 +123,7 @@ Three roles have completely separate Shell tab sets. Never mix tabs across roles
 `Hasiera` | `Ezarpenak`
 
 **Employee (`Langilea`) tabs:**
-`Hasiera` | `Nire txartelak` | `Txartelak (Kanban)` | `Ezarpenak`
+`Hasiera` | `Nire txartelak` | `Ezarpenak`
 
 Navigation built in `ShellFitxaEraikitzailea.KargatuAsync()` — checks role on every login.
 

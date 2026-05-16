@@ -3,6 +3,7 @@ using Kirokuu.Pages;
 using Kirokuu.ViewModels;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
+using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Logging.Debug;
 using Plugin.Maui.Audio;
@@ -39,17 +40,6 @@ public static class MauiProgram
             dotEnvKargatua = paketetikKargatua || dotEnvKargatua;
         }
 #endif
-        #region agent log
-        var envBideaOndoren = InguruneKargatzailea.BilatuEnvFitxategiarenBidea();
-        var envGurasoOndoren = envBideaOndoren is null ? null : Path.GetDirectoryName(envBideaOndoren);
-        InguruneKargatzailea.ErantsiAgenteDebugNeurria(envGurasoOndoren, "D", "MauiProgram.cs:CreateMauiApp:karga_ondoren", "maui_program_ingurunea", new Dictionary<string, object?>
-        {
-            ["dotEnvKargatuBool"] = dotEnvKargatua,
-            ["tursoUrlDago"] = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("TURSO_DATABASE_URL")),
-            ["tursoTokenDago"] = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("TURSO_AUTH_TOKEN")),
-            ["cloudinaryIzenaDago"] = !string.IsNullOrWhiteSpace(Environment.GetEnvironmentVariable("CLOUDINARY_CLOUD_NAME"))
-        });
-        #endregion
 #if DEBUG
         if (!dotEnvKargatua)
         {
@@ -76,10 +66,19 @@ public static class MauiProgram
                 fonts.AddFont("MaterialIcons-Regular.ttf", "MaterialIcons");
             });
 
-        builder.Services.AddSingleton<ArgazkiIgotzeZerbitzua>(_ => new ArgazkiIgotzeZerbitzua());
+        builder.Services.AddHttpClient(nameof(ArgazkiIgotzeZerbitzua), client =>
+        {
+            client.Timeout = TimeSpan.FromSeconds(30);
+        });
+        builder.Services.AddSingleton<ArgazkiIgotzeZerbitzua>(sp =>
+        {
+            var factory = sp.GetRequiredService<IHttpClientFactory>();
+            return new ArgazkiIgotzeZerbitzua(factory.CreateClient(nameof(ArgazkiIgotzeZerbitzua)));
+        });
         builder.Services.AddSingleton<KredentzialEgiaztapenZerbitzua>();
         builder.Services.AddSingleton<PasahitzaZerbitzua>();
         builder.Services.AddSingleton<DatuBaseaZerbitzua>();
+        builder.Services.AddSingleton<AuditoretzaZerbitzua>();
         builder.Services.AddSingleton<ErabiltzaileZerbitzua>();
         builder.Services.AddSingleton<SaioaGordetzeZerbitzua>();
         builder.Services.AddSingleton<AutorizazioZerbitzua>();
@@ -87,8 +86,6 @@ public static class MauiProgram
         builder.Services.AddSingleton<ShellFitxaEraikitzailea>();
         builder.Services.AddSingleton<INabigazioNagusia, NabigazioNagusia>();
 
-        builder.Services.AddTransient<MainPageViewModel>();
-        builder.Services.AddTransient<MainPage>();
         builder.Services.AddTransient<SaioHasieraViewModel>();
         builder.Services.AddTransient<ErregistroViewModel>();
         builder.Services.AddTransient<HasieraViewModel>();
@@ -111,7 +108,6 @@ public static class MauiProgram
         builder.Services.AddTransient<NireTxartelakOrria>();
         builder.Services.AddTransient<TxartelBerriaOrria>();
         builder.Services.AddTransient<LangileaTxartelaXehetasunOrria>();
-        builder.Services.AddTransient<LasterEdukiaOrria>();
         builder.Services.AddTransient<EzarpenakOrria>();
         builder.Services.AddTransient<LangileZerrendaOrria>();
         builder.Services.AddTransient<AdministratzaileHasieraOrria>();
