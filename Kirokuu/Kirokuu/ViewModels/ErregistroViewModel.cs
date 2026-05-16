@@ -127,9 +127,6 @@ public partial class ErregistroViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void TxertaturikAroba() => Posta += "@";
-
-    [RelayCommand]
     private void AlderantzikatuPasahitzaMaska() => PasahitzaMaskaratuta = !PasahitzaMaskaratuta;
 
     [RelayCommand]
@@ -192,6 +189,12 @@ public partial class ErregistroViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
+            if (await _erabiltzaileZerbitzua.NANErabilitaDagoaAsync(Dni).ConfigureAwait(true))
+            {
+                ErroreMezua = "NAN hau dagoeneko erregistratuta dago.";
+                return;
+            }
+
             var erabiltzailea = await _erabiltzaileZerbitzua.ErregistratuLangileaAsync(
                 Izena,
                 Abizena,

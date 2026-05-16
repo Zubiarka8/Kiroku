@@ -118,9 +118,6 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
     }
 
     [RelayCommand]
-    private void TxertaturikAroba() => Posta += "@";
-
-    [RelayCommand]
     private void AlderantzikatuPasahitzaMaska() => PasahitzaBerriaMaskaratuta = !PasahitzaBerriaMaskaratuta;
 
     private async Task KargatuAsync()
@@ -259,6 +256,12 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
+            if (await _erabiltzaileZerbitzua.NANErabilitaDagoaAsync(Dni, _erabiltzaileIdZenbakia).ConfigureAwait(true))
+            {
+                ErroreMezua = "NAN hau dagoeneko beste erabiltzaile bati esleituta dago.";
+                return;
+            }
+
             await _erabiltzaileZerbitzua.AdministratzaileakEguneratuErabiltzaileProfilaAsync(
                     _erabiltzaileIdZenbakia,
                     Izena,

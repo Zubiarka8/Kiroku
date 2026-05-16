@@ -32,4 +32,8 @@ public sealed class TxostenOnarpenLaburpena
     }
 
     public bool EzeztatuDaiteke => string.Equals(Egoera, "Zain", StringComparison.Ordinal);
+
+    public string AdminTestua { get; set; } = string.Empty;
+
+    public bool AdminTestuaIkagarri => !string.IsNullOrWhiteSpace(AdminTestua);
 }

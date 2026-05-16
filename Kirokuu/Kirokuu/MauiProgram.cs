@@ -103,6 +103,7 @@ public static class MauiProgram
         builder.Services.AddTransient<LangileaTxartelaXehetasunViewModel>();
         builder.Services.AddTransient<MugimenduakViewModel>();
         builder.Services.AddTransient<TxostenOnarpenXehetasunViewModel>();
+        builder.Services.AddTransient<TxostenGuztiekViewModel>();
         builder.Services.AddTransient<AplikazioIrekitzeViewModel>();
         builder.Services.AddTransient<AplikazioIrekitzeOrria>();
         builder.Services.AddTransient<SaioHasieraOrria>();
@@ -120,6 +121,7 @@ public static class MauiProgram
         builder.Services.AddTransient<ErabiltzaileXehetasunOrria>();
         builder.Services.AddTransient<MugimenduakOrria>();
         builder.Services.AddTransient<TxostenOnarpenXehetasunOrria>();
+        builder.Services.AddTransient<TxostenGuztiekOrria>();
         builder.Services.AddTransient<AppShell>();
 
 #if DEBUG

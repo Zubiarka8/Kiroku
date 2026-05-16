@@ -14,16 +14,16 @@ using System.Net.Http;
 
 namespace Kirokuu.ViewModels;
 
-public partial class MugimenduakViewModel : ObservableObject
+public partial class TxostenGuztiekViewModel : ObservableObject
 {
     private readonly AutorizazioZerbitzua _autorizazioZerbitzua;
     private readonly DatuBaseaZerbitzua _datuBaseaZerbitzua;
-    private readonly ILogger<MugimenduakViewModel> _logger;
+    private readonly ILogger<TxostenGuztiekViewModel> _logger;
 
-    public MugimenduakViewModel(
+    public TxostenGuztiekViewModel(
         AutorizazioZerbitzua autorizazioZerbitzua,
         DatuBaseaZerbitzua datuBaseaZerbitzua,
-        ILogger<MugimenduakViewModel> logger)
+        ILogger<TxostenGuztiekViewModel> logger)
     {
         _autorizazioZerbitzua = autorizazioZerbitzua ?? throw new ArgumentNullException(nameof(autorizazioZerbitzua));
         _datuBaseaZerbitzua = datuBaseaZerbitzua ?? throw new ArgumentNullException(nameof(datuBaseaZerbitzua));
@@ -36,7 +36,7 @@ public partial class MugimenduakViewModel : ObservableObject
     [ObservableProperty]
     private string? _erroreMezua;
 
-    public ObservableCollection<TxostenOnarpenLaburpena> TxostenZainak { get; } = new();
+    public ObservableCollection<TxostenOnarpenLaburpena> TxostenGuztiak { get; } = new();
 
     [RelayCommand]
     private async Task IrekiTxostenXehetasunaAsync(TxostenOnarpenLaburpena? laburpena)
@@ -44,7 +44,7 @@ public partial class MugimenduakViewModel : ObservableObject
         if (laburpena is null || laburpena.TxostenId <= 0)
             return;
 
-        _logger.LogInformation("Mugimenduak: txosten xehetasuna, id={TxostenId}", laburpena.TxostenId);
+        _logger.LogInformation("TxostenGuztiak: xehetasuna, id={TxostenId}", laburpena.TxostenId);
 
         try
         {
@@ -57,7 +57,7 @@ public partial class MugimenduakViewModel : ObservableObject
         }
         catch (Exception ex)
         {
-            _logger.LogError(ex, "Mugimenduak: txosten xehetasunera nabigazio errorea.");
+            _logger.LogError(ex, "TxostenGuztiak: nabigazio errorea.");
         }
     }
 
@@ -65,7 +65,7 @@ public partial class MugimenduakViewModel : ObservableObject
     private async Task AgertzenDeneanAsync()
     {
         ErroreMezua = null;
-        TxostenZainak.Clear();
+        TxostenGuztiak.Clear();
 
         try
         {
@@ -86,40 +86,40 @@ public partial class MugimenduakViewModel : ObservableObject
                     adminSektoreId = sId;
             }
 
-            var txostenak = await _datuBaseaZerbitzua.ZerrendatuTxostenOnarpenLaburrakAsync(TxostenEgoera.Zain, adminSektoreId).ConfigureAwait(true);
+            var txostenak = await _datuBaseaZerbitzua.ZerrendatuTxostenGuztiekAsync(adminSektoreId).ConfigureAwait(true);
             foreach (var t in txostenak)
-                TxostenZainak.Add(t);
+                TxostenGuztiak.Add(t);
         }
         catch (TursoExekuzioSalbuespena libEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ErabiltzaileMezua(libEx)
                 ?? "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(libEx, "Mugimenduak: Turso errorea.");
+            _logger.LogError(libEx, "TxostenGuztiak: Turso errorea.");
         }
         catch (KeyNotFoundException knfEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.ZutabeEskemaMezua;
-            _logger.LogError(knfEx, "Mugimenduak: mapa errorea.");
+            _logger.LogError(knfEx, "TxostenGuztiak: mapa errorea.");
         }
         catch (FormatException fmtEx)
         {
             ErroreMezua = LibsqlErroreaErabiltzaileMezura.BalioFormatuMezua;
-            _logger.LogError(fmtEx, "Mugimenduak: formatu errorea.");
+            _logger.LogError(fmtEx, "TxostenGuztiak: formatu errorea.");
         }
         catch (SQLiteException sqlEx)
         {
             ErroreMezua = "Datu-base errorea: ezin izan da irakurri. Saiatu berriro.";
-            _logger.LogError(sqlEx, "Mugimenduak: SQLite errorea.");
+            _logger.LogError(sqlEx, "TxostenGuztiak: SQLite errorea.");
         }
         catch (HttpRequestException httpEx)
         {
             ErroreMezua = "Sare errorea: konexioa egiaztatu eta saiatu berriro.";
-            _logger.LogError(httpEx, "Mugimenduak: sare errorea.");
+            _logger.LogError(httpEx, "TxostenGuztiak: sare errorea.");
         }
         catch (InvalidOperationException opEx)
         {
             ErroreMezua = "Eragiketa baliogabea. Berriz saiatu saioa hasita.";
-            _logger.LogError(opEx, "Mugimenduak: eragiketa baliogabea.");
+            _logger.LogError(opEx, "TxostenGuztiak: eragiketa baliogabea.");
         }
         catch (TaskCanceledException)
         {
@@ -128,7 +128,7 @@ public partial class MugimenduakViewModel : ObservableObject
         catch (Exception ex)
         {
             ErroreMezua = "Ustekabeko errorea gertatu da. Garatzailearekin jarri harremanetan.";
-            _logger.LogError(ex, "Mugimenduak: ustekabeko errorea.");
+            _logger.LogError(ex, "TxostenGuztiak: ustekabeko errorea.");
         }
         finally
         {

@@ -12,9 +12,11 @@ namespace Kirokuu.ZerbitzuakSaioa;
 
 public sealed partial class DatuBaseaZerbitzua
 {
-    private const string AuditoretzaEkintzaTxostenaOnartu = "TxostenaOnartu";
+    private const string AuditoretzaEkintzaTxostenaOnartu = "TxostenaOnartua";
 
-    private const string AuditoretzaEkintzaTxostenaUkatu = "TxostenaUkatu";
+    private const string AuditoretzaEkintzaTxostenaUkatu = "TxostenaEzeztatu";
+
+    private const string AuditoretzaEkintzaTxostenaEskatuDu = "TxostenaEskatuDu";
 
     private static bool TursoAlterBikoiztuaIgnoratu(Exception ex)
     {
@@ -79,6 +81,8 @@ public sealed partial class DatuBaseaZerbitzua
 
     private async Task BermatuTursoGainerakoTaulakEtaZutabeakAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
     {
+        await SaiatuTursoAlterEtIgnoratuAsync(bezeroa, "PRAGMA foreign_keys = ON;", cancellationToken).ConfigureAwait(false);
+
         const string gastuKontzeptuakSql = """
             CREATE TABLE IF NOT EXISTS GastuKontzeptuak (
                 KategoriaId INTEGER PRIMARY KEY NOT NULL,
@@ -172,6 +176,7 @@ public sealed partial class DatuBaseaZerbitzua
         await bezeroa.ExekutatuAsync(gastuKontzeptuakSeedSql, cancellationToken).ConfigureAwait(false);
 
         await bezeroa.ExekutatuAsync(bidaiaSql, cancellationToken).ConfigureAwait(false);
+        await BermatuTursoBidaiaTxostenaFKMirazioaAsync(bezeroa, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(gastuLerroSql, cancellationToken).ConfigureAwait(false);
         await bezeroa.ExekutatuAsync(auditSql, cancellationToken).ConfigureAwait(false);
 
@@ -244,6 +249,173 @@ public sealed partial class DatuBaseaZerbitzua
             .ConfigureAwait(false);
     }
 
+    private async Task BermatuTursoBidaiaTxostenaFKMirazioaAsync(ITursoSqlEgikaritzailea bezeroa, CancellationToken cancellationToken)
+    {
+        var emaitza = await bezeroa.ExekutatuAsync(
+            "SELECT sql FROM sqlite_master WHERE type='table' AND name='BidaiaTxostenak';",
+            cancellationToken).ConfigureAwait(false);
+
+        var lerroa = emaitza.LerroTestuBalioak.FirstOrDefault();
+        if (lerroa is null || lerroa.Count == 0)
+            return;
+
+        var sqlDefinizio = lerroa[0] ?? string.Empty;
+        if (sqlDefinizio.Contains("FOREIGN KEY", StringComparison.OrdinalIgnoreCase))
+            return;
+
+        _logger.LogWarning("Turso BidaiaTxostenak: FK gabe dago, taula berreraiki egingo da.");
+
+        await bezeroa.ExekutatuAsync("DROP TABLE IF EXISTS BidaiaTxostenak_migr;", cancellationToken).ConfigureAwait(false);
+
+        await bezeroa.ExekutatuAsync("""
+            CREATE TABLE BidaiaTxostenak_migr (
+                TxostenId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
+                ErabiltzaileId INTEGER NOT NULL,
+                LangileDNI TEXT NOT NULL DEFAULT '',
+                Saila TEXT NOT NULL DEFAULT '',
+                Helmuga TEXT NOT NULL DEFAULT '',
+                BidaiaHelburua TEXT NOT NULL DEFAULT '',
+                HasieraData TEXT NOT NULL DEFAULT '',
+                AmaieraData TEXT NOT NULL DEFAULT '',
+                PertsonaKopurua INTEGER NOT NULL DEFAULT 0,
+                JasoAurrerakina INTEGER NOT NULL DEFAULT 0,
+                Egoera TEXT NOT NULL DEFAULT '',
+                AdminOharra TEXT,
+                AdminDNI TEXT,
+                EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0,
+                MonetaKodea TEXT NOT NULL DEFAULT '',
+                SorkuntzaData TEXT NOT NULL DEFAULT '',
+                AzkenEguneraketa TEXT NOT NULL DEFAULT '',
+                DataAprobazioa TEXT NOT NULL DEFAULT '',
+                FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+                FOREIGN KEY (LangileDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE,
+                FOREIGN KEY (AdminDNI) REFERENCES Erabiltzaileak(DNI) ON DELETE RESTRICT ON UPDATE CASCADE
+            );
+            """, cancellationToken).ConfigureAwait(false);
+
+        await bezeroa.ExekutatuAsync("""
+            INSERT INTO BidaiaTxostenak_migr (
+                TxostenId, ErabiltzaileId, LangileDNI, Saila, Helmuga, BidaiaHelburua,
+                HasieraData, AmaieraData, PertsonaKopurua, JasoAurrerakina, Egoera,
+                AdminOharra, AdminDNI, EmpresaIbilgailua, MonetaKodea,
+                SorkuntzaData, AzkenEguneraketa, DataAprobazioa
+            )
+            SELECT
+                TxostenId, ErabiltzaileId,
+                COALESCE(LangileDNI, ''), Saila, Helmuga, BidaiaHelburua,
+                HasieraData, AmaieraData, PertsonaKopurua,
+                COALESCE(JasoAurrerakina, 0), Egoera,
+                AdminOharra, AdminDNI, COALESCE(EmpresaIbilgailua, 0),
+                COALESCE(MonetaKodea, 'EUR'), SorkuntzaData, AzkenEguneraketa,
+                COALESCE(DataAprobazioa, '')
+            FROM BidaiaTxostenak;
+            """, cancellationToken).ConfigureAwait(false);
+
+        await bezeroa.ExekutatuAsync("DROP TABLE BidaiaTxostenak;", cancellationToken).ConfigureAwait(false);
+        await bezeroa.ExekutatuAsync("ALTER TABLE BidaiaTxostenak_migr RENAME TO BidaiaTxostenak;", cancellationToken).ConfigureAwait(false);
+
+        _logger.LogWarning("Turso BidaiaTxostenak taula FK-rekin berreraiki da.");
+    }
+
+    public async Task<IReadOnlyList<TxostenOnarpenLaburpena>> ZerrendatuTxostenGuztiekAsync(
+        int? sektoreId = null,
+        CancellationToken cancellationToken = default)
+    {
+        await HasieratuAsync().ConfigureAwait(false);
+        cancellationToken.ThrowIfCancellationRequested();
+
+        if (_urrunTursoModua)
+            return await ZerrendatuTxostenGuztiekTursoAsync(sektoreId, cancellationToken).ConfigureAwait(false);
+
+        const string sqlOinarria = """
+            SELECT
+              b.TxostenId AS TxostenId,
+              b.ErabiltzaileId AS ErabiltzaileId,
+              TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+              b.Helmuga AS Helmuga,
+              b.Egoera AS Egoera,
+              COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+              b.HasieraData AS HasieraData,
+              COALESCE(TRIM(COALESCE(a.Izena,'') || ' ' || COALESCE(a.Abizena,'')), '') AS AdminTestua
+            FROM BidaiaTxostenak b
+            INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+            LEFT JOIN Erabiltzaileak a ON a.DNI = b.AdminDNI
+            """;
+
+        if (sektoreId is > 0)
+        {
+            var sql = sqlOinarria + " WHERE e.Sektorea = ? ORDER BY b.SorkuntzaData DESC";
+            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, sektoreId.Value).ConfigureAwait(false);
+        }
+
+        return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(
+            sqlOinarria + " ORDER BY b.SorkuntzaData DESC").ConfigureAwait(false);
+    }
+
+    private async Task<IReadOnlyList<TxostenOnarpenLaburpena>> ZerrendatuTxostenGuztiekTursoAsync(
+        int? sektoreId,
+        CancellationToken cancellationToken)
+    {
+        return await ExekutatuTursoanAsync(async bezeroa =>
+        {
+            const string sqlOinarria = """
+                SELECT
+                  b.TxostenId AS TxostenId,
+                  b.ErabiltzaileId AS ErabiltzaileId,
+                  TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+                  b.Helmuga AS Helmuga,
+                  b.Egoera AS Egoera,
+                  COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                  b.HasieraData AS HasieraData,
+                  COALESCE(TRIM(COALESCE(a.Izena,'') || ' ' || COALESCE(a.Abizena,'')), '') AS AdminTestua
+                FROM BidaiaTxostenak b
+                INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                LEFT JOIN Erabiltzaileak a ON a.DNI = b.AdminDNI
+                """;
+
+            TursoHttpExekuzioarenEmaitza emaitza;
+            if (sektoreId is > 0)
+            {
+                emaitza = await bezeroa.ExekutatuAsync(
+                    sqlOinarria + " WHERE e.Sektorea = ? ORDER BY b.SorkuntzaData DESC;",
+                    cancellationToken,
+                    LibsqlLoturaNormalizatua(sektoreId.Value)).ConfigureAwait(false);
+            }
+            else
+            {
+                emaitza = await bezeroa.ExekutatuAsync(
+                    sqlOinarria + " ORDER BY b.SorkuntzaData DESC;",
+                    cancellationToken).ConfigureAwait(false);
+            }
+
+            return MapeatuTxostenGuztiekLaburrak(emaitza);
+        }, cancellationToken).ConfigureAwait(false);
+    }
+
+    private static IReadOnlyList<TxostenOnarpenLaburpena> MapeatuTxostenGuztiekLaburrak(
+        TursoHttpExekuzioarenEmaitza emaitza)
+    {
+        var zutabeak = emaitza.ZutabeIzenak;
+        var zerrenda = new List<TxostenOnarpenLaburpena>();
+        foreach (var lerroa in emaitza.LerroTestuBalioak)
+        {
+            var mapa = SortuTursoLerroMapa(zutabeak, lerroa);
+            zerrenda.Add(new TxostenOnarpenLaburpena
+            {
+                TxostenId = IrakurriMapaOsoaLehenetsia(mapa, "TxostenId", 0),
+                ErabiltzaileId = IrakurriMapaOsoa(mapa, "ErabiltzaileId"),
+                LangileTestua = IrakurriMapaTestuaLehenetsia(mapa, "LangileTestua"),
+                Helmuga = IrakurriMapaTestuaLehenetsia(mapa, "Helmuga"),
+                Egoera = IrakurriMapaTestuaLehenetsia(mapa, "Egoera"),
+                GastuenBatuketakoZenbatekoa = IrakurriMapaKomaHamarkatuaLehenetsia(mapa, "GastuenBatuketakoZenbatekoa", 0),
+                HasieraData = IrakurriMapaTestuaLehenetsia(mapa, "HasieraData"),
+                AdminTestua = IrakurriMapaTestuaLehenetsia(mapa, "AdminTestua")
+            });
+        }
+
+        return zerrenda;
+    }
+
     public async Task<BidaiaTxostena?> EskuratuBidaiaTxostenaIdzAsync(int txostenId, CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
@@ -291,29 +463,76 @@ public sealed partial class DatuBaseaZerbitzua
 
     public async Task<IReadOnlyList<TxostenOnarpenLaburpena>> ZerrendatuTxostenOnarpenLaburrakAsync(
         string? egoeraIragazkia,
+        int? sektoreId = null,
         CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (_urrunTursoModua)
-            return await ZerrendatuTxostenOnarpenLaburrakTursoAsync(egoeraIragazkia, cancellationToken).ConfigureAwait(false);
+            return await ZerrendatuTxostenOnarpenLaburrakTursoAsync(egoeraIragazkia, sektoreId, cancellationToken).ConfigureAwait(false);
 
-        var sql = string.IsNullOrWhiteSpace(egoeraIragazkia)
-            ? """
-              SELECT
-                b.TxostenId AS TxostenId,
-                b.ErabiltzaileId AS ErabiltzaileId,
-                TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
-                b.Helmuga AS Helmuga,
-                b.Egoera AS Egoera,
-                COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
-                b.HasieraData AS HasieraData
-              FROM BidaiaTxostenak b
-              INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-              ORDER BY b.SorkuntzaData DESC;
-              """
-            : """
+        var iragazkiEgoera = !string.IsNullOrWhiteSpace(egoeraIragazkia);
+        var iragazkiSektorea = sektoreId is > 0;
+
+        string sql;
+        if (!iragazkiEgoera && !iragazkiSektorea)
+        {
+            sql = """
+                  SELECT
+                    b.TxostenId AS TxostenId,
+                    b.ErabiltzaileId AS ErabiltzaileId,
+                    TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+                    b.Helmuga AS Helmuga,
+                    b.Egoera AS Egoera,
+                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                    b.HasieraData AS HasieraData
+                  FROM BidaiaTxostenak b
+                  INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                  ORDER BY b.SorkuntzaData DESC
+                  """;
+            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql).ConfigureAwait(false);
+        }
+
+        if (iragazkiEgoera && iragazkiSektorea)
+        {
+            sql = """
+                  SELECT
+                    b.TxostenId AS TxostenId,
+                    b.ErabiltzaileId AS ErabiltzaileId,
+                    TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+                    b.Helmuga AS Helmuga,
+                    b.Egoera AS Egoera,
+                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                    b.HasieraData AS HasieraData
+                  FROM BidaiaTxostenak b
+                  INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                  WHERE b.Egoera = ? AND e.SektorearenIdentifikatzailea = ?
+                  ORDER BY b.SorkuntzaData DESC
+                  """;
+            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, egoeraIragazkia!.Trim(), sektoreId!.Value).ConfigureAwait(false);
+        }
+
+        if (iragazkiSektorea)
+        {
+            sql = """
+                  SELECT
+                    b.TxostenId AS TxostenId,
+                    b.ErabiltzaileId AS ErabiltzaileId,
+                    TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+                    b.Helmuga AS Helmuga,
+                    b.Egoera AS Egoera,
+                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                    b.HasieraData AS HasieraData
+                  FROM BidaiaTxostenak b
+                  INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                  WHERE e.SektorearenIdentifikatzailea = ?
+                  ORDER BY b.SorkuntzaData DESC
+                  """;
+            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, sektoreId!.Value).ConfigureAwait(false);
+        }
+
+        sql = """
               SELECT
                 b.TxostenId AS TxostenId,
                 b.ErabiltzaileId AS ErabiltzaileId,
@@ -325,53 +544,99 @@ public sealed partial class DatuBaseaZerbitzua
               FROM BidaiaTxostenak b
               INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
               WHERE b.Egoera = ?
-              ORDER BY b.SorkuntzaData DESC;
+              ORDER BY b.SorkuntzaData DESC
               """;
-
-        if (string.IsNullOrWhiteSpace(egoeraIragazkia))
-            return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql).ConfigureAwait(false);
-
-        return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, egoeraIragazkia.Trim()).ConfigureAwait(false);
+        return await _sqliteKonexioa!.QueryAsync<TxostenOnarpenLaburpena>(sql, egoeraIragazkia!.Trim()).ConfigureAwait(false);
     }
 
     private async Task<IReadOnlyList<TxostenOnarpenLaburpena>> ZerrendatuTxostenOnarpenLaburrakTursoAsync(
         string? egoeraIragazkia,
+        int? sektoreId,
         CancellationToken cancellationToken)
     {
         return await ExekutatuTursoanAsync(async bezeroa =>
         {
-            var sql = string.IsNullOrWhiteSpace(egoeraIragazkia)
-                ? """
-                  SELECT
-                    b.TxostenId AS TxostenId,
-                    b.ErabiltzaileId AS ErabiltzaileId,
-                    TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
-                    b.Helmuga AS Helmuga,
-                    b.Egoera AS Egoera,
-                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
-                    b.HasieraData AS HasieraData
-                  FROM BidaiaTxostenak b
-                  INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-                  ORDER BY b.SorkuntzaData DESC;
-                  """
-                : """
-                  SELECT
-                    b.TxostenId AS TxostenId,
-                    b.ErabiltzaileId AS ErabiltzaileId,
-                    TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
-                    b.Helmuga AS Helmuga,
-                    b.Egoera AS Egoera,
-                    COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
-                    b.HasieraData AS HasieraData
-                  FROM BidaiaTxostenak b
-                  INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
-                  WHERE b.Egoera = ?
-                  ORDER BY b.SorkuntzaData DESC;
-                  """;
+            var iragazkiEgoera = !string.IsNullOrWhiteSpace(egoeraIragazkia);
+            var iragazkiSektorea = sektoreId is > 0;
 
-            var emaitza = string.IsNullOrWhiteSpace(egoeraIragazkia)
-                ? await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false)
-                : await bezeroa.ExekutatuAsync(sql, cancellationToken, LibsqlLoturaNormalizatua(egoeraIragazkia.Trim())).ConfigureAwait(false);
+            string sql;
+            TursoHttpExekuzioarenEmaitza emaitza;
+
+            if (!iragazkiEgoera && !iragazkiSektorea)
+            {
+                sql = """
+                      SELECT
+                        b.TxostenId AS TxostenId,
+                        b.ErabiltzaileId AS ErabiltzaileId,
+                        TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+                        b.Helmuga AS Helmuga,
+                        b.Egoera AS Egoera,
+                        COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                        b.HasieraData AS HasieraData
+                      FROM BidaiaTxostenak b
+                      INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                      ORDER BY b.SorkuntzaData DESC;
+                      """;
+                emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken).ConfigureAwait(false);
+            }
+            else if (iragazkiEgoera && iragazkiSektorea)
+            {
+                sql = """
+                      SELECT
+                        b.TxostenId AS TxostenId,
+                        b.ErabiltzaileId AS ErabiltzaileId,
+                        TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+                        b.Helmuga AS Helmuga,
+                        b.Egoera AS Egoera,
+                        COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                        b.HasieraData AS HasieraData
+                      FROM BidaiaTxostenak b
+                      INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                      WHERE b.Egoera = ? AND e.SektorearenIdentifikatzailea = ?
+                      ORDER BY b.SorkuntzaData DESC;
+                      """;
+                emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken,
+                    LibsqlLoturaNormalizatua(egoeraIragazkia!.Trim()),
+                    LibsqlLoturaNormalizatua(sektoreId!.Value)).ConfigureAwait(false);
+            }
+            else if (iragazkiSektorea)
+            {
+                sql = """
+                      SELECT
+                        b.TxostenId AS TxostenId,
+                        b.ErabiltzaileId AS ErabiltzaileId,
+                        TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+                        b.Helmuga AS Helmuga,
+                        b.Egoera AS Egoera,
+                        COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                        b.HasieraData AS HasieraData
+                      FROM BidaiaTxostenak b
+                      INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                      WHERE e.SektorearenIdentifikatzailea = ?
+                      ORDER BY b.SorkuntzaData DESC;
+                      """;
+                emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken,
+                    LibsqlLoturaNormalizatua(sektoreId!.Value)).ConfigureAwait(false);
+            }
+            else
+            {
+                sql = """
+                      SELECT
+                        b.TxostenId AS TxostenId,
+                        b.ErabiltzaileId AS ErabiltzaileId,
+                        TRIM(COALESCE(e.Izena,'') || ' ' || COALESCE(e.Abizena,'')) AS LangileTestua,
+                        b.Helmuga AS Helmuga,
+                        b.Egoera AS Egoera,
+                        COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
+                        b.HasieraData AS HasieraData
+                      FROM BidaiaTxostenak b
+                      INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                      WHERE b.Egoera = ?
+                      ORDER BY b.SorkuntzaData DESC;
+                      """;
+                emaitza = await bezeroa.ExekutatuAsync(sql, cancellationToken,
+                    LibsqlLoturaNormalizatua(egoeraIragazkia!.Trim())).ConfigureAwait(false);
+            }
 
             return MapeatuTxostenOnarpenLaburrak(emaitza, egoeraIragazkia);
         }, cancellationToken).ConfigureAwait(false);
@@ -390,8 +655,12 @@ public sealed partial class DatuBaseaZerbitzua
         var txostena = await EskuratuBidaiaTxostenaIdzAsync(txostenId, cancellationToken).ConfigureAwait(false)
             ?? throw new InvalidOperationException("Txostena ez da aurkitu.");
 
+        var adminErabiltzailea = await BilatuErabiltzaileaIdzAsync(administratzaileErabiltzaileId, cancellationToken).ConfigureAwait(false);
+        var adminDNI = adminErabiltzailea?.DNI;
+
         var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
         txostena.Egoera = egoeraBerria;
+        txostena.AdminDNI = string.IsNullOrWhiteSpace(adminDNI) ? null : adminDNI.Trim();
         txostena.AdminOharra = string.Equals(egoeraBerria, TxostenEgoera.Ukatua, StringComparison.Ordinal)
             ? (string.IsNullOrWhiteSpace(adminOharra) ? string.Empty : adminOharra.Trim())
             : null;
@@ -406,7 +675,7 @@ public sealed partial class DatuBaseaZerbitzua
             {
                 const string sql = """
                     UPDATE BidaiaTxostenak
-                    SET Egoera = ?, AdminOharra = ?, AzkenEguneraketa = ?, DataAprobazioa = ?
+                    SET Egoera = ?, AdminOharra = ?, AdminDNI = ?, AzkenEguneraketa = ?, DataAprobazioa = ?
                     WHERE TxostenId = ?;
                     """;
                 await bezeroa.ExekutatuAsync(
@@ -414,6 +683,7 @@ public sealed partial class DatuBaseaZerbitzua
                     cancellationToken,
                     LibsqlLoturaNormalizatua(txostena.Egoera),
                     LibsqlLoturaNormalizatua(txostena.AdminOharra ?? string.Empty),
+                    LibsqlLoturaNormalizatua(txostena.AdminDNI),
                     LibsqlLoturaNormalizatua(txostena.AzkenEguneratzea),
                     LibsqlLoturaNormalizatua(txostena.DataAprobazioa),
                     LibsqlLoturaNormalizatua(txostenId)).ConfigureAwait(false);
@@ -435,13 +705,13 @@ public sealed partial class DatuBaseaZerbitzua
     private async Task IdazkiAuditoretzaLogaAsync(
         string ekintza,
         string deskribapena,
-        int administratzaileErabiltzaileId,
+        int erabiltzaileId,
         CancellationToken cancellationToken)
     {
         var loga = new AuditoretzaLoga
         {
             DiruSarreraId = null,
-            ErabiltzaileId = administratzaileErabiltzaileId,
+            ErabiltzaileId = erabiltzaileId,
             Ekintza = ekintza,
             DataOrdua = DateTime.UtcNow,
             Deskribapena = deskribapena,

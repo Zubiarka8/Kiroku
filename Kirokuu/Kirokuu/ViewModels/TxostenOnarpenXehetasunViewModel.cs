@@ -74,6 +74,14 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     [ObservableProperty]
     private string _adminOharra = string.Empty;
 
+    [ObservableProperty]
+    private int _jasoAurrerakina;
+
+    [ObservableProperty]
+    private bool _jasoAurrerakinaIkagarri;
+
+    public double OrdaintzekoBidea => GastuenGuztira - JasoAurrerakina;
+
     public ObservableCollection<GastuLerroa> GastuLerroak { get; } = new();
 
     private async Task KargatuAsync()
@@ -116,6 +124,9 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
 
             GastuenGuztira = guztira;
             AdminOharra = txostena.AdminOharra ?? string.Empty;
+            JasoAurrerakina = txostena.JasoAurrekina;
+            JasoAurrerakinaIkagarri = txostena.JasoAurrekina > 0;
+            OnPropertyChanged(nameof(OrdaintzekoBidea));
         }
         catch (TursoExekuzioSalbuespena libEx)
         {

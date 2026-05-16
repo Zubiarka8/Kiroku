@@ -156,12 +156,14 @@ public sealed partial class DatuBaseaZerbitzua
 
                 return 0;
             }, cancellationToken).ConfigureAwait(false);
+            await IdazkiAuditoretzaLogaAsync(AuditoretzaEkintzaTxostenaEskatuDu, txostena.Helmuga, txostena.ErabiltzaileId, cancellationToken).ConfigureAwait(false);
             return;
         }
 
         await _sqliteKonexioa!.InsertAsync(txostena).ConfigureAwait(false);
         gastuLerroa.TxostenId = txostena.TxostenId;
         await _sqliteKonexioa.InsertAsync(gastuLerroa).ConfigureAwait(false);
+        await IdazkiAuditoretzaLogaAsync(AuditoretzaEkintzaTxostenaEskatuDu, $"{txostena.TxostenId} · {txostena.Helmuga}", txostena.ErabiltzaileId, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<IReadOnlyList<GastuKontzeptua>> ZerrendatuGastuKontzeptuakAsync(
