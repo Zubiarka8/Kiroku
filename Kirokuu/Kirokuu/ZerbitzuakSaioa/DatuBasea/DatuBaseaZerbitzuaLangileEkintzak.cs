@@ -29,7 +29,7 @@ public sealed partial class DatuBaseaZerbitzua
               COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
               b.HasieraData AS HasieraData
             FROM BidaiaTxostenak b
-            INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+            LEFT JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
             WHERE b.ErabiltzaileId = ?
             """;
 
@@ -62,7 +62,7 @@ public sealed partial class DatuBaseaZerbitzua
                   COALESCE((SELECT SUM(gl.Zenbatekoa_Guztira) FROM GastuLerroak gl WHERE gl.TxostenId = b.TxostenId), 0) AS GastuenBatuketakoZenbatekoa,
                   b.HasieraData AS HasieraData
                 FROM BidaiaTxostenak b
-                INNER JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
+                LEFT JOIN Erabiltzaileak e ON e.ErabiltzaileId = b.ErabiltzaileId
                 WHERE b.ErabiltzaileId = ?
                 """;
 

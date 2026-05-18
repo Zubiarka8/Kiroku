@@ -61,6 +61,9 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
     private string? _erroreMezua;
 
     [ObservableProperty]
+    private string _ongiEtorriTestua = "Ongi etorri!";
+
+    [ObservableProperty]
     private string _laburpenBurua = "Organizazioaren laburpena";
 
     [ObservableProperty]
@@ -130,16 +133,25 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
             }
 
             int? sektoreIragazkia = null;
-            var zuzendariNagusiaDa = await _autorizazioZerbitzua.DaZuzendariNagusiaAsync().ConfigureAwait(true);
-            if (!zuzendariNagusiaDa)
+            var erabiltzaileId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+            if (erabiltzaileId is { } uid)
             {
-                var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
-                if (adminId is { } aid)
+                var oraingoErabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(uid).ConfigureAwait(true);
+                if (oraingoErabiltzailea is not null)
                 {
-                    sektoreIragazkia = await _datuBaseaZerbitzua
-                        .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
-                        .ConfigureAwait(true);
+                    var izenaGarbia = oraingoErabiltzailea.Izena?.Trim();
+                    OngiEtorriTestua = string.IsNullOrWhiteSpace(izenaGarbia)
+                        ? "Ongi etorri!"
+                        : $"Ongi etorri, {izenaGarbia}!";
                 }
+            }
+
+            var zuzendariNagusiaDa = await _autorizazioZerbitzua.DaZuzendariNagusiaAsync().ConfigureAwait(true);
+            if (!zuzendariNagusiaDa && erabiltzaileId is { } adminId)
+            {
+                sektoreIragazkia = await _datuBaseaZerbitzua
+                    .EskuratuAdministratzailearenSektoreIragazkiaAsync(adminId)
+                    .ConfigureAwait(true);
             }
 
             var langileak = await _datuBaseaZerbitzua.ZerrendatuLangileLaburpenakAsync(sektoreIragazkia).ConfigureAwait(true);

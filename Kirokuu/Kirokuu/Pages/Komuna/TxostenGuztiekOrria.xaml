@@ -128,6 +128,8 @@
                      Command="{Binding AgertzenDeneanCommand}"
                      IsRefreshing="{Binding IsBerritzen}">
             <CollectionView ItemsSource="{Binding TxostenGuztiak}"
+                            SelectionMode="Single"
+                            SelectedItem="{Binding SelektatutakoLaburpena}"
                             Margin="0,6,0,0"
                             VerticalScrollBarVisibility="Always">
                 <CollectionView.EmptyView>
@@ -148,11 +150,6 @@
                         <Border Style="{StaticResource TxartelTxartelaEstiloa}"
                                 Margin="0,5"
                                 Padding="0">
-                            <Border.GestureRecognizers>
-                                <TapGestureRecognizer
-                                    Command="{Binding Source={x:Reference TxostenGuztiekOrriaErreferentzia}, Path=BindingContext.IrekiTxostenXehetasunaCommand}"
-                                    CommandParameter="{Binding .}" />
-                            </Border.GestureRecognizers>
                             <Grid ColumnDefinitions="4,*" ColumnSpacing="0">
 
                                 <!-- Banda lateral con color de estado -->

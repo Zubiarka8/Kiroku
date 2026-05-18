@@ -195,15 +195,24 @@ public partial class LangileZerrendaViewModel : ObservableObject
         }
 
         var dagoeneko = laburpena.Aktiboa != 0;
+        const string xehetasunakEtiketa = "Xehetasunak ireki";
         var aldaketaEtiketa = dagoeneko ? "Desaktibatu" : "Aktibatu";
         var izenburua = string.Concat(laburpena.Izena, " ", laburpena.Abizena).Trim();
 
         var hautatua = await Shell.Current
-            .DisplayActionSheet(izenburua, "Utzi", null, aldaketaEtiketa)
+            .DisplayActionSheet(izenburua, "Utzi", null, xehetasunakEtiketa, aldaketaEtiketa)
             .ConfigureAwait(true);
 
         if (string.IsNullOrEmpty(hautatua) || string.Equals(hautatua, "Utzi", StringComparison.Ordinal))
             return;
+
+        if (string.Equals(hautatua, xehetasunakEtiketa, StringComparison.Ordinal))
+        {
+            await Shell.Current
+                .GoToAsync($"{nameof(ErabiltzaileXehetasunOrria)}?ErabiltzaileId={laburpena.Id.ToString(CultureInfo.InvariantCulture)}")
+                .ConfigureAwait(true);
+            return;
+        }
 
         if (!string.Equals(hautatua, aldaketaEtiketa, StringComparison.Ordinal))
             return;

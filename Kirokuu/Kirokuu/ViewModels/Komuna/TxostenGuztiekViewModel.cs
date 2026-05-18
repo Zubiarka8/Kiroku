@@ -105,6 +105,7 @@ public partial class TxostenGuztiekViewModel : ObservableObject
     [RelayCommand]
     private async Task AgertzenDeneanAsync()
     {
+        if (IsKargatzean) return;
         ErroreMezua = null;
         try
         {

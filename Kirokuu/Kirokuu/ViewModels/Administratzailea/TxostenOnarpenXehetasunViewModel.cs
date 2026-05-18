@@ -87,6 +87,9 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     private bool _jasoAurrerakinaIkagarri;
 
     [ObservableProperty]
+    private bool _batereIrudirik;
+
+    [ObservableProperty]
     private bool _ibilgailuaEremuakIkagarri;
 
     [ObservableProperty]
@@ -106,6 +109,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     {
         ErroreMezua = null;
         GastuLerroak.Clear();
+        BatereIrudirik = true;
         if (_txostenIdGordeta <= 0)
             return;
 
@@ -146,6 +150,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
 
             var lerroak = await _datuBaseaZerbitzua.ZerrendatuGastuLerroakTxostenIdzAsync(_txostenIdGordeta).ConfigureAwait(true);
             double guztira = 0;
+            var irudirikGabe = true;
             double kilometroMax = 0;
             var ibilgailuaBeharDu = false;
             var garraioPribatua = false;
@@ -154,6 +159,8 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
             {
                 GastuLerroak.Add(lerroa);
                 guztira += lerroa.ZenbatekoaGuztira;
+                if (lerroa.IrudiaDauka)
+                    irudirikGabe = false;
                 if (lerroa.Kilometroak > kilometroMax)
                     kilometroMax = lerroa.Kilometroak;
                 if (lerroa.IbilgailuaBeharrezkoa == 1)
@@ -164,6 +171,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
                     garraioPublikoaHautatua = true;
             }
 
+            BatereIrudirik = irudirikGabe;
             GastuenGuztira = guztira;
             AdminOharra = txostena.AdminOharra ?? string.Empty;
             JasoAurrerakina = txostena.JasoAurrerakina;
