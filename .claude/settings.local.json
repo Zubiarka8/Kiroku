@@ -75,7 +75,11 @@
       "PowerShell([console]::beep\\(880, 200\\); Start-Sleep -Milliseconds 80; [console]::beep\\(1320, 250\\))",
       "PowerShell(\"--- adapters Up ---\"; Get-NetAdapter | Where-Object Status -eq Up | Select-Object Name,Status | Format-Table -AutoSize | Out-String; \"--- NordLynx state ---\"; Get-NetAdapter -Name \"NordLynx\" -ErrorAction SilentlyContinue | Select-Object Name,Status | Format-Table -AutoSize | Out-String)",
       "PowerShell(Get-Service *)",
-      "PowerShell(Get-WindowsOptionalFeature *)"
+      "PowerShell(Get-WindowsOptionalFeature *)",
+      "Bash(dotnet *)",
+      "Bash(Select-Object -First 5)",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb -s emulator-5554 shell run-as com.companyname.kirokuu ls -la /data/data/com.companyname.kirokuu/files/ 2>&1)",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb -s emulator-5554 logcat -c; Write-Output \"logcat cleared\")"
     ]
   }
 }
