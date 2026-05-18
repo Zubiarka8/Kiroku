@@ -59,7 +59,7 @@
                     <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="12,8" Margin="6,4">
                         <Border.GestureRecognizers>
                             <TapGestureRecognizer
-                                Command="{Binding Source={x:Reference LangileZerrendaOrriOrokorra}, Path=BindingContext.IrekiEkintzakCommand}"
+                                Command="{Binding Source={x:Reference LangileZerrendaOrriOrokorra}, Path=BindingContext.IrekiEkintzakCommand, x:DataType={x:Null}}"
                                 CommandParameter="{Binding .}" />
                         </Border.GestureRecognizers>
                         <VerticalStackLayout Spacing="4">
