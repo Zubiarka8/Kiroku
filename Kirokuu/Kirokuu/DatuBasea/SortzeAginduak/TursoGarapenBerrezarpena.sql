@@ -19,7 +19,7 @@ CREATE TABLE Erabiltzaileak (
     DNI TEXT NOT NULL UNIQUE DEFAULT '',
     Email TEXT NOT NULL UNIQUE,
     Kargoa TEXT NOT NULL DEFAULT '',
-    Sektorea INTEGER NOT NULL DEFAULT 0,
+    Sektorea TEXT NOT NULL DEFAULT '',
     KargoarenIdentifikatzailea INTEGER NOT NULL DEFAULT 0,
     Rola INTEGER NOT NULL,
     SorkuntzaData TEXT NOT NULL DEFAULT '',

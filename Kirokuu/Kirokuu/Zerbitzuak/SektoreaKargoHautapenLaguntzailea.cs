@@ -1,5 +1,4 @@
 using System.Collections.ObjectModel;
-using System.Linq;
 using Kirokuu.DatuEreduak;
 
 namespace Kirokuu.Zerbitzuak;
@@ -8,13 +7,13 @@ public static class SektoreaKargoHautapenLaguntzailea
 {
     public static void BeteKargoenZerrenda(
         ObservableCollection<HautapenElementua> kargoenAukerak,
-        HautapenElementua? hautatutakoSektorea)
+        string? sektorea)
     {
         kargoenAukerak.Clear();
-        if (hautatutakoSektorea is null)
+        if (string.IsNullOrWhiteSpace(sektorea))
             return;
 
-        foreach (var k in SektoreaKargoarenHiztegia.SortuKargoenZerrenda(hautatutakoSektorea.Identifikatzailea))
+        foreach (var k in SektoreaKargoarenHiztegia.SortuKargoenZerrenda(sektorea))
             kargoenAukerak.Add(k);
     }
 

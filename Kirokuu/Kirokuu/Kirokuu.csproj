@@ -20,6 +20,13 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
+		<!-- MVVMTK0045: partial property source generation ez da MAUI Android/iOS-en aplikatzen (AOT-en partial properties oraindik ez dira erabilgarriak guztiz); abisua kentzen dugu. -->
+		<!-- XC0045: Source={x:Reference Orri}, Path=BindingContext.X eredua ezin da konpilatu (BindingContext object da); runtime fallback erabiltzen da. -->
+		<NoWarn>$(NoWarn);MVVMTK0045;XC0045</NoWarn>
+
+		<!-- XAMLC bindings Source= dutenei tipo-egiaztapena konpilazio-denboran (XC0025). -->
+		<MauiEnableXamlCBindingWithSourceCompilation>true</MauiEnableXamlCBindingWithSourceCompilation>
+
 		<!-- Display name -->
 		<ApplicationTitle>Kirokuu</ApplicationTitle>
 

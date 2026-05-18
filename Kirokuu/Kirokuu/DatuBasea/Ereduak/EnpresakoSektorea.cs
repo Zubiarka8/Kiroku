@@ -7,3 +7,10 @@ public enum EnpresakoSektorea
     Marketina = 2,
     Salmentak = 3
 }
+
+public static class SektoreIzenak
+{
+    public const string Finantzak = "Finantzak";
+    public const string Marketina = "Marketina";
+    public const string Salmentak = "Salmentak";
+}

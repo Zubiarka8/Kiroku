@@ -10,6 +10,8 @@ public sealed class ErabiltzaileLaburpena
 
     public string Posta { get; set; } = string.Empty;
 
+    public string Sektorea { get; set; } = string.Empty;
+
     public int Aktiboa { get; set; } = 1;
 
     public string AktiboTestua => Aktiboa != 0 ? "Aktibo" : "Desaktibatuta";

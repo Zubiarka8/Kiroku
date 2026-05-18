@@ -19,7 +19,6 @@ public sealed class Erabiltzailea
     public string Abizena2 { get; set; } = string.Empty;
 
     [NotNull, Indexed(Unique = true)]
-    [Column("DNI")]
     public string DNI { get; set; } = string.Empty;
 
     [NotNull, Indexed(Unique = true)]
@@ -29,10 +28,9 @@ public sealed class Erabiltzailea
     [NotNull]
     public string Kargoa { get; set; } = string.Empty;
 
-    [Column("Sektorea")]
-    public int SektorearenIdentifikatzailea { get; set; }
+    [NotNull, Column("Sektorea")]
+    public string Sektorea { get; set; } = string.Empty;
 
-    [Column("KargoarenIdentifikatzailea")]
     public int KargoarenIdentifikatzailea { get; set; }
 
     public int Rola { get; set; }
@@ -40,16 +38,13 @@ public sealed class Erabiltzailea
     public int Aktiboa { get; set; } = 1;
 
     [NotNull]
-    [Column("SorkuntzaData")]
     public string SorkuntzaData { get; set; } = string.Empty;
 
     [NotNull]
     public string Pasahitza { get; set; } = string.Empty;
 
-    [Column("SaioHasieraSaiakerak")]
     public int SaioHasieraSaiakerak { get; set; }
 
-    [Column("SaioaBlokeoaAmaieraUtc")]
     public string? SaioaBlokeoaAmaieraUtc { get; set; }
 
 }

@@ -5,45 +5,37 @@ namespace Kirokuu.Zerbitzuak;
 
 public static class SektoreaKargoarenHiztegia
 {
-    private static readonly HautapenElementua[] SektoreenZerrenda =
+    private static readonly string[] SektoreenZerrenda =
     {
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Finantzak, Etiketa = "Finantzak" },
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Marketina, Etiketa = "Marketina" },
-        new HautapenElementua { Identifikatzailea = (int)EnpresakoSektorea.Salmentak, Etiketa = "Salmentak" }
+        SektoreIzenak.Finantzak,
+        SektoreIzenak.Marketina,
+        SektoreIzenak.Salmentak
     };
 
-    public static IReadOnlyList<HautapenElementua> SortuSektoreenZerrenda() => SektoreenZerrenda;
+    public static IReadOnlyList<string> SortuSektoreenZerrenda() => SektoreenZerrenda;
 
-    public static string LortuSektorearenEtiketa(int sektorearenIdentifikatzailea)
+    public static IReadOnlyList<HautapenElementua> SortuKargoenZerrenda(string? sektorea)
     {
-        foreach (var s in SektoreenZerrenda)
-        {
-            if (s.Identifikatzailea == sektorearenIdentifikatzailea)
-                return s.Etiketa;
-        }
+        if (string.IsNullOrWhiteSpace(sektorea))
+            return [];
 
-        return string.Empty;
-    }
-
-    public static IReadOnlyList<HautapenElementua> SortuKargoenZerrenda(int sektorearenIdentifikatzailea)
-    {
-        return (EnpresakoSektorea)sektorearenIdentifikatzailea switch
+        return sektorea switch
         {
-            EnpresakoSektorea.Finantzak =>
+            SektoreIzenak.Finantzak =>
             [
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Kontularia, Etiketa = "Kontularia" },
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.FinantzaAnalista, Etiketa = "Finantza analista" },
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Auditorra, Etiketa = "Auditatzailea" },
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.AholkulariFiskala, Etiketa = "Zerga aholkularia" }
             ],
-            EnpresakoSektorea.Marketina =>
+            SektoreIzenak.Marketina =>
             [
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.KomunitateKudeatzailea, Etiketa = "Komunitate kudeatzailea" },
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.DiseinatzaileGrafikoa, Etiketa = "Diseinu grafikoa" },
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.SeoEspezialista, Etiketa = "SEO espezialista" },
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Copywriter, Etiketa = "Idazle sortzailea" }
             ],
-            EnpresakoSektorea.Salmentak =>
+            SektoreIzenak.Salmentak =>
             [
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.Komertziala, Etiketa = "Komertziala" },
                 new HautapenElementua { Identifikatzailea = (int)EnpresakoLangileKargoa.AccountManager, Etiketa = "Kontu kudeatzailea" },
@@ -54,17 +46,17 @@ public static class SektoreaKargoarenHiztegia
         };
     }
 
-    public static EnpresakoSektorea? LortuSektoreaKargoarentzat(EnpresakoLangileKargoa kargo)
+    public static string? LortuSektoreaKargoarentzat(EnpresakoLangileKargoa kargo)
     {
         return kargo switch
         {
             EnpresakoLangileKargoa.Kontularia or EnpresakoLangileKargoa.FinantzaAnalista or EnpresakoLangileKargoa.Auditorra
-                or EnpresakoLangileKargoa.AholkulariFiskala => EnpresakoSektorea.Finantzak,
+                or EnpresakoLangileKargoa.AholkulariFiskala => SektoreIzenak.Finantzak,
             EnpresakoLangileKargoa.KomunitateKudeatzailea or EnpresakoLangileKargoa.DiseinatzaileGrafikoa
-                or EnpresakoLangileKargoa.SeoEspezialista or EnpresakoLangileKargoa.Copywriter => EnpresakoSektorea.Marketina,
+                or EnpresakoLangileKargoa.SeoEspezialista or EnpresakoLangileKargoa.Copywriter => SektoreIzenak.Marketina,
             EnpresakoLangileKargoa.Komertziala or EnpresakoLangileKargoa.AccountManager or EnpresakoLangileKargoa.SalmentenArduraduna
-                or EnpresakoLangileKargoa.BezeroArreta => EnpresakoSektorea.Salmentak,
-            EnpresakoLangileKargoa.AdministratzaileSistema => EnpresakoSektorea.Finantzak,
+                or EnpresakoLangileKargoa.BezeroArreta => SektoreIzenak.Salmentak,
+            EnpresakoLangileKargoa.AdministratzaileSistema => SektoreIzenak.Finantzak,
             _ => null
         };
     }
@@ -74,9 +66,9 @@ public static class SektoreaKargoarenHiztegia
         if (kargo == EnpresakoLangileKargoa.AdministratzaileSistema)
             return "Sistema administratzailea";
 
-        foreach (var sektorea in new[] { EnpresakoSektorea.Finantzak, EnpresakoSektorea.Marketina, EnpresakoSektorea.Salmentak })
+        foreach (var sektorea in SektoreenZerrenda)
         {
-            foreach (var el in SortuKargoenZerrenda((int)sektorea))
+            foreach (var el in SortuKargoenZerrenda(sektorea))
             {
                 if (el.Identifikatzailea == (int)kargo)
                     return el.Etiketa;
@@ -86,35 +78,34 @@ public static class SektoreaKargoarenHiztegia
         return string.Empty;
     }
 
-    public static bool SektoreaEtaKargoarenIdentifikatzaileakBaliozkoa(int sektorearenIdentifikatzailea, int kargoarenIdentifikatzailea) =>
-        sektorearenIdentifikatzailea > 0 && kargoarenIdentifikatzailea > 0 &&
-        KargoakSektorearekinBatDator(sektorearenIdentifikatzailea, kargoarenIdentifikatzailea);
+    public static bool SektoreaEtaKargoarenIdentifikatzaileakBaliozkoa(string? sektorea, int kargoarenIdentifikatzailea) =>
+        !string.IsNullOrWhiteSpace(sektorea) && kargoarenIdentifikatzailea > 0 &&
+        KargoakSektorearekinBatDator(sektorea, kargoarenIdentifikatzailea);
 
-    public static bool KargoakSektorearekinBatDator(int sektorearenIdentifikatzailea, int kargoarenIdentifikatzailea)
+    public static bool KargoakSektorearekinBatDator(string? sektorea, int kargoarenIdentifikatzailea)
     {
-        if (sektorearenIdentifikatzailea <= 0 || kargoarenIdentifikatzailea <= 0)
+        if (string.IsNullOrWhiteSpace(sektorea) || kargoarenIdentifikatzailea <= 0)
             return false;
 
         var k = (EnpresakoLangileKargoa)kargoarenIdentifikatzailea;
         var esperoDenSektorea = LortuSektoreaKargoarentzat(k);
-        return esperoDenSektorea == (EnpresakoSektorea)sektorearenIdentifikatzailea;
+        return string.Equals(esperoDenSektorea, sektorea, StringComparison.Ordinal);
     }
 
-    public static bool SaiatuLeheneratuTestutik(string? kargoarenTestuaZaharra, ref int sektorearenIdentifikatzailea, ref int kargoarenIdentifikatzailea)
+    public static bool SaiatuLeheneratuTestutik(string? kargoarenTestuaZaharra, ref string? sektorea, ref int kargoarenIdentifikatzailea)
     {
         if (string.IsNullOrWhiteSpace(kargoarenTestuaZaharra) || kargoarenIdentifikatzailea > 0)
             return false;
 
         var garbia = kargoarenTestuaZaharra.Trim();
-        foreach (var sektorea in new[] { EnpresakoSektorea.Finantzak, EnpresakoSektorea.Marketina, EnpresakoSektorea.Salmentak })
+        foreach (var sek in SektoreenZerrenda)
         {
-            foreach (var el in SortuKargoenZerrenda((int)sektorea))
+            foreach (var el in SortuKargoenZerrenda(sek))
             {
                 if (string.Equals(el.Etiketa, garbia, StringComparison.OrdinalIgnoreCase))
                 {
                     kargoarenIdentifikatzailea = el.Identifikatzailea;
-                    sektorearenIdentifikatzailea = (int)(LortuSektoreaKargoarentzat((EnpresakoLangileKargoa)el.Identifikatzailea)
-                        ?? EnpresakoSektorea.EzDaZehaztu);
+                    sektorea = LortuSektoreaKargoarentzat((EnpresakoLangileKargoa)el.Identifikatzailea);
                     return true;
                 }
             }

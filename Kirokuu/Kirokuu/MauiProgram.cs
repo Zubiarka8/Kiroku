@@ -4,7 +4,6 @@ using Kirokuu.ViewModels;
 using Kirokuu.Zerbitzuak;
 using Kirokuu.ZerbitzuakSaioa;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Logging.Debug;
 using Plugin.Maui.Audio;
 using SkiaSharp.Views.Maui.Controls.Hosting;
 using SQLitePCL;
@@ -27,8 +26,8 @@ public static class MauiProgram
 
         if (!InguruneKargatzailea.TursoAldagaiNagusiakDaude())
         {
-            var multzoBidea = typeof(MauiProgram).Assembly.Location;
-            var multzoKarpeta = string.IsNullOrEmpty(multzoBidea) ? null : Path.GetDirectoryName(multzoBidea);
+            // AppContext.BaseDirectory: single-file/AOT seguruan dabil (Assembly.Location hutsik geratzen da → IL3000).
+            var multzoKarpeta = AppContext.BaseDirectory;
             if (!string.IsNullOrEmpty(multzoKarpeta))
                 dotEnvKargatua = InguruneKargatzailea.KargatuDotEnv(multzoKarpeta) || dotEnvKargatua;
         }
@@ -101,7 +100,6 @@ public static class MauiProgram
         builder.Services.AddTransient<TxartelBerriaViewModel>();
         builder.Services.AddTransient<TxartelKanbanViewModel>();
         builder.Services.AddTransient<LangileaTxartelaXehetasunViewModel>();
-        builder.Services.AddTransient<MugimenduakViewModel>();
         builder.Services.AddTransient<TxostenOnarpenXehetasunViewModel>();
         builder.Services.AddTransient<TxostenGuztiekViewModel>();
         builder.Services.AddTransient<AplikazioIrekitzeViewModel>();
@@ -119,7 +117,6 @@ public static class MauiProgram
         builder.Services.AddTransient<AdministratzaileHasieraOrria>();
         builder.Services.AddTransient<ErabiltzaileBerriaOrria>();
         builder.Services.AddTransient<ErabiltzaileXehetasunOrria>();
-        builder.Services.AddTransient<MugimenduakOrria>();
         builder.Services.AddTransient<TxostenOnarpenXehetasunOrria>();
         builder.Services.AddTransient<TxostenGuztiekOrria>();
         builder.Services.AddTransient<AppShell>();

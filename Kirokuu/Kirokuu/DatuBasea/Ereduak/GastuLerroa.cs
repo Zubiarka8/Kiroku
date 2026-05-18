@@ -1,3 +1,4 @@
+using System.Globalization;
 using SQLite;
 
 namespace Kirokuu.DatuBasea.Ereduak;
@@ -6,13 +7,10 @@ namespace Kirokuu.DatuBasea.Ereduak;
 public sealed class GastuLerroa
 {
     [PrimaryKey, AutoIncrement]
-    [Column("GastuId")]
     public int GastuId { get; set; }
 
-    [Column("TxostenId")]
     public int TxostenId { get; set; }
 
-    [Column("KategoriaId")]
     public int KategoriaId { get; set; }
 
     [NotNull]
@@ -35,6 +33,18 @@ public sealed class GastuLerroa
 
     public int KontzeptuId { get; set; }
 
-    [Column("IbilgailuaBeharrezkoa")]
     public int IbilgailuaBeharrezkoa { get; set; }
+
+    [Ignore]
+    public string GastuDataFormateatua =>
+        DateTime.TryParse(GastuData, CultureInfo.InvariantCulture,
+            DateTimeStyles.RoundtripKind | DateTimeStyles.AllowWhiteSpaces, out var data)
+            ? data.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
+            : GastuData;
+
+    [Ignore]
+    public bool KilometroakIkagarri => Kilometroak > 0;
+
+    [Ignore]
+    public bool IbilgailuaBeharrezkoaBai => IbilgailuaBeharrezkoa != 0;
 }

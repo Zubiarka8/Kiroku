@@ -590,4 +590,21 @@
         <Setter Property="InputTransparent" Value="True" />
     </Style>
 
+    <!-- Chip base estiloa egoeraren araberako iragazkientzat. Hautatu gabe: gris arina; hautatuta: chip bakoitzak BackgroundColor eta TextColor sobrescribitzen ditu DataTrigger bidez. -->
+    <Style x:Key="EgoeraTxipEstiloa" TargetType="Border">
+        <Setter Property="Padding" Value="12,6" />
+        <Setter Property="StrokeShape" Value="RoundRectangle 18" />
+        <Setter Property="StrokeThickness" Value="1.5" />
+        <Setter Property="Stroke" Value="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}" />
+        <Setter Property="BackgroundColor" Value="Transparent" />
+        <Setter Property="MinimumHeightRequest" Value="36" />
+    </Style>
+
+    <Style x:Key="EgoeraTxipTestuEstiloa" TargetType="Label">
+        <Setter Property="FontSize" Value="13" />
+        <Setter Property="FontAttributes" Value="Bold" />
+        <Setter Property="VerticalTextAlignment" Value="Center" />
+        <Setter Property="InputTransparent" Value="True" />
+    </Style>
+
 </ResourceDictionary>
