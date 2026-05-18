@@ -43,7 +43,7 @@ public partial class EzarpenakViewModel : ObservableObject
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         foreach (var s in SektoreaKargoarenHiztegia.SortuSektoreenZerrenda())
-            SektoreenAukerak.Add(new HautapenElementua { Etiketa = s });
+            SektoreenAukerak.Add(s);
     }
 
     public ObservableCollection<HautapenElementua> SektoreenAukerak { get; } = new();
@@ -281,7 +281,7 @@ public partial class EzarpenakViewModel : ObservableObject
                 ? AdministratzaileOrganizazioLehenetsia.Sektorea
                 : HautatutakoSektorea!.Etiketa;
             var kargoId = _daAdministratzaileTaldea
-                ? AdministratzaileOrganizazioLehenetsia.KargoarenIdentifikatzailea
+                ? (int)EnpresakoLangileKargoa.AdministratzaileSistema
                 : HautatutakoKargoa!.Identifikatzailea;
 
             await _erabiltzaileZerbitzua.NorberarenProfilaEguneratuAsync(
@@ -525,7 +525,7 @@ public partial class EzarpenakViewModel : ObservableObject
     private void HasieratuSektoreaKargoHautapenak(Erabiltzailea erabiltzailea)
     {
         string? sektoreIzena = erabiltzailea.Sektorea;
-        var kId = erabiltzailea.KargoarenIdentifikatzailea;
+        var kId = 0;
         var kTestua = erabiltzailea.Kargoa;
         if (!SektoreaKargoarenHiztegia.SektoreaEtaKargoarenIdentifikatzaileakBaliozkoa(sektoreIzena, kId))
             SektoreaKargoarenHiztegia.SaiatuLeheneratuTestutik(kTestua, ref sektoreIzena, ref kId);

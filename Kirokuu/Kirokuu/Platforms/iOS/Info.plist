@@ -28,5 +28,9 @@
 	</array>
 	<key>XSAppIconAssets</key>
 	<string>Assets.xcassets/appicon.appiconset</string>
+	<key>NSCameraUsageDescription</key>
+	<string>Ticket argazkiak ateratzeko kamera erabiltzen da.</string>
+	<key>NSPhotoLibraryUsageDescription</key>
+	<string>Ticket argazkiak hautatzeko galeria erabiltzen da.</string>
 </dict>
 </plist>

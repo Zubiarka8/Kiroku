@@ -6,5 +6,7 @@ public static class AdministratzaileOrganizazioLehenetsia
 {
     public const string Sektorea = SektoreIzenak.Finantzak;
 
+    public const int SektorearenIdentifikatzailea = (int)EnpresakoSektorea.Finantzak;
+
     public const int KargoarenIdentifikatzailea = (int)EnpresakoLangileKargoa.AdministratzaileSistema;
 }

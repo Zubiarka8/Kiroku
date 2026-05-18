@@ -8,6 +8,7 @@ using Microsoft.Extensions.Logging;
 using Microsoft.Maui.ApplicationModel;
 using Microsoft.Maui.Media;
 using SQLite;
+using System.IO;
 
 namespace Kirokuu.ViewModels;
 
@@ -86,6 +87,9 @@ public partial class TxartelBerriaViewModel : ObservableObject
     [ObservableProperty]
     private bool _kilometroakIkagarri;
 
+    [ObservableProperty]
+    private string _sailarenEtiketa = string.Empty;
+
     partial void OnHautatutakoKategoriaIndizeaChanged(int value)
     {
         HautatutakoGarraioIndizea = -1;
@@ -155,10 +159,24 @@ public partial class TxartelBerriaViewModel : ObservableObject
         IbilgailuaAukeraketaIkagarri = false;
         KilometroakTestua = string.Empty;
         KilometroakIkagarri = false;
+        SailarenEtiketa = string.Empty;
         _ibilgailuaBeharDuKategoriaIdz = new Dictionary<int, int>();
 
         try
         {
+            var erabiltzaileId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+            if (erabiltzaileId is not null)
+            {
+                var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId.Value).ConfigureAwait(true);
+                if (erabiltzailea is not null)
+                {
+                    var saila = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(erabiltzailea.Sektorea);
+                    SailarenEtiketa = string.IsNullOrEmpty(saila)
+                        ? SektoreaKargoarenHiztegia.LortuSektorearenEtiketa(erabiltzailea.SektorearenIdentifikatzailea)
+                        : saila;
+                }
+            }
+
             var kontzeptuak = await _datuBaseaZerbitzua.ZerrendatuGastuKontzeptuakAsync().ConfigureAwait(true);
             foreach (var k in kontzeptuak)
                 _ibilgailuaBeharDuKategoriaIdz[k.KategoriaId] = k.IbilgailuaBeharDu;
@@ -182,31 +200,177 @@ public partial class TxartelBerriaViewModel : ObservableObject
         }
     }
 
+    private const long ArgazkiGehienezkoTamainaBytes = 10 * 1024 * 1024; // 10 MB
+
     [RelayCommand]
-    private async Task HautatuArgazkia()
+    private async Task HautatuGaleriatikAsync()
     {
         try
         {
+            if (!await EskatuGaleriaBaimenaAsync().ConfigureAwait(true))
+            {
+                ErroreMezua = "Galeria erabiltzeko baimena behar da. Ezarpenetan aktibatu.";
+                return;
+            }
+
             var argazkia = await MediaPicker.Default.PickPhotoAsync(new MediaPickerOptions
             {
                 Title = "Hautatu ticket argazkia"
             }).ConfigureAwait(true);
 
-            if (argazkia is null)
-                return;
-
-            LokalArgazkiBidea = argazkia.FullPath;
-            ArgazkiHautatua = true;
+            await ProzesatuHautatutakoArgazkiaAsync(argazkia).ConfigureAwait(true);
         }
         catch (PermissionException)
         {
             ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
         }
+        catch (FeatureNotSupportedException)
+        {
+            ErroreMezua = "Gailu honek ez du galeria onartzen.";
+        }
         catch (Exception ex)
         {
             ErroreMezua = "Argazkia hautatzean errorea gertatu da.";
-            _logger.LogError(ex, "HautatuArgazkia: errorea.");
+            _logger.LogError(ex, "HautatuGaleriatik: errorea.");
         }
+    }
+
+    [RelayCommand]
+    private async Task AteraKameratikAsync()
+    {
+        try
+        {
+            if (!MediaPicker.Default.IsCaptureSupported)
+            {
+                ErroreMezua = "Gailu honek ez du kamerarik edo ez da onartzen.";
+                return;
+            }
+
+            if (!await EskatuKameraBaimenaAsync().ConfigureAwait(true))
+            {
+                ErroreMezua = "Kamera erabiltzeko baimena behar da. Ezarpenetan aktibatu.";
+                return;
+            }
+
+            var argazkia = await MediaPicker.Default.CapturePhotoAsync(new MediaPickerOptions
+            {
+                Title = "Atera ticket argazkia"
+            }).ConfigureAwait(true);
+
+            await ProzesatuHautatutakoArgazkiaAsync(argazkia).ConfigureAwait(true);
+        }
+        catch (PermissionException)
+        {
+            ErroreMezua = "Baimena ukatu da. Ezarpenetan baimena eman.";
+        }
+        catch (FeatureNotSupportedException)
+        {
+            ErroreMezua = "Gailu honek ez du kamerarik.";
+        }
+        catch (Exception ex)
+        {
+            ErroreMezua = "Argazkia ateratzean errorea gertatu da.";
+            _logger.LogError(ex, "AteraKameratik: errorea.");
+        }
+    }
+
+    private static async Task<bool> EskatuKameraBaimenaAsync()
+    {
+        var egoera = await Permissions.CheckStatusAsync<Permissions.Camera>().ConfigureAwait(true);
+        if (egoera == PermissionStatus.Granted)
+            return true;
+
+        egoera = await Permissions.RequestAsync<Permissions.Camera>().ConfigureAwait(true);
+        return egoera == PermissionStatus.Granted;
+    }
+
+    private static async Task<bool> EskatuGaleriaBaimenaAsync()
+    {
+        if (DeviceInfo.Platform != DevicePlatform.Android)
+            return true;
+
+        PermissionStatus egoera;
+        if (DeviceInfo.Version.Major >= 13)
+        {
+            egoera = await Permissions.CheckStatusAsync<Permissions.Photos>().ConfigureAwait(true);
+            if (egoera == PermissionStatus.Granted)
+                return true;
+
+            egoera = await Permissions.RequestAsync<Permissions.Photos>().ConfigureAwait(true);
+        }
+        else
+        {
+            egoera = await Permissions.CheckStatusAsync<Permissions.StorageRead>().ConfigureAwait(true);
+            if (egoera == PermissionStatus.Granted)
+                return true;
+
+            egoera = await Permissions.RequestAsync<Permissions.StorageRead>().ConfigureAwait(true);
+        }
+
+        return egoera == PermissionStatus.Granted;
+    }
+
+    [RelayCommand]
+    private void KenduArgazkia()
+    {
+        LokalArgazkiBidea = null;
+        ArgazkiHautatua = false;
+        ErroreMezua = null;
+    }
+
+    private async Task ProzesatuHautatutakoArgazkiaAsync(FileResult? argazkia)
+    {
+        if (argazkia is null)
+            return;
+
+        if (string.IsNullOrWhiteSpace(argazkia.FullPath))
+        {
+            ErroreMezua = "Ezin izan da argazkiaren fitxategia irakurri. Saiatu berriro.";
+            return;
+        }
+
+        if (!BalidatuArgazkiFitxategia(argazkia, out var balidazioMezua))
+        {
+            ErroreMezua = balidazioMezua;
+            return;
+        }
+
+        ErroreMezua = null;
+        LokalArgazkiBidea = argazkia.FullPath;
+        ArgazkiHautatua = true;
+        await Toast.Make("Argazkia prest dago. Gorde botoiarekin bidali dezakezu.").Show().ConfigureAwait(true);
+    }
+
+    private static bool BalidatuArgazkiFitxategia(FileResult argazkia, out string? erroreMezua)
+    {
+        var bidea = argazkia.FullPath;
+        var izena = argazkia.FileName ?? Path.GetFileName(bidea);
+        var luzapena = Path.GetExtension(izena);
+        if (string.IsNullOrEmpty(luzapena))
+            luzapena = ".jpg";
+
+        luzapena = luzapena.ToLowerInvariant();
+        if (luzapena is not ".jpg" and not ".jpeg" and not ".png")
+        {
+            erroreMezua = "Formatu onartua: JPEG edo PNG soilik.";
+            return false;
+        }
+
+        if (!File.Exists(bidea))
+        {
+            erroreMezua = "Ezin izan da argazkiaren fitxategia irakurri. Saiatu berriro.";
+            return false;
+        }
+
+        var tamaina = new FileInfo(bidea).Length;
+        if (tamaina > ArgazkiGehienezkoTamainaBytes)
+        {
+            erroreMezua = "Argazkia handiegia da (gehienez 10 MB).";
+            return false;
+        }
+
+        erroreMezua = null;
+        return true;
     }
 
     [RelayCommand]
@@ -262,12 +426,9 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 return;
             }
 
-            var orain = DateTime.UtcNow.ToString("o", System.Globalization.CultureInfo.InvariantCulture);
-            var dataTestua = HautatutakoData.Date.ToString("yyyy-MM-dd", System.Globalization.CultureInfo.InvariantCulture);
-            // GastuData behar du eguna + une honetako ordua, gastua noiz sortu den jasotzeko.
-            var gastuDataOrduarekin = HautatutakoData.Date
-                .Add(DateTime.Now.TimeOfDay)
-                .ToString("yyyy-MM-ddTHH:mm:ss", System.Globalization.CultureInfo.InvariantCulture);
+            var orain = DataOrduaBalioak.DataOrduaOrain();
+            var dataTestua = DataOrduaBalioak.DataOrduaOsatuHautatutakoEguna(HautatutakoData);
+            var gastuDataOrduarekin = dataTestua;
             var kategoriaIzena = KategoriaIzenak[HautatutakoKategoriaIndizea];
 
             var erabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(erabiltzaileId.Value).ConfigureAwait(true);
@@ -277,6 +438,13 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 return;
             }
             var langileDni = erabiltzailea.DNI;
+
+            var sailaGordetzeko = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(erabiltzailea.Sektorea);
+            if (string.IsNullOrEmpty(sailaGordetzeko))
+            {
+                ErroreMezua = "Zure saila ez dago ezarrita. Joan ezarpenetara eta hautatu Finantzak, Marketina edo Salmentak.";
+                return;
+            }
 
             string ticketArgazkiaUrl = string.Empty;
             if (!string.IsNullOrWhiteSpace(LokalArgazkiBidea))
@@ -300,25 +468,6 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 }
             }
 
-            var txostena = new BidaiaTxostena
-            {
-                ErabiltzaileId = erabiltzaileId.Value,
-                LangileDNI = langileDni,
-                Saila = string.Empty,
-                Helmuga = kategoriaIzena,
-                BidaiaHelburua = deskribapenaGarbia,
-                HasieraData = dataTestua,
-                AmaieraData = dataTestua,
-                PertsonaKopurua = 1,
-                JasoAurrerakina = 0,
-                Egoera = TxostenEgoera.Zain,
-                AdminOharra = null,
-                MonetaKodea = "EUR",
-                SorkuntzaData = orain,
-                AzkenEguneraketa = orain,
-                DataAprobazioa = string.Empty
-            };
-
             var garraioTestua = IbilgailuaAukeraketaIkagarri
                 ? GarraioBideaBalioak.AukeraEstadioak[HautatutakoGarraioIndizea]
                 : string.Empty;
@@ -332,6 +481,26 @@ public partial class TxartelBerriaViewModel : ObservableObject
                     out kilometroak);
             }
 
+            var txostena = new BidaiaTxostena
+            {
+                ErabiltzaileId = erabiltzaileId.Value,
+                LangileDNI = langileDni,
+                Saila = sailaGordetzeko,
+                Helmuga = kategoriaIzena,
+                BidaiaHelburua = deskribapenaGarbia,
+                HasieraData = dataTestua,
+                AmaieraData = dataTestua,
+                PertsonaKopurua = 1,
+                JasoAurrerakina = 0,
+                Egoera = TxostenEgoera.Zain,
+                AdminOharra = null,
+                EmpresaIbilgailua = GarraioBideaBalioak.EnpresakoIbilgailuaBandera(garraioTestua),
+                MonetaKodea = "EUR",
+                SorkuntzaData = orain,
+                AzkenEguneraketa = orain,
+                DataAprobazioa = string.Empty
+            };
+
             var gastuLerroa = new GastuLerroa
             {
                 KategoriaId = HautatutakoKategoriaIndizea + 1,
@@ -341,7 +510,8 @@ public partial class TxartelBerriaViewModel : ObservableObject
                 Kilometroak = kilometroak,
                 TicketArgazkia = ticketArgazkiaUrl,
                 Oharrak = deskribapenaGarbia,
-                KontzeptuId = HautatutakoKategoriaIndizea + 1
+                KontzeptuId = HautatutakoKategoriaIndizea + 1,
+                IbilgailuaBeharrezkoa = IbilgailuaAukeraketaIkagarri ? 1 : 0
             };
 
             await _datuBaseaZerbitzua

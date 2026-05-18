@@ -64,7 +64,8 @@ else
   done
 fi
 
-readonly OBJ_ANDROID="${KIROKUU_ROOT}/Kirokuu/obj/Debug/${TFM}"
+readonly KIROKUU_PROIEKTU_KARPETA="${KIROKUU_ROOT}/Kirokuu"
+readonly OBJ_ANDROID="${KIROKUU_PROIEKTU_KARPETA}/obj/Debug/${TFM}"
 
 if [[ "${KIROKUU_LOGCAT}" == "1" ]]; then
   echo "Logcat garbitzen (${emulator_serial})..."
@@ -74,12 +75,16 @@ fi
 echo "Konpilazio-zerbitzariak ixten (fitxategi-loturak askatzeko)..."
 dotnet build-server shutdown 2>/dev/null || true
 
-echo "Garbitzen: ${CSPROJ}"
 export MSBUILDDISABLENODEREUSE=1
-dotnet clean "${CSPROJ}" -f "${TFM}" -v minimal
+
+echo "obj/bin ezabatzen (${TFM}, XARDF7023 / obj hondatua saihesteko)..."
+rm -rf "${KIROKUU_PROIEKTU_KARPETA}/obj" "${KIROKUU_PROIEKTU_KARPETA}/bin"
+
+echo "Garbitzen (dotnet clean): ${CSPROJ}"
+dotnet clean "${CSPROJ}" -f "${TFM}" -v minimal || true
 
 if [[ -d "${OBJ_ANDROID}" ]]; then
-  echo "obj ${TFM} ezabatzen (XARLP7024 / lp loturak saihesteko)..."
+  echo "obj ${TFM} berriz ezabatzen (loturak)..."
   rm -rf "${OBJ_ANDROID}"
 fi
 

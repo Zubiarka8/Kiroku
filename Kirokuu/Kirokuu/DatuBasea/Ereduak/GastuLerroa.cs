@@ -1,4 +1,4 @@
-using System.Globalization;
+using Kirokuu.Zerbitzuak;
 using SQLite;
 
 namespace Kirokuu.DatuBasea.Ereduak;
@@ -36,17 +36,13 @@ public sealed class GastuLerroa
     public int IbilgailuaBeharrezkoa { get; set; }
 
     [Ignore]
-    public string GastuDataFormateatua =>
-        DateTime.TryParse(GastuData, CultureInfo.InvariantCulture,
-            DateTimeStyles.RoundtripKind | DateTimeStyles.AllowWhiteSpaces, out var data)
-            ? data.ToString("dd/MM/yyyy", CultureInfo.InvariantCulture)
-            : GastuData;
+    public string GastuDataFormateatua => DataOrduaBalioak.DataOrduaBistaratu(GastuData);
 
     [Ignore]
     public bool KilometroakIkagarri => Kilometroak > 0;
 
     [Ignore]
-    public bool IbilgailuaBeharrezkoaBai => IbilgailuaBeharrezkoa != 0;
+    public bool IbilgailuaBeharrezkoaBai => IbilgailuaBeharrezkoa == 1;
 
     [Ignore]
     public bool IrudiaDauka => !string.IsNullOrWhiteSpace(TicketArgazkia);

@@ -16,6 +16,25 @@ public sealed class BidaiaTxostena
     [NotNull]
     public string Saila { get; set; } = string.Empty;
 
+    [Ignore]
+    public int SailarenIdentifikatzailea
+    {
+        get => Saila switch
+        {
+            "Finantzak" => (int)EnpresakoSektorea.Finantzak,
+            "Marketina" => (int)EnpresakoSektorea.Marketina,
+            "Salmentak" => (int)EnpresakoSektorea.Salmentak,
+            _ => (int)EnpresakoSektorea.EzDaZehaztu
+        };
+        set => Saila = value switch
+        {
+            (int)EnpresakoSektorea.Finantzak => "Finantzak",
+            (int)EnpresakoSektorea.Marketina => "Marketina",
+            (int)EnpresakoSektorea.Salmentak => "Salmentak",
+            _ => string.Empty
+        };
+    }
+
     [NotNull]
     public string Helmuga { get; set; } = string.Empty;
 

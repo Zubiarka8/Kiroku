@@ -45,7 +45,6 @@ public sealed class ShellFitxaEraikitzailea
         {
             tabBar.Items.Add(SortuLangileOrria<HasieraOrria>("Hasiera", IkonoFontIturria.FitxaHasieraLangile()));
             tabBar.Items.Add(SortuLangileOrria<NireTxartelakOrria>("Nire txartelak", IkonoFontIturria.FitxaNireTxartelak()));
-            tabBar.Items.Add(SortuLangileOrria<TxartelKanbanOrria>("Txartelak", IkonoFontIturria.FitxaTxartelKanban()));
             tabBar.Items.Add(SortuEzarpenak());
         }
 
