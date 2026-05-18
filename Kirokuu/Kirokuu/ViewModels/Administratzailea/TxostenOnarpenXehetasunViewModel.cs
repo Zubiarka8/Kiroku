@@ -178,7 +178,8 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
             JasoAurrerakinaIkagarri = txostena.JasoAurrerakina > 0;
             IbilgailuaEremuakIkagarri = garraioPribatua || txostena.EmpresaIbilgailua == 1 || kilometroMax > 0
                 || (ibilgailuaBeharDu && !garraioPublikoaHautatua);
-            IbilgailuaEremuakEditagarri = OnarpenEkintzakIkagarri && IbilgailuaEremuakIkagarri;
+            // Admin-ek ezin du langilearen txosteneko ibilgailua/km aldatu: ikusi bakarrik.
+            IbilgailuaEremuakEditagarri = false;
             EnpresakoIbilgailua = txostena.EmpresaIbilgailua == 1
                 || lerroak.Any(l => GarraioBideaBalioak.DaEnpresakoIbilgailua(l.GarraioBidea));
             KilometroakTestua = kilometroMax > 0

@@ -79,7 +79,10 @@
       "Bash(dotnet *)",
       "Bash(Select-Object -First 5)",
       "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb -s emulator-5554 shell run-as com.companyname.kirokuu ls -la /data/data/com.companyname.kirokuu/files/ 2>&1)",
-      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb -s emulator-5554 logcat -c; Write-Output \"logcat cleared\")"
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb -s emulator-5554 logcat -c; Write-Output \"logcat cleared\")",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb -s emulator-5554 logcat -c; $pid_app = & $adb -s emulator-5554 shell pidof com.companyname.kirokuu; Write-Output \"logcat cleared; app PID=$pid_app\")",
+      "PowerShell($adb = \"$env:LOCALAPPDATA\\\\Android\\\\Sdk\\\\platform-tools\\\\adb.exe\"; & $adb -s emulator-5554 shell run-as com.companyname.kirokuu find /data/data/com.companyname.kirokuu -name \"debug-d4d7d2.log\" 2>&1; & $adb -s emulator-5554 shell run-as com.companyname.kirokuu ls /data/data/com.companyname.kirokuu/files/ 2>&1)",
+      "Bash(curl *)"
     ]
   }
 }
