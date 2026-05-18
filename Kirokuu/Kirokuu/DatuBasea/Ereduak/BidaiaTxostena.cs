@@ -6,10 +6,8 @@ namespace Kirokuu.DatuBasea.Ereduak;
 public sealed class BidaiaTxostena
 {
     [PrimaryKey, AutoIncrement]
-    [Column("TxostenId")]
     public int TxostenId { get; set; }
 
-    [Column("ErabiltzaileId")]
     public int ErabiltzaileId { get; set; }
 
     [NotNull]
@@ -44,37 +42,33 @@ public sealed class BidaiaTxostena
     public string BidaiaHelburua { get; set; } = string.Empty;
 
     [NotNull]
-    public string  HasieraData { get; set; }
+    public string HasieraData { get; set; } = string.Empty;
 
     [NotNull]
-    public string  AmaieraData { get; set; }
+    public string AmaieraData { get; set; } = string.Empty;
 
     public int PertsonaKopurua { get; set; }
 
-    [Column("JasoAurrerakina")]
-    public int JasoAurrekina { get; set; }
+    public int JasoAurrerakina { get; set; }
 
     [NotNull]
     public string Egoera { get; set; } = string.Empty;
 
     public string? AdminOharra { get; set; }
 
-    [Column("AdminDNI")]
     public string? AdminDNI { get; set; }
 
-    [Column("EmpresaIbilgailua")]
     public int EmpresaIbilgailua { get; set; }
 
     [NotNull]
-    public string MonetaKodea { get; set; } = string.Empty;
+    public string MonetaKodea { get; set; } = "EUR";
 
     [NotNull]
-    public string  SorkuntzaData { get; set; }
+    public string SorkuntzaData { get; set; } = string.Empty;
 
     [NotNull]
-    [Column("AzkenEguneraketa")]
-    public string  AzkenEguneratzea { get; set; }
+    public string AzkenEguneraketa { get; set; } = string.Empty;
 
     [NotNull]
-    public string  DataAprobazioa { get; set; }
+    public string DataAprobazioa { get; set; } = string.Empty;
 }

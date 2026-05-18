@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:datu="clr-namespace:Kirokuu.DatuEreduak"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             xmlns:kiro="clr-namespace:Kirokuu"
+             x:Class="Kirokuu.Pages.LangileZerrendaOrria"
+             x:Name="LangileZerrendaOrriOrokorra"
+             x:DataType="vm:LangileZerrendaViewModel"
+             Title="Erabiltzaileak">
+
+    <ContentPage.ToolbarItems>
+        <ToolbarItem Text="Berria"
+                     Command="{Binding LangileBerriaIrekiCommand}"
+                     Order="Primary"
+                     Priority="0" />
+    </ContentPage.ToolbarItems>
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing"
+                                        Command="{Binding AgertzenDeneanCommand}" />
+    </ContentPage.Behaviors>
+
+    <Grid RowDefinitions="Auto,Auto,Auto,*" Padding="0" RowSpacing="0">
+        <ActivityIndicator Grid.Row="0"
+                           IsRunning="{Binding IsKargatzean}"
+                           IsVisible="{Binding IsKargatzean}"
+                           HorizontalOptions="Center"
+                           Margin="0,12" />
+
+        <Label Grid.Row="1"
+               Text="{Binding ErroreMezua}"
+               Style="{StaticResource ErroreEtiketaEstiloa}"
+               Margin="16,8" />
+
+        <SearchBar x:Name="LangileenBilaketa"
+                   Grid.Row="2"
+                   Placeholder="Bilatu izen, abizen edo posta..."
+                   Text="{Binding BilaketaTestua, Mode=TwoWay}"
+                   Margin="8,0" />
+
+        <CollectionView Grid.Row="3"
+                        ItemsSource="{Binding Langileak}"
+                        Margin="8,0"
+                        VerticalScrollBarVisibility="Always">
+            <CollectionView.EmptyView>
+                <VerticalStackLayout Padding="24" Spacing="12" VerticalOptions="Center">
+                    <Label Style="{StaticResource IkonoHandiaEstiloa}"
+                           Text="{x:Static kiro:IkonoFontIturria.HutsikIkonoGlifoa}" />
+                    <Label Text="{Binding HutsaMezua}"
+                           HorizontalTextAlignment="Center"
+                           Style="{StaticResource TestuBigarrenMailaEstiloa}" />
+                </VerticalStackLayout>
+            </CollectionView.EmptyView>
+            <CollectionView.ItemTemplate>
+                <DataTemplate x:DataType="datu:ErabiltzaileLaburpena">
+                    <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="12,8" Margin="6,4">
+                        <Border.GestureRecognizers>
+                            <TapGestureRecognizer
+                                Command="{Binding Source={x:Reference LangileZerrendaOrriOrokorra}, Path=BindingContext.IrekiEkintzakCommand}"
+                                CommandParameter="{Binding .}" />
+                        </Border.GestureRecognizers>
+                        <VerticalStackLayout Spacing="4">
+                            <HorizontalStackLayout Spacing="6">
+                                <Label Text="{Binding Izena}" FontAttributes="Bold" />
+                                <Label Text="{Binding Abizena}" FontAttributes="Bold" />
+                            </HorizontalStackLayout>
+                            <Label Text="{Binding Posta}"
+                                   FontSize="13"
+                                   Style="{StaticResource TestuBigarrenMailaEstiloa}" />
+                            <Label Text="{Binding AktiboTestua}"
+                                   FontSize="12"
+                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                        </VerticalStackLayout>
+                    </Border>
+                </DataTemplate>
+            </CollectionView.ItemTemplate>
+        </CollectionView>
+    </Grid>
+</ContentPage>

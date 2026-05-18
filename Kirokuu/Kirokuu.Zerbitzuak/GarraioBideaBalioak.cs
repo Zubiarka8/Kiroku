@@ -8,7 +8,7 @@ public static class GarraioBideaBalioak
 
     public const string GarraioPublikoa = "Garraio publikoa";
 
-    public static IReadOnlyList<string> AukeraEstadioak { get; } = new[]
+    public static IList<string> AukeraEstadioak { get; } = new List<string>
     {
         EnpresakoIbilgailua,
         NorberarenIbilgailua,

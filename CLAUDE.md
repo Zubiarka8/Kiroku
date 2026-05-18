@@ -110,6 +110,8 @@ Never create files outside this structure without asking first.
 - Singleton: `ArgazkiIgotzeZerbitzua`, `KredentzialEgiaztapenZerbitzua`, `PasahitzaZerbitzua`, `DatuBaseaZerbitzua`, `ErabiltzaileZerbitzua`, `SaioaGordetzeZerbitzua`, `AutorizazioZerbitzua`, `BerrespenLeihoZerbitzua`, `ShellFitxaEraikitzailea`, `INabigazioNagusia`
 - Transient: all ViewModels and Pages
 
+**File size limit:** every source file (`.cs`, `.xaml`) must have between **200 and 400 lines of code** maximum, excluding comments and blank lines. If a file grows beyond 400 LOC, split it into partial classes, extract responsibilities into helpers/services, or move related logic to a new file. Models and DTOs are exempt only if they are pure data with no logic.
+
 ---
 
 ## Role-Based Navigation

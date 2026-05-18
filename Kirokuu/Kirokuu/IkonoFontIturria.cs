@@ -25,8 +25,6 @@ public static class IkonoFontIturria
 
     public static FontImageSource FitxaErabiltzaileZerrenda(double tamaina = 26) => Sortu("\ue7ef", tamaina);
 
-    public static FontImageSource FitxaMugimenduak(double tamaina = 26) => Sortu("\ue8d4", tamaina);
-
     public static FontImageSource FitxaTxostenGuztiak(double tamaina = 26) => Sortu("\ue241", tamaina);
 
     public static FontImageSource FitxaEzarpenak(double tamaina = 26) => Sortu("\ue8b8", tamaina);

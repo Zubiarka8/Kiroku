@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<ContentPage xmlns="http://schemas.microsoft.com/dotnet/2021/maui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2009/xaml"
+             xmlns:vm="clr-namespace:Kirokuu.ViewModels"
+             xmlns:kiro="clr-namespace:Kirokuu"
+             xmlns:toolkit="http://schemas.microsoft.com/dotnet/2022/maui/toolkit"
+             x:Class="Kirokuu.Pages.TxartelBerriaOrria"
+             x:DataType="vm:TxartelBerriaViewModel"
+             Title="Gastu berria">
+
+    <ContentPage.Behaviors>
+        <toolkit:EventToCommandBehavior EventName="Appearing"
+                                        Command="{Binding AgertzenDeneanCommand}" />
+    </ContentPage.Behaviors>
+
+    <ScrollView VerticalScrollBarVisibility="Always">
+        <VerticalStackLayout Padding="16" Spacing="16">
+
+            <ActivityIndicator IsRunning="{Binding IsKargatzean}"
+                               IsVisible="{Binding IsKargatzean}"
+                               HorizontalOptions="Center" />
+
+            <Label Text="{Binding ErroreMezua}"
+                   Style="{StaticResource ErroreEtiketaEstiloa}"
+                   IsVisible="{Binding ErroreMezua, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
+
+            <VerticalStackLayout Spacing="4"
+                                 IsVisible="{Binding SailarenEtiketa, Converter={toolkit:IsStringNotNullOrEmptyConverter}}">
+                <Label Text="Saila" FontAttributes="Bold" />
+                <Label Text="{Binding SailarenEtiketa}"
+                       FontSize="15" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Kategoria" FontAttributes="Bold" />
+                <Picker x:Name="KategoriaHautapena"
+                        ItemsSource="{Binding KategoriaIzenak}"
+                        SelectedIndex="{Binding HautatutakoKategoriaIndizea}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout x:Name="GarraioAukeraketaBlokea"
+                                 Spacing="4"
+                                 IsVisible="{Binding IbilgailuaAukeraketaIkagarri}">
+                <Label Text="Nola joan zinen?" FontAttributes="Bold" />
+                <Picker x:Name="GarraioModuarenHautapena"
+                        ItemsSource="{Binding GarraioAukerenTestuak}"
+                        SelectedIndex="{Binding HautatutakoGarraioIndizea}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4"
+                                 IsVisible="{Binding KilometroakIkagarri}">
+                <Label Text="Kilometroak (km)" FontAttributes="Bold" />
+                <Entry Text="{Binding KilometroakTestua}"
+                       Keyboard="Numeric"
+                       Placeholder="0"
+                       ReturnType="Next" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Zenbatekoa (€)" FontAttributes="Bold" />
+                <Entry Text="{Binding ZenbatekoaTestua}"
+                       Keyboard="Numeric"
+                       Placeholder="0,00"
+                       ReturnType="Next" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Data" FontAttributes="Bold" />
+                <DatePicker Date="{Binding HautatutakoData}"
+                            MaximumDate="{Binding Source={x:Static vm:TxartelBerriaViewModel.GaurkoData}}" />
+            </VerticalStackLayout>
+
+            <VerticalStackLayout Spacing="4">
+                <Label Text="Deskribapena" FontAttributes="Bold" />
+                <Editor Text="{Binding Deskribapena}"
+                        Placeholder="Gastuaren deskribapena idatzi..."
+                        MinimumHeightRequest="80"
+                        AutoSize="TextChanges" />
+            </VerticalStackLayout>
+
+            <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="16">
+                <VerticalStackLayout Spacing="12">
+                    <VerticalStackLayout Spacing="4">
+                        <Label Text="Ticket argazkia"
+                               FontAttributes="Bold"
+                               FontSize="16" />
+                        <Label Text="Aukerakoa. Atera argazkia edo hautatu galeriatik (JPEG/PNG, gehienez 10 MB)."
+                               FontSize="12"
+                               LineBreakMode="WordWrap"
+                               TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
+                    </VerticalStackLayout>
+
+                    <VerticalStackLayout Spacing="8"
+                                         HorizontalOptions="Center"
+                                         IsVisible="{Binding ArgazkiHautatua, Converter={toolkit:InvertedBoolConverter}}">
+                        <Border StrokeThickness="1.5"
+                                Stroke="{AppThemeBinding Light={StaticResource MugaArinaArgia}, Dark={StaticResource MugaArinaIluna}}"
+                                StrokeShape="RoundRectangle 12"
+                                BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray950}}"
+                                Padding="24,28"
+                                HorizontalOptions="Fill">
+                            <VerticalStackLayout Spacing="8" HorizontalOptions="Center">
+                                <Label Style="{StaticResource IkonoHandiaEstiloa}"
+                                       Text="{x:Static kiro:IkonoFontIturria.ArgazkiaIkonoGlifoa}"
+                                       HorizontalOptions="Center"
+                                       SemanticProperties.Description="Argazki ikonoa" />
+                                <Label Text="Oraindik ez da argazkirik gehitu"
+                                       FontAttributes="Bold"
+                                       FontSize="14"
+                                       HorizontalTextAlignment="Center" />
+                                <Label Text="Behean aukeratu galeria edo kamera"
+                                       FontSize="12"
+                                       HorizontalTextAlignment="Center"
+                                       TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
+                            </VerticalStackLayout>
+                        </Border>
+                    </VerticalStackLayout>
+
+                    <Border IsVisible="{Binding ArgazkiHautatua}"
+                            StrokeThickness="0"
+                            StrokeShape="RoundRectangle 12"
+                            BackgroundColor="{AppThemeBinding Light={StaticResource Gray100}, Dark={StaticResource Gray950}}"
+                            Padding="8">
+                        <VerticalStackLayout Spacing="8">
+                            <Image Source="{Binding LokalArgazkiBidea}"
+                                   HeightRequest="200"
+                                   Aspect="AspectFit"
+                                   HorizontalOptions="Center" />
+                            <Label Text="Aurrebista — gorde botoiarekin igoko da"
+                                   Style="{StaticResource ArrakastaMezuEstiloa}"
+                                   FontSize="12"
+                                   HorizontalTextAlignment="Center" />
+                        </VerticalStackLayout>
+                    </Border>
+
+                    <Grid ColumnDefinitions="*,*" ColumnSpacing="10">
+                        <Button Grid.Column="0"
+                                Text="Galeria"
+                                Command="{Binding HautatuGaleriatikCommand}"
+                                Style="{StaticResource BotoiBigarrenMailakoaEstiloa}">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="MaterialIcons"
+                                                 Glyph="{x:Static kiro:IkonoFontIturria.GaleriaIkonoGlifoa}"
+                                                 Size="20"
+                                                 Color="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+                            </Button.ImageSource>
+                        </Button>
+                        <Button Grid.Column="1"
+                                Text="Kamera"
+                                Command="{Binding AteraKameratikCommand}"
+                                Style="{StaticResource BotoiBigarrenMailakoaEstiloa}">
+                            <Button.ImageSource>
+                                <FontImageSource FontFamily="MaterialIcons"
+                                                 Glyph="{x:Static kiro:IkonoFontIturria.KameraIkonoGlifoa}"
+                                                 Size="20"
+                                                 Color="{AppThemeBinding Light={StaticResource Gray900}, Dark={StaticResource White}}" />
+                            </Button.ImageSource>
+                        </Button>
+                    </Grid>
+
+                    <Button Text="Argazkia kendu"
+                            Command="{Binding KenduArgazkiaCommand}"
+                            IsVisible="{Binding ArgazkiHautatua}"
+                            Style="{StaticResource BotoiArriskuEstiloa}"
+                            Margin="0,0,0,0" />
+                </VerticalStackLayout>
+            </Border>
+
+            <Grid ColumnDefinitions="*,*" ColumnSpacing="8" Margin="0,8,0,0">
+                <Button Grid.Column="0"
+                        Text="Ezeztatu"
+                        Command="{Binding EzeztatuCommand}"
+                        Style="{StaticResource BotoiBigarrenMailakoaEstiloa}" />
+                <Button Grid.Column="1"
+                        Text="Gorde"
+                        Command="{Binding GordeCommand}"
+                        IsEnabled="{Binding IsKargatzean, Converter={toolkit:InvertedBoolConverter}}" />
+            </Grid>
+
+        </VerticalStackLayout>
+    </ScrollView>
+</ContentPage>

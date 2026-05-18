@@ -6,13 +6,11 @@ namespace Kirokuu.DatuBasea.Ereduak;
 public sealed class AuditoretzaLoga
 {
     [PrimaryKey, AutoIncrement]
-    [Column("LogId")]
     public int LogId { get; set; }
 
     [Column("TxostenId")]
     public int? TxostenId { get; set; }
 
-    [Column("ErabiltzaileId")]
     public int ErabiltzaileId { get; set; }
 
     [Column("LangileId")]
@@ -22,7 +20,7 @@ public sealed class AuditoretzaLoga
     public string Ekintza { get; set; } = string.Empty;
 
     [NotNull]
-    public DateTime  DataOrdua { get; set; }
+    public DateTime DataOrdua { get; set; }
 
     [NotNull]
     public string Deskribapena { get; set; } = string.Empty;

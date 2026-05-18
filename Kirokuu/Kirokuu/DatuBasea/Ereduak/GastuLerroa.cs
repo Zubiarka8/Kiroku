@@ -7,13 +7,10 @@ namespace Kirokuu.DatuBasea.Ereduak;
 public sealed class GastuLerroa
 {
     [PrimaryKey, AutoIncrement]
-    [Column("GastuId")]
     public int GastuId { get; set; }
 
-    [Column("TxostenId")]
     public int TxostenId { get; set; }
 
-    [Column("KategoriaId")]
     public int KategoriaId { get; set; }
 
     [NotNull]
@@ -36,7 +33,6 @@ public sealed class GastuLerroa
 
     public int KontzeptuId { get; set; }
 
-    [Column("IbilgailuaBeharrezkoa")]
     public int IbilgailuaBeharrezkoa { get; set; }
 
     [Ignore]

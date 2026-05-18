@@ -6,7 +6,6 @@ namespace Kirokuu.DatuBasea.Ereduak;
 public sealed class GastuKontzeptua
 {
     [PrimaryKey]
-    [Column("KategoriaId")]
     public int KategoriaId { get; set; }
 
     [NotNull]
@@ -21,6 +20,5 @@ public sealed class GastuKontzeptua
     [NotNull]
     public string Estatusa { get; set; } = string.Empty;
 
-    [Column("GastuKontzeptuId")]
     public int GastuKontzeptuId { get; set; }
 }
