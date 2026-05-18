@@ -11,7 +11,7 @@
 **Roles (`ErabiltzaileRola` enum):**
 - `Langilea = 0` (Employee): submits tickets, tracks their own status only.
 - `Administratzailea = 1` (Admin): approves/rejects tickets, creates own expenses (auto-approved), manages employees.
-- `ZuzendariNagusia = 2` (CEO): read-only dashboard access — sees the admin home (statistics) and own settings. Cannot manage employees, approve/reject tickets, or see movements.
+- `ZuzendariNagusia = 2` (CEO): read-only access across the app — sees the admin home (statistics), full employee list (any sector), all tickets (any sector, any state) and own settings. Cannot create/edit/deactivate employees, approve/reject tickets, or modify any data.
 
 ---
 
@@ -122,7 +122,7 @@ Three roles have completely separate Shell tab sets. Never mix tabs across roles
 `Hasiera` | `Erabiltzaileak` | `Mugimenduak` | `Ezarpenak`
 
 **CEO (`ZuzendariNagusia`) tabs:**
-`Hasiera` | `Ezarpenak`
+`Hasiera` | `Erabiltzaileak` | `Txosten guztiak` | `Ezarpenak` — read-only across the board (`IsIkusketaSoilik=true` on shared admin VMs disables CRUD UI and `CanExecute` guards on mutating commands).
 
 **Employee (`Langilea`) tabs:**
 `Hasiera` | `Nire txartelak` | `Txartelak (Kanban)` | `Ezarpenak`

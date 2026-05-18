@@ -100,6 +100,18 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
     private bool _aktiboa;
 
     [ObservableProperty]
+    private bool _isIkusketaSoilik;
+
+    public bool DaIdazketaSarbidea => !IsIkusketaSoilik;
+
+    partial void OnIsIkusketaSoilikChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DaIdazketaSarbidea));
+        GordeCommand.NotifyCanExecuteChanged();
+        DesaktibatuCommand.NotifyCanExecuteChanged();
+    }
+
+    [ObservableProperty]
     private string _pasahitzaBerria = string.Empty;
 
     [ObservableProperty]
@@ -129,11 +141,15 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
-            if (!await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true))
+            var daAdministratzailea = await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true);
+            var daZuzendariNagusia = await _autorizazioZerbitzua.DaZuzendariNagusiaAsync().ConfigureAwait(true);
+            if (!daAdministratzailea && !daZuzendariNagusia)
             {
                 ErroreMezua = "Ez duzu baimenik.";
                 return;
             }
+
+            IsIkusketaSoilik = daZuzendariNagusia && !daAdministratzailea;
 
             var erabiltzailea = await _erabiltzaileZerbitzua.EskuratuErabiltzaileaIdzAsync(_erabiltzaileIdZenbakia).ConfigureAwait(true);
             if (erabiltzailea is null)
@@ -142,18 +158,21 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
                 return;
             }
 
-            if (erabiltzailea.Rola != (int)ErabiltzaileRola.Langilea)
+            if (!IsIkusketaSoilik && erabiltzailea.Rola != (int)ErabiltzaileRola.Langilea)
             {
                 ErroreMezua = "Administratzaile profilak ezin dira hemen editatu.";
                 return;
             }
 
-            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
-            if (adminId is { } aid &&
-                !await _erabiltzaileZerbitzua.AdministratzaileakErabiltzaileaIkusiDezakeAsync(aid, _erabiltzaileIdZenbakia).ConfigureAwait(true))
+            if (daAdministratzailea)
             {
-                ErroreMezua = "Ez duzu baimenik erabiltzaile hau ikusteko.";
-                return;
+                var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+                if (adminId is { } aid &&
+                    !await _erabiltzaileZerbitzua.AdministratzaileakErabiltzaileaIkusiDezakeAsync(aid, _erabiltzaileIdZenbakia).ConfigureAwait(true))
+                {
+                    ErroreMezua = "Ez duzu baimenik erabiltzaile hau ikusteko.";
+                    return;
+                }
             }
 
             Izena = erabiltzailea.Izena;
@@ -212,11 +231,11 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(DaIdazketaSarbidea))]
     private async Task GordeAsync()
     {
         ErroreMezua = null;
-        if (_erabiltzaileIdZenbakia <= 0)
+        if (_erabiltzaileIdZenbakia <= 0 || IsIkusketaSoilik)
             return;
 
         if (!await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true))
@@ -375,11 +394,11 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(DaIdazketaSarbidea))]
     private async Task DesaktibatuAsync()
     {
         ErroreMezua = null;
-        if (_erabiltzaileIdZenbakia <= 0)
+        if (_erabiltzaileIdZenbakia <= 0 || IsIkusketaSoilik)
             return;
 
         var baieztatu = await _berrespenLeihoZerbitzua.BerretsiAsync(

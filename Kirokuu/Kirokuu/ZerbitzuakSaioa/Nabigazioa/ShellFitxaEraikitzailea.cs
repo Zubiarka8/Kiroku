@@ -39,6 +39,8 @@ public sealed class ShellFitxaEraikitzailea
         else if (zuzendariNagusiaDa)
         {
             tabBar.Items.Add(SortuAdministratzaileOrria<AdministratzaileHasieraOrria>("Hasiera", IkonoFontIturria.FitxaHasieraAdministratzaile()));
+            tabBar.Items.Add(SortuAdministratzaileOrria<LangileZerrendaOrria>("Erabiltzaileak", IkonoFontIturria.FitxaErabiltzaileZerrenda()));
+            tabBar.Items.Add(SortuAdministratzaileOrria<TxostenGuztiekOrria>("Txosten guztiak", IkonoFontIturria.FitxaTxostenGuztiak()));
             tabBar.Items.Add(SortuEzarpenak());
         }
         else

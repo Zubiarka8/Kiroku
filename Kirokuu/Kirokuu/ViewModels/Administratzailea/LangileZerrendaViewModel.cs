@@ -47,6 +47,17 @@ public partial class LangileZerrendaViewModel : ObservableObject
     [ObservableProperty]
     private string _bilaketaTestua = string.Empty;
 
+    [ObservableProperty]
+    private bool _isIkusketaSoilik;
+
+    public bool DaIdazketaSarbidea => !IsIkusketaSoilik;
+
+    partial void OnIsIkusketaSoilikChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DaIdazketaSarbidea));
+        LangileBerriaIrekiCommand.NotifyCanExecuteChanged();
+    }
+
     public ObservableCollection<ErabiltzaileLaburpena> Langileak { get; } = new();
 
     partial void OnBilaketaTestuaChanged(string value)
@@ -97,33 +108,49 @@ public partial class LangileZerrendaViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
-            if (!await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true))
+            var daAdministratzailea = await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true);
+            var daZuzendariNagusia = await _autorizazioZerbitzua.DaZuzendariNagusiaAsync().ConfigureAwait(true);
+            if (!daAdministratzailea && !daZuzendariNagusia)
             {
                 ErroreMezua = "Ez duzu baimenik atal honetan.";
                 return;
             }
 
-            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
-            if (adminId is null)
+            IsIkusketaSoilik = daZuzendariNagusia && !daAdministratzailea;
+
+            var oraingoId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+            if (oraingoId is null)
             {
-                ErroreMezua = "Ezin izan da uneko administratzailea identifikatu.";
+                ErroreMezua = "Ezin izan da uneko erabiltzailea identifikatu.";
                 return;
             }
 
-            var administratzailea = await _erabiltzaileZerbitzua.EskuratuErabiltzaileaIdzAsync(adminId.Value).ConfigureAwait(true);
-            var sektorea = administratzailea?.Sektorea?.Trim() ?? string.Empty;
-            if (string.IsNullOrEmpty(sektorea) ||
-                !SektoreaKargoarenHiztegia.SortuSektoreenZerrenda().Any(s => string.Equals(s.Etiketa, sektorea, StringComparison.Ordinal)))
+            IReadOnlyList<ErabiltzaileLaburpena> zerrenda;
+            if (IsIkusketaSoilik)
             {
-                ErroreMezua = "Zure profilak ez du sektore baliodunik. Ezarri sektorea Ezarpenetan.";
-                return;
+                // CEO: sektorerik gabe, langile guztiak ikusgai izan ditzake.
+                _administratzailearenSektorea = string.Empty;
+                zerrenda = await _erabiltzaileZerbitzua
+                    .EskuratuLangileenLaburpenakAsync(null)
+                    .ConfigureAwait(true);
+            }
+            else
+            {
+                var administratzailea = await _erabiltzaileZerbitzua.EskuratuErabiltzaileaIdzAsync(oraingoId.Value).ConfigureAwait(true);
+                var sektorea = administratzailea?.Sektorea?.Trim() ?? string.Empty;
+                if (string.IsNullOrEmpty(sektorea) ||
+                    !SektoreaKargoarenHiztegia.SortuSektoreenZerrenda().Any(s => string.Equals(s.Etiketa, sektorea, StringComparison.Ordinal)))
+                {
+                    ErroreMezua = "Zure profilak ez du sektore baliodunik. Ezarri sektorea Ezarpenetan.";
+                    return;
+                }
+
+                _administratzailearenSektorea = sektorea;
+                zerrenda = await _erabiltzaileZerbitzua
+                    .EskuratuLangileenLaburpenakAdministratzailearentzatAsync(oraingoId.Value)
+                    .ConfigureAwait(true);
             }
 
-            _administratzailearenSektorea = sektorea;
-
-            var zerrenda = await _erabiltzaileZerbitzua
-                .EskuratuLangileenLaburpenakAdministratzailearentzatAsync(adminId.Value)
-                .ConfigureAwait(true);
             foreach (var lerroa in zerrenda)
                 _langileIturburuZerrenda.Add(lerroa);
 
@@ -175,7 +202,7 @@ public partial class LangileZerrendaViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(DaIdazketaSarbidea))]
     private async Task LangileBerriaIrekiAsync()
     {
         await Shell.Current.GoToAsync(nameof(ErabiltzaileBerriaOrria)).ConfigureAwait(true);
@@ -186,6 +213,15 @@ public partial class LangileZerrendaViewModel : ObservableObject
     {
         if (laburpena is null)
             return;
+
+        if (IsIkusketaSoilik)
+        {
+            // CEO: irakurketa hutsa, xehetasunetara zuzenean.
+            await Shell.Current
+                .GoToAsync($"{nameof(ErabiltzaileXehetasunOrria)}?ErabiltzaileId={laburpena.Id.ToString(CultureInfo.InvariantCulture)}")
+                .ConfigureAwait(true);
+            return;
+        }
 
         if (!string.IsNullOrEmpty(_administratzailearenSektorea) &&
             !string.Equals(laburpena.Sektorea?.Trim(), _administratzailearenSektorea, StringComparison.Ordinal))

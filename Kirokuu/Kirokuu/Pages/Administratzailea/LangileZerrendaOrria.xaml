@@ -13,6 +13,7 @@
     <ContentPage.ToolbarItems>
         <ToolbarItem Text="Berria"
                      Command="{Binding LangileBerriaIrekiCommand}"
+                     IsEnabled="{Binding DaIdazketaSarbidea}"
                      Order="Primary"
                      Priority="0" />
     </ContentPage.ToolbarItems>

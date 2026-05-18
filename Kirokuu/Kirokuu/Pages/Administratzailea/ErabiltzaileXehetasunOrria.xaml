@@ -12,34 +12,44 @@
                                IsVisible="{Binding IsKargatzean}"
                                HorizontalOptions="Center" />
 
-            <Entry Text="{Binding Izena}" Placeholder="Izena" />
-            <Entry Text="{Binding Abizena}" Placeholder="Abizena" />
-            <Entry Text="{Binding Abizena2}" Placeholder="Bigarren abizena" />
-            <Entry Text="{Binding Dni}" Placeholder="DNI / NAN" />
+            <Entry Text="{Binding Izena}" Placeholder="Izena"
+                   IsEnabled="{Binding DaIdazketaSarbidea}" />
+            <Entry Text="{Binding Abizena}" Placeholder="Abizena"
+                   IsEnabled="{Binding DaIdazketaSarbidea}" />
+            <Entry Text="{Binding Abizena2}" Placeholder="Bigarren abizena"
+                   IsEnabled="{Binding DaIdazketaSarbidea}" />
+            <Entry Text="{Binding Dni}" Placeholder="DNI / NAN"
+                   IsEnabled="{Binding DaIdazketaSarbidea}" />
             <Entry Text="{Binding Posta}"
                    Placeholder="Posta"
-                   Keyboard="Email" />
+                   Keyboard="Email"
+                   IsEnabled="{Binding DaIdazketaSarbidea}" />
             <Label Text="Sektorea" FontAttributes="Bold" />
             <Picker ItemsSource="{Binding SektoreenAukerak}"
                     ItemDisplayBinding="{Binding Etiketa}"
                     SelectedItem="{Binding HautatutakoSektorea}"
+                    IsEnabled="{Binding DaIdazketaSarbidea}"
                     Title="Aukeratu sektorea" />
 
             <Label Text="Kargoa" FontAttributes="Bold" />
             <Picker ItemsSource="{Binding KargoenAukerak}"
                     ItemDisplayBinding="{Binding Etiketa}"
                     SelectedItem="{Binding HautatutakoKargoa}"
+                    IsEnabled="{Binding DaIdazketaSarbidea}"
                     Title="Aukeratu kargoa" />
 
             <HorizontalStackLayout Spacing="12">
                 <Label Text="Aktibo" VerticalOptions="Center" />
-                <Switch IsToggled="{Binding Aktiboa}" />
+                <Switch IsToggled="{Binding Aktiboa}"
+                        IsEnabled="{Binding DaIdazketaSarbidea}" />
             </HorizontalStackLayout>
 
             <Label Text="Pasahitz berria (aukerakoa)"
-                   Style="{StaticResource SubHeadline}" />
+                   Style="{StaticResource SubHeadline}"
+                   IsVisible="{Binding DaIdazketaSarbidea}" />
 
-            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4">
+            <Grid ColumnDefinitions="*,Auto" ColumnSpacing="4"
+                  IsVisible="{Binding DaIdazketaSarbidea}">
                 <Entry Grid.Column="0"
                        Text="{Binding PasahitzaBerria}"
                        Placeholder="Utzi hutsik pasahitza mantentzeko"
@@ -58,10 +68,12 @@
                    Style="{StaticResource ErroreEtiketaEstiloa}" />
 
             <Button Text="Gorde"
-                    Command="{Binding GordeCommand}" />
+                    Command="{Binding GordeCommand}"
+                    IsVisible="{Binding DaIdazketaSarbidea}" />
 
             <Button Text="Desaktibatu kontua"
                     Command="{Binding DesaktibatuCommand}"
+                    IsVisible="{Binding DaIdazketaSarbidea}"
                     Style="{StaticResource BotoiSaioItxiEstiloa}" />
         </VerticalStackLayout>
     </ScrollView>

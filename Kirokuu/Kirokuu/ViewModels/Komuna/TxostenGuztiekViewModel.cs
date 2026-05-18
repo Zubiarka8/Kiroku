@@ -110,21 +110,27 @@ public partial class TxostenGuztiekViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
-            if (!await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true))
+            var daAdministratzailea = await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true);
+            var daZuzendariNagusia = await _autorizazioZerbitzua.DaZuzendariNagusiaAsync().ConfigureAwait(true);
+            if (!daAdministratzailea && !daZuzendariNagusia)
             {
                 ErroreMezua = "Ez duzu baimenik atal honetan.";
                 return;
             }
 
-            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
             _adminSektoreIzenaGordeta = null;
-            if (adminId is { } aid)
+            if (daAdministratzailea)
             {
-                var admin = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(aid).ConfigureAwait(true);
-                var sektoreIzena = admin?.Sektorea;
-                if (!string.IsNullOrWhiteSpace(sektoreIzena))
-                    _adminSektoreIzenaGordeta = sektoreIzena;
+                var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+                if (adminId is { } aid)
+                {
+                    var admin = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(aid).ConfigureAwait(true);
+                    var sektoreIzena = admin?.Sektorea;
+                    if (!string.IsNullOrWhiteSpace(sektoreIzena))
+                        _adminSektoreIzenaGordeta = sektoreIzena;
+                }
             }
+            // CEO: sektorerik gabe, txosten guztiak ikus ditzake.
 
             await ZerrendaKargatuAsync().ConfigureAwait(true);
         }

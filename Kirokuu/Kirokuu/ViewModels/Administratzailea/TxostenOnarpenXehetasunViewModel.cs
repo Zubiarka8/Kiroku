@@ -78,6 +78,18 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     private bool _onarpenEkintzakIkagarri;
 
     [ObservableProperty]
+    private bool _isIkusketaSoilik;
+
+    public bool DaIdazketaSarbidea => !IsIkusketaSoilik;
+
+    partial void OnIsIkusketaSoilikChanged(bool value)
+    {
+        OnPropertyChanged(nameof(DaIdazketaSarbidea));
+        OnartuCommand.NotifyCanExecuteChanged();
+        UkatuCommand.NotifyCanExecuteChanged();
+    }
+
+    [ObservableProperty]
     private string _adminOharra = string.Empty;
 
     [ObservableProperty]
@@ -116,20 +128,28 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         try
         {
             IsKargatzean = true;
-            if (!await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true))
+            var daAdministratzailea = await _autorizazioZerbitzua.DaAdministratzaileaAsync().ConfigureAwait(true);
+            var daZuzendariNagusia = await _autorizazioZerbitzua.DaZuzendariNagusiaAsync().ConfigureAwait(true);
+            if (!daAdministratzailea && !daZuzendariNagusia)
             {
                 ErroreMezua = "Ez duzu baimenik.";
                 return;
             }
 
+            IsIkusketaSoilik = daZuzendariNagusia && !daAdministratzailea;
+
             _adminSektoreIragazkia = null;
-            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
-            if (adminId is { } aid)
+            if (daAdministratzailea)
             {
-                _adminSektoreIragazkia = await _datuBaseaZerbitzua
-                    .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
-                    .ConfigureAwait(true);
+                var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+                if (adminId is { } aid)
+                {
+                    _adminSektoreIragazkia = await _datuBaseaZerbitzua
+                        .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
+                        .ConfigureAwait(true);
+                }
             }
+            // CEO: sektorerik gabe, edozein txosten ikus dezake.
 
             var txostena = await _datuBaseaZerbitzua
                 .EskuratuBidaiaTxostenaAdministratzailearentzatAsync(_txostenIdGordeta, _adminSektoreIragazkia)
@@ -143,7 +163,8 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
             Helmuga = txostena.Helmuga;
             SailarenEtiketa = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(txostena.Saila);
             Egoera = txostena.Egoera;
-            OnarpenEkintzakIkagarri = string.Equals(txostena.Egoera, TxostenEgoera.Zain, StringComparison.Ordinal);
+            OnarpenEkintzakIkagarri = !IsIkusketaSoilik &&
+                string.Equals(txostena.Egoera, TxostenEgoera.Zain, StringComparison.Ordinal);
 
             var langile = await _datuBaseaZerbitzua.BilatuErabiltzaileLaburpenaIdzAsync(txostena.ErabiltzaileId).ConfigureAwait(true);
             LangileTestua = langile is null ? $"#{txostena.ErabiltzaileId}" : $"{langile.Izena} {langile.Abizena}";
@@ -276,11 +297,11 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
             .ConfigureAwait(true);
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(DaIdazketaSarbidea))]
     private async Task OnartuAsync()
     {
         ErroreMezua = null;
-        if (_txostenIdGordeta <= 0)
+        if (_txostenIdGordeta <= 0 || IsIkusketaSoilik)
             return;
 
         if (!SaiatuBalidatuIbilgailuaDatuak())
@@ -342,11 +363,11 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         }
     }
 
-    [RelayCommand]
+    [RelayCommand(CanExecute = nameof(DaIdazketaSarbidea))]
     private async Task UkatuAsync()
     {
         ErroreMezua = null;
-        if (_txostenIdGordeta <= 0)
+        if (_txostenIdGordeta <= 0 || IsIkusketaSoilik)
             return;
 
         if (!SaiatuBalidatuIbilgailuaDatuak())
