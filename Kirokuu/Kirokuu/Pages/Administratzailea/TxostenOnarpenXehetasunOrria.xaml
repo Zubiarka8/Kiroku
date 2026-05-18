@@ -29,6 +29,12 @@
 
             <Label Text="Gastu lerroak" Style="{StaticResource SubHeadline}" />
 
+            <Label Text="Ez dauka irudirik."
+                   FontAttributes="Italic"
+                   FontSize="13"
+                   IsVisible="{Binding BatereIrudirik}"
+                   Style="{StaticResource TestuBigarrenMailaEstiloa}" />
+
             <CollectionView ItemsSource="{Binding GastuLerroak}" VerticalScrollBarVisibility="Always">
                 <CollectionView.EmptyView>
                     <VerticalStackLayout Padding="16" Spacing="8" VerticalOptions="Center">
@@ -42,13 +48,23 @@
                 <CollectionView.ItemTemplate>
                     <DataTemplate x:DataType="ered:GastuLerroa">
                         <Border Style="{StaticResource TxartelTxartelaEstiloa}" Padding="10" Margin="2">
-                            <VerticalStackLayout Spacing="2">
+                            <VerticalStackLayout Spacing="6">
                                 <Label Text="{Binding GastuData}" FontAttributes="Bold" />
                                 <Label Text="{Binding ZenbatekoaGuztira, StringFormat='Zenbatekoa: {0:N2} €'}" FontSize="13" />
                                 <Label Text="{Binding GarraioBidea, StringFormat='Garraioa: {0}'}"
                                        FontSize="12"
                                        IsVisible="{Binding GarraioBidea, Converter={toolkit:IsStringNotNullOrEmptyConverter}}" />
                                 <Label Text="{Binding Oharrak}" FontSize="12" />
+                                <Image Source="{Binding TicketArgazkiUrl}"
+                                       Aspect="AspectFit"
+                                       HeightRequest="200"
+                                       HorizontalOptions="Start"
+                                       IsVisible="{Binding IrudiaDauka}" />
+                                <Label Text="Ez dauka irudirik."
+                                       FontSize="12"
+                                       FontAttributes="Italic"
+                                       IsVisible="{Binding IrudiaDauka, Converter={toolkit:InvertedBoolConverter}}"
+                                       Style="{StaticResource TestuBigarrenMailaEstiloa}" />
                             </VerticalStackLayout>
                         </Border>
                     </DataTemplate>

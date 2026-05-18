@@ -61,6 +61,9 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
     private string? _erroreMezua;
 
     [ObservableProperty]
+    private string _ongiEtorriTestua = "Ongi etorri!";
+
+    [ObservableProperty]
     private string _laburpenBurua = "Organizazioaren laburpena";
 
     [ObservableProperty]
@@ -129,7 +132,30 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
                 return;
             }
 
-            var langileak = await _datuBaseaZerbitzua.ZerrendatuLangileLaburpenakAsync().ConfigureAwait(true);
+            string? langileSektoreIragazkia = null;
+            var erabiltzaileId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+            if (erabiltzaileId is { } uid)
+            {
+                var oraingoErabiltzailea = await _datuBaseaZerbitzua.BilatuErabiltzaileaIdzAsync(uid).ConfigureAwait(true);
+                if (oraingoErabiltzailea is not null)
+                {
+                    var izenaGarbia = oraingoErabiltzailea.Izena?.Trim();
+                    OngiEtorriTestua = string.IsNullOrWhiteSpace(izenaGarbia)
+                        ? "Ongi etorri!"
+                        : $"Ongi etorri, {izenaGarbia}!";
+
+                    // Administratzaileak bere sektorekoak bakarrik; Zuzendari Nagusiak guztiak.
+                    if (oraingoErabiltzailea.Rola == (int)ErabiltzaileRola.Administratzailea
+                        && !string.IsNullOrWhiteSpace(oraingoErabiltzailea.Sektorea))
+                    {
+                        langileSektoreIragazkia = oraingoErabiltzailea.Sektorea;
+                    }
+                }
+            }
+
+            var langileak = await _datuBaseaZerbitzua
+                .ZerrendatuLangileLaburpenakAsync(langileSektoreIragazkia)
+                .ConfigureAwait(true);
             LangileKopuruTestua = langileak.Count.ToString(KulturaZenbakietarako);
 
             var onartutakoGuztira =

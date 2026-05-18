@@ -47,4 +47,10 @@ public sealed class GastuLerroa
 
     [Ignore]
     public bool IbilgailuaBeharrezkoaBai => IbilgailuaBeharrezkoa != 0;
+
+    [Ignore]
+    public bool IrudiaDauka => !string.IsNullOrWhiteSpace(TicketArgazkia);
+
+    [Ignore]
+    public string? TicketArgazkiUrl => IrudiaDauka ? TicketArgazkia : null;
 }

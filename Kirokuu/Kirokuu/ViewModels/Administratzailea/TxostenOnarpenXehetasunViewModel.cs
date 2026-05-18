@@ -80,6 +80,9 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     [ObservableProperty]
     private bool _jasoAurrerakinaIkagarri;
 
+    [ObservableProperty]
+    private bool _batereIrudirik;
+
     public double OrdaintzekoBidea => GastuenGuztira - JasoAurrerakina;
 
     public ObservableCollection<GastuLerroa> GastuLerroak { get; } = new();
@@ -88,6 +91,7 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     {
         ErroreMezua = null;
         GastuLerroak.Clear();
+        BatereIrudirik = true;
         if (_txostenIdGordeta <= 0)
             return;
 
@@ -116,12 +120,16 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
 
             var lerroak = await _datuBaseaZerbitzua.ZerrendatuGastuLerroakTxostenIdzAsync(_txostenIdGordeta).ConfigureAwait(true);
             double guztira = 0;
+            var irudirikGabe = true;
             foreach (var lerroa in lerroak)
             {
                 GastuLerroak.Add(lerroa);
                 guztira += lerroa.ZenbatekoaGuztira;
+                if (lerroa.IrudiaDauka)
+                    irudirikGabe = false;
             }
 
+            BatereIrudirik = irudirikGabe;
             GastuenGuztira = guztira;
             AdminOharra = txostena.AdminOharra ?? string.Empty;
             JasoAurrerakina = txostena.JasoAurrerakina;

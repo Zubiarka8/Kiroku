@@ -31,6 +31,24 @@
         <!-- Egoera txipak -->
         <ScrollView Grid.Row="2" Orientation="Horizontal" HorizontalScrollBarVisibility="Never">
             <HorizontalStackLayout Spacing="8" Padding="2,4">
+                <Border Style="{StaticResource EgoeraTxipEstiloa}" Stroke="{StaticResource Gray500}">
+                    <Border.GestureRecognizers>
+                        <TapGestureRecognizer Command="{Binding HautatuFiltroaCommand}" CommandParameter="{x:Null}" />
+                    </Border.GestureRecognizers>
+                    <Border.Triggers>
+                        <DataTrigger TargetType="Border" Binding="{Binding DaGuztiakIragazkia}" Value="True">
+                            <Setter Property="BackgroundColor" Value="{StaticResource Gray500}" />
+                        </DataTrigger>
+                    </Border.Triggers>
+                    <Label Style="{StaticResource EgoeraTxipTestuEstiloa}" TextColor="{StaticResource Gray500}"
+                           Text="{Binding KopuruGuztiak, StringFormat='Guztiak ({0})'}">
+                        <Label.Triggers>
+                            <DataTrigger TargetType="Label" Binding="{Binding DaGuztiakIragazkia}" Value="True">
+                                <Setter Property="TextColor" Value="White" />
+                            </DataTrigger>
+                        </Label.Triggers>
+                    </Label>
+                </Border>
                 <Border Style="{StaticResource EgoeraTxipEstiloa}" Stroke="{StaticResource EgoeraZainAtzekoa}">
                     <Border.GestureRecognizers>
                         <TapGestureRecognizer Command="{Binding HautatuFiltroaCommand}" CommandParameter="Zain" />

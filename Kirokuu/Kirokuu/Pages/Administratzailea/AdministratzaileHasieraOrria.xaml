@@ -20,9 +20,14 @@
                                IsVisible="{Binding IsKargatzean}"
                                HorizontalOptions="Center" />
 
-            <Label Text="{Binding LaburpenBurua}"
+            <Label Text="{Binding OngiEtorriTestua}"
                    Style="{StaticResource Headline}"
                    HorizontalTextAlignment="Center" />
+
+            <Label Text="{Binding LaburpenBurua}"
+                   FontSize="14"
+                   HorizontalTextAlignment="Center"
+                   TextColor="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
 
             <Label Text="{Binding ErroreMezua}"
                    Style="{StaticResource ErroreEtiketaEstiloa}" />

@@ -58,6 +58,13 @@ public partial class NireTxartelakViewModel : ObservableObject
     [ObservableProperty]
     private int _kopuruEzeztatua;
 
+    [ObservableProperty]
+    private int _kopuruGuztiak;
+
+    public bool DaGuztiakIragazkia => string.IsNullOrEmpty(EgoeraFiltroa);
+
+    partial void OnEgoeraFiltroaChanged(string? value) => OnPropertyChanged(nameof(DaGuztiakIragazkia));
+
     [RelayCommand]
     private async Task HautatuFiltroaAsync(string? egoera)
     {
@@ -118,6 +125,10 @@ public partial class NireTxartelakViewModel : ObservableObject
             foreach (var t in zerrenda)
                 Txartelak.Add(t);
 
+            _logger.LogInformation(
+                "NireTxartelak: ErabiltzaileId={Uid} EgoeraFiltroa={Filtroa} Itzulitakoak={Kop}",
+                uid, EgoeraFiltroa ?? "(Guztiak)", zerrenda.Count);
+
             await KopuruakEguneratuAsync().ConfigureAwait(true);
         }
         catch (TursoExekuzioSalbuespena libEx)
@@ -163,6 +174,7 @@ public partial class NireTxartelakViewModel : ObservableObject
         KopuruOnartua = KopuruEgoeraz(kopuruak, TxostenEgoera.Onartua);
         KopuruUkatua = KopuruEgoeraz(kopuruak, TxostenEgoera.Ukatua);
         KopuruEzeztatua = KopuruEgoeraz(kopuruak, TxostenEgoera.Ezeztatua);
+        KopuruGuztiak = KopuruZain + KopuruOnartua + KopuruUkatua + KopuruEzeztatua;
     }
 
     private static int KopuruEgoeraz(IReadOnlyList<TxostenEgoeraKopurua> zerrenda, string egoera) =>
