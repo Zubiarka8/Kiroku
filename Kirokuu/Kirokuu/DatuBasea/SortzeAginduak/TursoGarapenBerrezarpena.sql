@@ -20,7 +20,6 @@ CREATE TABLE Erabiltzaileak (
     Email TEXT NOT NULL UNIQUE,
     Kargoa TEXT NOT NULL DEFAULT '',
     Sektorea TEXT NOT NULL DEFAULT '',
-    KargoarenIdentifikatzailea INTEGER NOT NULL DEFAULT 0,
     Rola INTEGER NOT NULL,
     SorkuntzaData TEXT NOT NULL DEFAULT '',
     Pasahitza TEXT NOT NULL DEFAULT '',
@@ -80,11 +79,14 @@ CREATE TABLE GastuLerroak (
 
 CREATE TABLE AuditoretzaLoga (
     LogId INTEGER PRIMARY KEY AUTOINCREMENT NOT NULL,
-    DiruSarreraId INTEGER,
+    TxostenId INTEGER,
     ErabiltzaileId INTEGER NOT NULL DEFAULT 0,
+    LangileId INTEGER,
     Ekintza TEXT NOT NULL DEFAULT '',
     DataOrdua TEXT NOT NULL DEFAULT '',
     Deskribapena TEXT NOT NULL DEFAULT '',
     IP_Helbidea TEXT NOT NULL DEFAULT '',
-    FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT
+    FOREIGN KEY (ErabiltzaileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE RESTRICT,
+    FOREIGN KEY (LangileId) REFERENCES Erabiltzaileak(ErabiltzaileId) ON DELETE SET NULL,
+    FOREIGN KEY (TxostenId) REFERENCES BidaiaTxostenak(TxostenId) ON DELETE SET NULL
 );

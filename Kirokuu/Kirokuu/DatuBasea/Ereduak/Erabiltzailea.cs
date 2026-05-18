@@ -28,10 +28,28 @@ public sealed class Erabiltzailea
     [NotNull]
     public string Kargoa { get; set; } = string.Empty;
 
-    [NotNull, Column("Sektorea")]
+    [NotNull]
+    [Column("Sektorea")]
     public string Sektorea { get; set; } = string.Empty;
 
-    public int KargoarenIdentifikatzailea { get; set; }
+    [Ignore]
+    public int SektorearenIdentifikatzailea
+    {
+        get => Sektorea switch
+        {
+            "Finantzak" => (int)EnpresakoSektorea.Finantzak,
+            "Marketina" => (int)EnpresakoSektorea.Marketina,
+            "Salmentak" => (int)EnpresakoSektorea.Salmentak,
+            _ => (int)EnpresakoSektorea.EzDaZehaztu
+        };
+        set => Sektorea = value switch
+        {
+            (int)EnpresakoSektorea.Finantzak => "Finantzak",
+            (int)EnpresakoSektorea.Marketina => "Marketina",
+            (int)EnpresakoSektorea.Salmentak => "Salmentak",
+            _ => string.Empty
+        };
+    }
 
     public int Rola { get; set; }
 
@@ -46,5 +64,4 @@ public sealed class Erabiltzailea
     public int SaioHasieraSaiakerak { get; set; }
 
     public string? SaioaBlokeoaAmaieraUtc { get; set; }
-
 }

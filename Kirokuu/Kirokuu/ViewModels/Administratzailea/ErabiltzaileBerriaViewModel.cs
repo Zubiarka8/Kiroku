@@ -30,7 +30,7 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         foreach (var s in SektoreaKargoarenHiztegia.SortuSektoreenZerrenda())
-            SektoreenAukerak.Add(new HautapenElementua { Etiketa = s });
+            SektoreenAukerak.Add(s);
 
         _barneratzen = true;
         try
@@ -169,6 +169,15 @@ public partial class ErabiltzaileBerriaViewModel : ObservableObject
         if (Pasahitza.Trim().Length < 8)
         {
             ErroreMezua = "Pasahitzak gutxienez 8 karaktere izan behar ditu.";
+            return;
+        }
+
+        var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+        if (adminId is { } aid &&
+            !await _erabiltzaileZerbitzua.AdministratzaileakSektoreaKudeatuDezakeAsync(
+                aid, HautatutakoSektorea.Identifikatzailea).ConfigureAwait(true))
+        {
+            ErroreMezua = "Ez duzu baimenik beste sektore batean langilea sortzeko.";
             return;
         }
 

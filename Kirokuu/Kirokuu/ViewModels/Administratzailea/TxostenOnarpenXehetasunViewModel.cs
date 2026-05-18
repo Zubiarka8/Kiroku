@@ -1,4 +1,5 @@
 using System.Collections.ObjectModel;
+using System.Linq;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
 using Kirokuu.DatuBasea.Ereduak;
@@ -22,6 +23,8 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     private readonly ILogger<TxostenOnarpenXehetasunViewModel> _logger;
 
     private int _txostenIdGordeta;
+
+    private int? _adminSektoreIragazkia;
 
     public TxostenOnarpenXehetasunViewModel(
         AutorizazioZerbitzua autorizazioZerbitzua,
@@ -60,6 +63,9 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
     private string _helmuga = string.Empty;
 
     [ObservableProperty]
+    private string _sailarenEtiketa = string.Empty;
+
+    [ObservableProperty]
     private string _egoera = string.Empty;
 
     [ObservableProperty]
@@ -79,6 +85,18 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
 
     [ObservableProperty]
     private bool _jasoAurrerakinaIkagarri;
+
+    [ObservableProperty]
+    private bool _ibilgailuaEremuakIkagarri;
+
+    [ObservableProperty]
+    private bool _ibilgailuaEremuakEditagarri;
+
+    [ObservableProperty]
+    private bool _enpresakoIbilgailua;
+
+    [ObservableProperty]
+    private string _kilometroakTestua = string.Empty;
 
     public double OrdaintzekoBidea => GastuenGuztira - JasoAurrerakina;
 
@@ -100,14 +118,26 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
                 return;
             }
 
-            var txostena = await _datuBaseaZerbitzua.EskuratuBidaiaTxostenaIdzAsync(_txostenIdGordeta).ConfigureAwait(true);
+            _adminSektoreIragazkia = null;
+            var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+            if (adminId is { } aid)
+            {
+                _adminSektoreIragazkia = await _datuBaseaZerbitzua
+                    .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
+                    .ConfigureAwait(true);
+            }
+
+            var txostena = await _datuBaseaZerbitzua
+                .EskuratuBidaiaTxostenaAdministratzailearentzatAsync(_txostenIdGordeta, _adminSektoreIragazkia)
+                .ConfigureAwait(true);
             if (txostena is null)
             {
-                ErroreMezua = "Txostena ez da aurkitu.";
+                ErroreMezua = "Txostena ez da aurkitu edo ez duzu baimenik.";
                 return;
             }
 
             Helmuga = txostena.Helmuga;
+            SailarenEtiketa = SektoreaKargoarenHiztegia.LortuBaliozkotutakoSailaTestua(txostena.Saila);
             Egoera = txostena.Egoera;
             OnarpenEkintzakIkagarri = string.Equals(txostena.Egoera, TxostenEgoera.Zain, StringComparison.Ordinal);
 
@@ -116,16 +146,36 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
 
             var lerroak = await _datuBaseaZerbitzua.ZerrendatuGastuLerroakTxostenIdzAsync(_txostenIdGordeta).ConfigureAwait(true);
             double guztira = 0;
+            double kilometroMax = 0;
+            var ibilgailuaBeharDu = false;
+            var garraioPribatua = false;
+            var garraioPublikoaHautatua = false;
             foreach (var lerroa in lerroak)
             {
                 GastuLerroak.Add(lerroa);
                 guztira += lerroa.ZenbatekoaGuztira;
+                if (lerroa.Kilometroak > kilometroMax)
+                    kilometroMax = lerroa.Kilometroak;
+                if (lerroa.IbilgailuaBeharrezkoa == 1)
+                    ibilgailuaBeharDu = true;
+                if (GarraioBideaBalioak.IbilgailuaErabiltzenDu(lerroa.GarraioBidea))
+                    garraioPribatua = true;
+                if (string.Equals(lerroa.GarraioBidea.Trim(), GarraioBideaBalioak.GarraioPublikoa, StringComparison.Ordinal))
+                    garraioPublikoaHautatua = true;
             }
 
             GastuenGuztira = guztira;
             AdminOharra = txostena.AdminOharra ?? string.Empty;
             JasoAurrerakina = txostena.JasoAurrerakina;
             JasoAurrerakinaIkagarri = txostena.JasoAurrerakina > 0;
+            IbilgailuaEremuakIkagarri = garraioPribatua || txostena.EmpresaIbilgailua == 1 || kilometroMax > 0
+                || (ibilgailuaBeharDu && !garraioPublikoaHautatua);
+            IbilgailuaEremuakEditagarri = OnarpenEkintzakIkagarri && IbilgailuaEremuakIkagarri;
+            EnpresakoIbilgailua = txostena.EmpresaIbilgailua == 1
+                || lerroak.Any(l => GarraioBideaBalioak.DaEnpresakoIbilgailua(l.GarraioBidea));
+            KilometroakTestua = kilometroMax > 0
+                ? kilometroMax.ToString("0.##", CultureInfo.InvariantCulture)
+                : string.Empty;
             OnPropertyChanged(nameof(OrdaintzekoBidea));
         }
         catch (TursoExekuzioSalbuespena libEx)
@@ -184,6 +234,39 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         return id;
     }
 
+    private bool SaiatuBalidatuIbilgailuaDatuak()
+    {
+        if (!IbilgailuaEremuakIkagarri || !IbilgailuaEremuakEditagarri)
+            return true;
+
+        if (!double.TryParse(KilometroakTestua.Replace(',', '.'), NumberStyles.Any,
+                CultureInfo.InvariantCulture, out var kilometroak) || kilometroak <= 0)
+        {
+            ErroreMezua = "Sartu kilometro kopurua (0 baino handiagoa).";
+            return false;
+        }
+
+        return true;
+    }
+
+    private async Task GordetuIbilgailuaDatuakAsync()
+    {
+        if (!IbilgailuaEremuakIkagarri || !IbilgailuaEremuakEditagarri)
+            return;
+
+        double.TryParse(KilometroakTestua.Replace(',', '.'), NumberStyles.Any,
+            CultureInfo.InvariantCulture, out var kilometroak);
+        kilometroak = Math.Round(kilometroak, 2, MidpointRounding.AwayFromZero);
+
+        var garraioTestua = GarraioBideaBalioak.SortuGarraioBideaTestua(EnpresakoIbilgailua);
+        await _datuBaseaZerbitzua.EguneratuTxostenIbilgailuaEtaKilometroakAsync(
+                _txostenIdGordeta,
+                EnpresakoIbilgailua ? 1 : 0,
+                garraioTestua,
+                kilometroak)
+            .ConfigureAwait(true);
+    }
+
     [RelayCommand]
     private async Task OnartuAsync()
     {
@@ -191,15 +274,20 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         if (_txostenIdGordeta <= 0)
             return;
 
+        if (!SaiatuBalidatuIbilgailuaDatuak())
+            return;
+
         try
         {
             IsKargatzean = true;
+            await GordetuIbilgailuaDatuakAsync().ConfigureAwait(true);
             var adminId = await EskuratuAdministratzaileIdAsync().ConfigureAwait(true);
             await _datuBaseaZerbitzua.EguneratuTxostenEgoeraAdministratzaileAsync(
                     _txostenIdGordeta,
                     TxostenEgoera.Onartua,
                     null,
-                    adminId)
+                    adminId,
+                    _adminSektoreIragazkia)
                 .ConfigureAwait(true);
 
             await MainThread.InvokeOnMainThreadAsync(async () =>
@@ -252,15 +340,20 @@ public partial class TxostenOnarpenXehetasunViewModel : ObservableObject
         if (_txostenIdGordeta <= 0)
             return;
 
+        if (!SaiatuBalidatuIbilgailuaDatuak())
+            return;
+
         try
         {
             IsKargatzean = true;
+            await GordetuIbilgailuaDatuakAsync().ConfigureAwait(true);
             var adminId = await EskuratuAdministratzaileIdAsync().ConfigureAwait(true);
             await _datuBaseaZerbitzua.EguneratuTxostenEgoeraAdministratzaileAsync(
                     _txostenIdGordeta,
                     TxostenEgoera.Ukatua,
                     string.IsNullOrWhiteSpace(AdminOharra) ? null : AdminOharra.Trim(),
-                    adminId)
+                    adminId,
+                    _adminSektoreIragazkia)
                 .ConfigureAwait(true);
 
             await MainThread.InvokeOnMainThreadAsync(async () =>

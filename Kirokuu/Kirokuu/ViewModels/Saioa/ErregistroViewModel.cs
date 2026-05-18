@@ -34,7 +34,7 @@ public partial class ErregistroViewModel : ObservableObject
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         foreach (var s in SektoreaKargoarenHiztegia.SortuSektoreenZerrenda())
-            SektoreenAukerak.Add(new HautapenElementua { Etiketa = s });
+            SektoreenAukerak.Add(s);
 
         _barneratzen = true;
         try

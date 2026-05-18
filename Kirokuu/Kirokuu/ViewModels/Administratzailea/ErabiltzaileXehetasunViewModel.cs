@@ -39,7 +39,7 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
         _logger = logger ?? throw new ArgumentNullException(nameof(logger));
 
         foreach (var s in SektoreaKargoarenHiztegia.SortuSektoreenZerrenda())
-            SektoreenAukerak.Add(new HautapenElementua { Etiketa = s });
+            SektoreenAukerak.Add(s);
     }
 
     public ObservableCollection<HautapenElementua> SektoreenAukerak { get; } = new();
@@ -149,15 +149,10 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
             }
 
             var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
-            var administratzailea = adminId is null
-                ? null
-                : await _erabiltzaileZerbitzua.EskuratuErabiltzaileaIdzAsync(adminId.Value).ConfigureAwait(true);
-            var adminSektorea = administratzailea?.Sektorea?.Trim() ?? string.Empty;
-            var langileSektorea = erabiltzailea.Sektorea?.Trim() ?? string.Empty;
-            if (string.IsNullOrEmpty(adminSektorea) ||
-                !string.Equals(adminSektorea, langileSektorea, StringComparison.Ordinal))
+            if (adminId is { } aid &&
+                !await _erabiltzaileZerbitzua.AdministratzaileakErabiltzaileaIkusiDezakeAsync(aid, _erabiltzaileIdZenbakia).ConfigureAwait(true))
             {
-                ErroreMezua = "Ez duzu baimenik beste sektore bateko erabiltzaileak kudeatzeko.";
+                ErroreMezua = "Ez duzu baimenik erabiltzaile hau ikusteko.";
                 return;
             }
 
@@ -266,6 +261,15 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
             return;
         }
 
+        var adminIdGordetzean = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+        if (adminIdGordetzean is { } aidGordetzean &&
+            !await _erabiltzaileZerbitzua.AdministratzaileakSektoreaKudeatuDezakeAsync(
+                aidGordetzean, HautatutakoSektorea.Identifikatzailea).ConfigureAwait(true))
+        {
+            ErroreMezua = "Ez duzu baimenik beste sektore baten erabiltzailea kudeatzeko.";
+            return;
+        }
+
         try
         {
             IsKargatzean = true;
@@ -351,7 +355,7 @@ public partial class ErabiltzaileXehetasunViewModel : ObservableObject
     private void HasieratuSektoreaKargoHautapenak(Erabiltzailea erabiltzailea)
     {
         string? sektoreIzena = erabiltzailea.Sektorea;
-        var kId = erabiltzailea.KargoarenIdentifikatzailea;
+        var kId = 0;
         var kTestua = erabiltzailea.Kargoa;
         if (!SektoreaKargoarenHiztegia.SektoreaEtaKargoarenIdentifikatzaileakBaliozkoa(sektoreIzena, kId))
             SektoreaKargoarenHiztegia.SaiatuLeheneratuTestutik(kTestua, ref sektoreIzena, ref kId);

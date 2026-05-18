@@ -43,6 +43,10 @@ public static class IkonoFontIturria
 
     public static string ArgazkiaIkonoGlifoa => "\ue412";
 
+    public static string KameraIkonoGlifoa => "\ue3af";
+
+    public static string GaleriaIkonoGlifoa => "\ue413";
+
     public static string DiruaIkonoGlifoa => "\ue227";
 
     public static string SaioHasieraIkonoGlifoa => "\uea77";

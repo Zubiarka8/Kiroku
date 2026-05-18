@@ -8,15 +8,19 @@ public sealed class AuditoretzaLoga
     [PrimaryKey, AutoIncrement]
     public int LogId { get; set; }
 
-    public int? DiruSarreraId { get; set; }
+    [Column("TxostenId")]
+    public int? TxostenId { get; set; }
 
     public int ErabiltzaileId { get; set; }
+
+    [Column("LangileId")]
+    public int? LangileId { get; set; }
 
     [NotNull]
     public string Ekintza { get; set; } = string.Empty;
 
     [NotNull]
-    public DateTime  DataOrdua { get; set; }
+    public DateTime DataOrdua { get; set; }
 
     [NotNull]
     public string Deskribapena { get; set; } = string.Empty;

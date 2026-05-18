@@ -41,7 +41,7 @@ public sealed class ErabiltzaileZerbitzua
         var pasahitzaGarbia = pasahitza.Trim();
         ArgumentException.ThrowIfNullOrWhiteSpace(pasahitzaGarbia);
         var (gatza, hash) = _pasahitzaZerbitzua.SortuGatzaEtaHash(pasahitzaGarbia);
-        var orain = DateTime.UtcNow.ToString("o", CultureInfo.InvariantCulture);
+        var orain = DataOrduaBalioak.DataOrduaOrain();
         var erabiltzailea = new Erabiltzailea
         {
             Izena = izena.Trim(),
@@ -275,7 +275,7 @@ public sealed class ErabiltzaileZerbitzua
     }
 
     public async Task<IReadOnlyList<ErabiltzaileLaburpena>> EskuratuLangileenLaburpenakAsync(
-        string? sektoreIragazkia = null,
+        int? sektoreIragazkia = null,
         CancellationToken cancellationToken = default)
     {
         return await _datuBaseaZerbitzua.ZerrendatuLangileLaburpenakAsync(sektoreIragazkia, cancellationToken).ConfigureAwait(false);
@@ -302,6 +302,46 @@ public sealed class ErabiltzaileZerbitzua
         }
     }
 
+    public async Task<IReadOnlyList<ErabiltzaileLaburpena>> EskuratuLangileenLaburpenakAdministratzailearentzatAsync(
+        int administratzaileErabiltzaileId,
+        CancellationToken cancellationToken = default)
+    {
+        var sektoreIragazkia = await _datuBaseaZerbitzua
+            .EskuratuAdministratzailearenSektoreIragazkiaAsync(administratzaileErabiltzaileId, cancellationToken)
+            .ConfigureAwait(false);
+        return await EskuratuLangileenLaburpenakAsync(sektoreIragazkia, cancellationToken).ConfigureAwait(false);
+    }
+
+    public async Task<bool> AdministratzaileakErabiltzaileaIkusiDezakeAsync(
+        int administratzaileErabiltzaileId,
+        int erabiltzaileId,
+        CancellationToken cancellationToken = default)
+    {
+        var sektoreIragazkia = await _datuBaseaZerbitzua
+            .EskuratuAdministratzailearenSektoreIragazkiaAsync(administratzaileErabiltzaileId, cancellationToken)
+            .ConfigureAwait(false);
+        if (sektoreIragazkia is null)
+            return true;
+
+        return await _datuBaseaZerbitzua
+            .ErabiltzaileaSektorearekinBatDatorAsync(erabiltzaileId, sektoreIragazkia.Value, cancellationToken)
+            .ConfigureAwait(false);
+    }
+
+    public async Task<bool> AdministratzaileakSektoreaKudeatuDezakeAsync(
+        int administratzaileErabiltzaileId,
+        int sektorearenIdentifikatzailea,
+        CancellationToken cancellationToken = default)
+    {
+        var sektoreIragazkia = await _datuBaseaZerbitzua
+            .EskuratuAdministratzailearenSektoreIragazkiaAsync(administratzaileErabiltzaileId, cancellationToken)
+            .ConfigureAwait(false);
+        if (sektoreIragazkia is null)
+            return true;
+
+        return sektoreIragazkia.Value == sektorearenIdentifikatzailea;
+    }
+
     private static string NormalizatuPosta(string posta) => posta.Trim().ToLowerInvariant();
 
     private static void EzarriSektoreaEtaKargoarenBalioak(
@@ -310,7 +350,6 @@ public sealed class ErabiltzaileZerbitzua
         int kargoarenIdentifikatzailea)
     {
         erabiltzailea.Sektorea = sektoreIzena?.Trim() ?? string.Empty;
-        erabiltzailea.KargoarenIdentifikatzailea = kargoarenIdentifikatzailea;
         erabiltzailea.Kargoa = SektoreaKargoarenHiztegia.LortuKargoarenEtiketa((EnpresakoLangileKargoa)kargoarenIdentifikatzailea);
     }
 }

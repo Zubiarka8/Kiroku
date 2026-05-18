@@ -129,27 +129,40 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
                 return;
             }
 
-            var langileak = await _datuBaseaZerbitzua.ZerrendatuLangileLaburpenakAsync().ConfigureAwait(true);
+            int? sektoreIragazkia = null;
+            var zuzendariNagusiaDa = await _autorizazioZerbitzua.DaZuzendariNagusiaAsync().ConfigureAwait(true);
+            if (!zuzendariNagusiaDa)
+            {
+                var adminId = await _autorizazioZerbitzua.EskuratuOraingoErabiltzaileIdAsync().ConfigureAwait(true);
+                if (adminId is { } aid)
+                {
+                    sektoreIragazkia = await _datuBaseaZerbitzua
+                        .EskuratuAdministratzailearenSektoreIragazkiaAsync(aid)
+                        .ConfigureAwait(true);
+                }
+            }
+
+            var langileak = await _datuBaseaZerbitzua.ZerrendatuLangileLaburpenakAsync(sektoreIragazkia).ConfigureAwait(true);
             LangileKopuruTestua = langileak.Count.ToString(KulturaZenbakietarako);
 
             var onartutakoGuztira =
-                await _datuBaseaZerbitzua.EskuratuOnartutakoGastuenGuztiraOrguOrokorraAsync().ConfigureAwait(true);
+                await _datuBaseaZerbitzua.EskuratuOnartutakoGastuenGuztiraOrguOrokorraAsync(sektoreIragazkia).ConfigureAwait(true);
             OnartutakoGastuenTestua =
                 $"{onartutakoGuztira.ToString("N2", KulturaZenbakietarako)} €";
 
             var zainKop =
-                await _datuBaseaZerbitzua.EskuratuZainTxartenKopuruaOrguOrokorraAsync().ConfigureAwait(true);
+                await _datuBaseaZerbitzua.EskuratuZainTxartenKopuruaOrguOrokorraAsync(sektoreIragazkia).ConfigureAwait(true);
             ZainTxartelenTestua = zainKop.ToString(KulturaZenbakietarako);
 
             var hilabetekoak = await _datuBaseaZerbitzua
-                .EskuratuAzkenHilabeteetakoOnartutakoGastuakOrguOrokorraAsync(HilabeteKopuruaGrafikoan)
+                .EskuratuAzkenHilabeteetakoOnartutakoGastuakOrguOrokorraAsync(HilabeteKopuruaGrafikoan, sektoreIragazkia)
                 .ConfigureAwait(true);
             EraikiHilabetekoGrafikoa(hilabetekoak);
 
-            var kategoriak = await _datuBaseaZerbitzua.EskuratuKategoriakoOnartutakoGastuakOrguOrokorraAsync().ConfigureAwait(true);
+            var kategoriak = await _datuBaseaZerbitzua.EskuratuKategoriakoOnartutakoGastuakOrguOrokorraAsync(sektoreIragazkia).ConfigureAwait(true);
             EraikiKategoriaGrafikoa(kategoriak);
 
-            var egoerak = await _datuBaseaZerbitzua.EskuratuTxostenKopuruakEgoerarenAraberaOrguOrokorraAsync().ConfigureAwait(true);
+            var egoerak = await _datuBaseaZerbitzua.EskuratuTxostenKopuruakEgoerarenAraberaOrguOrokorraAsync(sektoreIragazkia).ConfigureAwait(true);
             EraikiEgoeraGrafikoa(egoerak);
         }
         catch (TursoExekuzioSalbuespena libEx)

@@ -113,7 +113,7 @@ public partial class LangileZerrendaViewModel : ObservableObject
             var administratzailea = await _erabiltzaileZerbitzua.EskuratuErabiltzaileaIdzAsync(adminId.Value).ConfigureAwait(true);
             var sektorea = administratzailea?.Sektorea?.Trim() ?? string.Empty;
             if (string.IsNullOrEmpty(sektorea) ||
-                !SektoreaKargoarenHiztegia.SortuSektoreenZerrenda().Any(s => string.Equals(s, sektorea, StringComparison.Ordinal)))
+                !SektoreaKargoarenHiztegia.SortuSektoreenZerrenda().Any(s => string.Equals(s.Etiketa, sektorea, StringComparison.Ordinal)))
             {
                 ErroreMezua = "Zure profilak ez du sektore baliodunik. Ezarri sektorea Ezarpenetan.";
                 return;
@@ -121,7 +121,9 @@ public partial class LangileZerrendaViewModel : ObservableObject
 
             _administratzailearenSektorea = sektorea;
 
-            var zerrenda = await _erabiltzaileZerbitzua.EskuratuLangileenLaburpenakAsync(sektorea).ConfigureAwait(true);
+            var zerrenda = await _erabiltzaileZerbitzua
+                .EskuratuLangileenLaburpenakAdministratzailearentzatAsync(adminId.Value)
+                .ConfigureAwait(true);
             foreach (var lerroa in zerrenda)
                 _langileIturburuZerrenda.Add(lerroa);
 
