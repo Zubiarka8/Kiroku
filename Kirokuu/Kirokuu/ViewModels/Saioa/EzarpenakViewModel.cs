@@ -169,9 +169,9 @@ public partial class EzarpenakViewModel : ObservableObject
             Posta = erabiltzailea.Posta;
             RolTestu = erabiltzailea.Rola switch
             {
-                (int)ErabiltzaileRola.Administratzailea => "Administrador",
-                (int)ErabiltzaileRola.ZuzendariNagusia => "Director general (CEO)",
-                _ => "Empleado"
+                (int)ErabiltzaileRola.Administratzailea => "Administratzailea",
+                (int)ErabiltzaileRola.ZuzendariNagusia => "Zuzendari Nagusia (CEO)",
+                _ => "Langilea"
             };
 
             EzarriSektoreaKargoIkuspegia(erabiltzailea);

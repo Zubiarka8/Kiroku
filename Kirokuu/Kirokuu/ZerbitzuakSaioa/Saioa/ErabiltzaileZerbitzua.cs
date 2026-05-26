@@ -276,9 +276,12 @@ public sealed class ErabiltzaileZerbitzua
 
     public async Task<IReadOnlyList<ErabiltzaileLaburpena>> EskuratuLangileenLaburpenakAsync(
         int? sektoreIragazkia = null,
+        bool soilikLangileak = true,
         CancellationToken cancellationToken = default)
     {
-        return await _datuBaseaZerbitzua.ZerrendatuLangileLaburpenakAsync(sektoreIragazkia, cancellationToken).ConfigureAwait(false);
+        return await _datuBaseaZerbitzua
+            .ZerrendatuLangileLaburpenakAsync(sektoreIragazkia, soilikLangileak, cancellationToken)
+            .ConfigureAwait(false);
     }
 
     public async Task EguneratuErabiltzaileaAktiboaAsync(
@@ -309,7 +312,7 @@ public sealed class ErabiltzaileZerbitzua
         var sektoreIragazkia = await _datuBaseaZerbitzua
             .EskuratuAdministratzailearenSektoreIragazkiaAsync(administratzaileErabiltzaileId, cancellationToken)
             .ConfigureAwait(false);
-        return await EskuratuLangileenLaburpenakAsync(sektoreIragazkia, cancellationToken).ConfigureAwait(false);
+        return await EskuratuLangileenLaburpenakAsync(sektoreIragazkia, soilikLangileak: true, cancellationToken).ConfigureAwait(false);
     }
 
     public async Task<bool> AdministratzaileakErabiltzaileaIkusiDezakeAsync(

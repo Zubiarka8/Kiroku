@@ -10,6 +10,7 @@ using LiveChartsCore.Measure;
 using LiveChartsCore.SkiaSharpView;
 using LiveChartsCore.SkiaSharpView.Painting;
 using Microsoft.Extensions.Logging;
+using Microsoft.Maui.Graphics;
 using SkiaSharp;
 using SQLite;
 
@@ -107,6 +108,9 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
 
     [ObservableProperty]
     private string _kategoriaBakarXehetasuna = string.Empty;
+
+    [ObservableProperty]
+    private IReadOnlyList<KategoriaLegendaElementua> _kategoriaLegendaElementuak = Array.Empty<KategoriaLegendaElementua>();
 
     [ObservableProperty]
     private ISeries[] _egoeraSerieak = Array.Empty<ISeries>();
@@ -285,6 +289,7 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
         ErakutsiKategoriaPieGrafikoa = false;
         ErakutsiKategoriaBarraGrafikoa = false;
         KategoriaBakarXehetasuna = string.Empty;
+        KategoriaLegendaElementuak = Array.Empty<KategoriaLegendaElementua>();
     }
 
     private void EraikiKategoriaGrafikoa(IReadOnlyList<KategoriakoGastuAgregatua> datuak)
@@ -323,6 +328,7 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
     {
         var guztira = moztuta.Sum(d => d.Guztira);
         var serieak = new List<ISeries>(moztuta.Count);
+        var legenda = new List<KategoriaLegendaElementua>(moztuta.Count);
 
         for (var i = 0; i < moztuta.Count; i++)
         {
@@ -335,6 +341,13 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
                 $"{zenbatekoa.ToString("N2", KulturaZenbakietarako)} € · {ehunekoa:0}%";
 
             var kolorea = KategoriaKoloreak[i % KategoriaKoloreak.Length];
+            legenda.Add(new KategoriaLegendaElementua
+            {
+                Kolorea = Color.FromRgb(kolorea.Red, kolorea.Green, kolorea.Blue),
+                Izena = izenaOsoa,
+                Xehetasuna = $"{zenbatekoa.ToString("N2", KulturaZenbakietarako)} € · {ehunekoa:0}%"
+            });
+
             var izKopia = izenaOsoa;
             var zbKopia = zenbatekoa;
             var ehKopia = ehunekoa;
@@ -359,6 +372,7 @@ public partial class AdministratzaileHasieraViewModel : ObservableObject
         }
 
         KategoriaGastuSerieak = serieak.ToArray();
+        KategoriaLegendaElementuak = legenda;
     }
 
     private void EraikiKategoriaBarraGrafikoa(IReadOnlyList<KategoriakoGastuAgregatua> moztuta)

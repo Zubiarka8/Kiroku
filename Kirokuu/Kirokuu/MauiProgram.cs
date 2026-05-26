@@ -1,4 +1,5 @@
 ﻿using CommunityToolkit.Maui;
+using LiveChartsCore.SkiaSharpView.Maui;
 using Kirokuu.Pages;
 using Kirokuu.ViewModels;
 using Kirokuu.Zerbitzuak;
@@ -65,6 +66,7 @@ public static class MauiProgram
         var builder = MauiApp.CreateBuilder();
         builder
             .UseSkiaSharp()
+            .UseLiveCharts()
             .UseMauiApp<App>()
             .UseMauiCommunityToolkit()
             .AddAudio()

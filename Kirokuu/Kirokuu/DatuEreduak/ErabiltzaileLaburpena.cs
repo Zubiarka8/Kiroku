@@ -1,3 +1,5 @@
+using Kirokuu.DatuBasea.Ereduak;
+
 namespace Kirokuu.DatuEreduak;
 
 public sealed class ErabiltzaileLaburpena
@@ -14,5 +16,17 @@ public sealed class ErabiltzaileLaburpena
 
     public int Aktiboa { get; set; } = 1;
 
+    public int Rola { get; set; } = (int)ErabiltzaileRola.Langilea;
+
     public string AktiboTestua => Aktiboa != 0 ? "Aktibo" : "Desaktibatuta";
+
+    // Rol etiketak euskaraz.
+    public string RolaTestua => Rola switch
+    {
+        (int)ErabiltzaileRola.Administratzailea => "Administratzailea",
+        (int)ErabiltzaileRola.ZuzendariNagusia => "Zuzendari Nagusia (CEO)",
+        _ => "Langilea"
+    };
+
+    public bool DaLangilea => Rola == (int)ErabiltzaileRola.Langilea;
 }

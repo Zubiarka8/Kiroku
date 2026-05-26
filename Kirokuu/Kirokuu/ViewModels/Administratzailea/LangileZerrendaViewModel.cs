@@ -128,10 +128,10 @@ public partial class LangileZerrendaViewModel : ObservableObject
             IReadOnlyList<ErabiltzaileLaburpena> zerrenda;
             if (IsIkusketaSoilik)
             {
-                // CEO: sektorerik gabe, langile guztiak ikusgai izan ditzake.
+                // CEO: sektorerik gabe, erabiltzaile guztiak (administratzaileak barne) ikusgai.
                 _administratzailearenSektorea = string.Empty;
                 zerrenda = await _erabiltzaileZerbitzua
-                    .EskuratuLangileenLaburpenakAsync(null)
+                    .EskuratuLangileenLaburpenakAsync(null, soilikLangileak: false)
                     .ConfigureAwait(true);
             }
             else

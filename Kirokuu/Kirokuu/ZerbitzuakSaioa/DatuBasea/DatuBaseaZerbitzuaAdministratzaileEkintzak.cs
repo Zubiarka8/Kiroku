@@ -203,6 +203,12 @@ public sealed partial class DatuBaseaZerbitzua
 
         await SaiatuTursoAlterEtIgnoratuAsync(
                 bezeroa,
+                "ALTER TABLE BidaiaTxostenak ADD COLUMN Saila TEXT NOT NULL DEFAULT '';",
+                cancellationToken)
+            .ConfigureAwait(false);
+
+        await SaiatuTursoAlterEtIgnoratuAsync(
+                bezeroa,
                 "ALTER TABLE GastuLerroak ADD COLUMN IbilgailuaBeharrezkoa INTEGER NOT NULL DEFAULT 0;",
                 cancellationToken)
             .ConfigureAwait(false);

@@ -20,6 +20,9 @@
 		<ImplicitUsings>enable</ImplicitUsings>
 		<Nullable>enable</Nullable>
 
+		<!-- LiveCharts 2.0.x (SkiaSharp 3.x, 16 KB) Microsoft.Maui.Controls >= 9.0.120 eskatzen du. -->
+		<MauiVersion>9.0.120</MauiVersion>
+
 		<!-- MVVMTK0045: partial property source generation ez da MAUI Android/iOS-en aplikatzen (AOT-en partial properties oraindik ez dira erabilgarriak guztiz); abisua kentzen dugu. -->
 		<!-- XC0045: Source={x:Reference Orri}, Path=BindingContext.X eredua ezin da konpilatu (BindingContext object da); runtime fallback erabiltzen da. -->
 		<NoWarn>$(NoWarn);MVVMTK0045;XC0045</NoWarn>
@@ -48,6 +51,11 @@
 		<SupportedOSPlatformVersion Condition="$([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'tizen'">6.5</SupportedOSPlatformVersion>
 	</PropertyGroup>
 
+	<!-- Banaketarako APK unibertsala: ABI guztiak (arm64+arm mugikor errealentzat, x64+x86 emulagailuentzat). -->
+	<PropertyGroup Condition="'$(Configuration)'=='Release' And $([MSBuild]::GetTargetPlatformIdentifier('$(TargetFramework)')) == 'android'">
+		<RuntimeIdentifiers>android-arm64;android-arm;android-x64;android-x86</RuntimeIdentifiers>
+	</PropertyGroup>
+
 	<ItemGroup>
 		<!-- App ikonoa: Images/kiroku_logo.webp (berdina irekitze pantailan) -->
 		<MauiIcon Include="Resources\AppIcon\appicon.svg" ForegroundFile="Resources\Images\kiroku_logo.webp" Color="#512BD4" />
@@ -69,19 +77,19 @@
 	<ItemGroup>
 		<PackageReference Include="CommunityToolkit.Maui" Version="9.1.1" />
 		<PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.2" />
-		<PackageReference Include="LiveChartsCore.SkiaSharpView.Maui" Version="2.0.0-rc2" />
+		<PackageReference Include="LiveChartsCore.SkiaSharpView.Maui" Version="2.0.4" />
 		<PackageReference Include="Microsoft.Maui.Controls" Version="$(MauiVersion)" />
 		<PackageReference Include="Microsoft.Extensions.Logging.Debug" Version="9.0.8" />
 		<PackageReference Include="Plugin.Maui.Audio" Version="4.0.0" />
 		<PackageReference Include="sqlite-net-pcl" Version="1.9.172" />
-		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.2" />
+		<PackageReference Include="SQLitePCLRaw.bundle_e_sqlcipher" Version="2.1.11" />
 		<!-- sqlite-net-pcl-ek SQLitePCLRaw.bundle_green ekartzen du; nativeak bakarra e_sqlcipher izan dadin. -->
-		<PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.2">
+		<PackageReference Include="SQLitePCLRaw.bundle_green" Version="2.1.11">
 			<IncludeAssets>none</IncludeAssets>
 			<ExcludeAssets>all</ExcludeAssets>
 			<PrivateAssets>all</PrivateAssets>
 		</PackageReference>
-		<PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.2">
+		<PackageReference Include="SQLitePCLRaw.lib.e_sqlite3.android" Version="2.1.11">
 			<IncludeAssets>none</IncludeAssets>
 			<ExcludeAssets>all</ExcludeAssets>
 			<PrivateAssets>all</PrivateAssets>
@@ -94,15 +102,20 @@
 
 	<PropertyGroup>
 		<KiroRepoInguruneBidea>$([System.IO.Path]::GetFullPath('$(MSBuildThisFileDirectory)..\..\.env'))</KiroRepoInguruneBidea>
+		<!-- Banaketarako: Turso kredentzialak Release APK-an sartzeko aukera. Lehenetsia false (segurtasuna mantentzeko). -->
+		<TursoInguruneaSartu Condition="'$(TursoInguruneaSartu)'==''">false</TursoInguruneaSartu>
+		<!-- Debug-en beti sartzen da; Release-n soilik TursoInguruneaSartu=true denean. -->
+		<_TursoEnvSartu>false</_TursoEnvSartu>
+		<_TursoEnvSartu Condition="'$(Configuration)'=='Debug' Or '$(TursoInguruneaSartu)'=='true'">true</_TursoEnvSartu>
 	</PropertyGroup>
 
 	<Target Name="TursoGarapenaEnvPrestatu" BeforeTargets="ProcessMauiAssets" Condition="$([System.String]::Copy('$(TargetFramework)').Contains('-android'))">
 		<PropertyGroup>
 			<_TursoGarapenaHelbidea>$(MSBuildThisFileDirectory)Resources\Raw\turso_garapena.env</_TursoGarapenaHelbidea>
 		</PropertyGroup>
-		<Copy Condition="'$(Configuration)'=='Debug' And Exists('$(KiroRepoInguruneBidea)')" SourceFiles="$(KiroRepoInguruneBidea)" DestinationFiles="$(_TursoGarapenaHelbidea)" SkipUnchangedFiles="true" />
-		<Delete Condition="'$(Configuration)'!='Debug'" Files="$(_TursoGarapenaHelbidea)" ContinueOnError="true" />
-		<ItemGroup Condition="'$(Configuration)'=='Debug' And Exists('$(_TursoGarapenaHelbidea)')">
+		<Copy Condition="'$(_TursoEnvSartu)'=='true' And Exists('$(KiroRepoInguruneBidea)')" SourceFiles="$(KiroRepoInguruneBidea)" DestinationFiles="$(_TursoGarapenaHelbidea)" SkipUnchangedFiles="true" />
+		<Delete Condition="'$(_TursoEnvSartu)'!='true'" Files="$(_TursoGarapenaHelbidea)" ContinueOnError="true" />
+		<ItemGroup Condition="'$(_TursoEnvSartu)'=='true' And Exists('$(_TursoGarapenaHelbidea)')">
 			<MauiAsset Include="$(_TursoGarapenaHelbidea)">
 				<LogicalName>turso_garapena.env</LogicalName>
 				<Link>turso_garapena.env</Link>

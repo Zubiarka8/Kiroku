@@ -270,13 +270,28 @@ public sealed partial class DatuBaseaZerbitzua
 
     public async Task<IReadOnlyList<ErabiltzaileLaburpena>> ZerrendatuLangileLaburpenakAsync(
         int? sektoreIragazkia = null,
+        bool soilikLangileak = true,
         CancellationToken cancellationToken = default)
     {
         await HasieratuAsync().ConfigureAwait(false);
         cancellationToken.ThrowIfCancellationRequested();
 
         if (_urrunTursoModua)
-            return await ZerrendatuLangileLaburpenakTursoAsync(sektoreIragazkia, cancellationToken).ConfigureAwait(false);
+            return await ZerrendatuLangileLaburpenakTursoAsync(sektoreIragazkia, soilikLangileak, cancellationToken).ConfigureAwait(false);
+
+        // ZuzendariNagusia: rol guztietako erabiltzaileak (administratzaileak barne).
+        if (!soilikLangileak)
+        {
+            return await _sqliteKonexioa!.QueryAsync<ErabiltzaileLaburpena>(
+                """
+                SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                       COALESCE(Sektorea, '') AS Sektorea,
+                       COALESCE(Aktiboa, 1) AS Aktiboa,
+                       COALESCE(Rola, 0) AS Rola
+                FROM Erabiltzaileak
+                ORDER BY Rola DESC, Izena COLLATE NOCASE, Abizena COLLATE NOCASE
+                """).ConfigureAwait(false);
+        }
 
         if (sektoreIragazkia is > 0)
         {
@@ -285,7 +300,8 @@ public sealed partial class DatuBaseaZerbitzua
                 """
                 SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
                        COALESCE(Sektorea, '') AS Sektorea,
-                       COALESCE(Aktiboa, 1) AS Aktiboa
+                       COALESCE(Aktiboa, 1) AS Aktiboa,
+                       COALESCE(Rola, 0) AS Rola
                 FROM Erabiltzaileak
                 WHERE Rola = ? AND Sektorea = ?
                 ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE
@@ -298,7 +314,8 @@ public sealed partial class DatuBaseaZerbitzua
             """
             SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
                    COALESCE(Sektorea, '') AS Sektorea,
-                   COALESCE(Aktiboa, 1) AS Aktiboa
+                   COALESCE(Aktiboa, 1) AS Aktiboa,
+                   COALESCE(Rola, 0) AS Rola
             FROM Erabiltzaileak
             WHERE Rola = ?
             ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE
@@ -653,6 +670,12 @@ public sealed partial class DatuBaseaZerbitzua
             await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN EmpresaIbilgailua INTEGER NOT NULL DEFAULT 0").ConfigureAwait(false);
             _logger.LogWarning("SQLite BidaiaTxostenak taulan EmpresaIbilgailua zutabea gehitu da.");
         }
+
+        if (!izenak.Contains("Saila"))
+        {
+            await _sqliteKonexioa.ExecuteAsync("ALTER TABLE BidaiaTxostenak ADD COLUMN Saila TEXT NOT NULL DEFAULT ''").ConfigureAwait(false);
+            _logger.LogWarning("SQLite BidaiaTxostenak taulan Saila zutabea gehitu da.");
+        }
     }
 
     private async Task<HashSet<string>> IrakurriSqliteErabiltzaileZutabeakAsync()
@@ -1002,18 +1025,33 @@ public sealed partial class DatuBaseaZerbitzua
 
     private async Task<IReadOnlyList<ErabiltzaileLaburpena>> ZerrendatuLangileLaburpenakTursoAsync(
         int? sektoreIragazkia,
+        bool soilikLangileak,
         CancellationToken cancellationToken)
     {
         return await ExekutatuTursoanAsync(async bezeroa =>
         {
             cancellationToken.ThrowIfCancellationRequested();
             TursoHttpExekuzioarenEmaitza emaitza;
-            if (sektoreIragazkia is > 0)
+            if (!soilikLangileak)
+            {
+                // ZuzendariNagusia: rol guztietako erabiltzaileak (administratzaileak barne).
+                const string sqlGuztiak = """
+                    SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
+                           COALESCE(Sektorea, '') AS Sektorea,
+                           COALESCE(Aktiboa, 1) AS Aktiboa,
+                           COALESCE(Rola, 0) AS Rola
+                    FROM Erabiltzaileak
+                    ORDER BY Rola DESC, Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
+                    """;
+                emaitza = await bezeroa.ExekutatuAsync(sqlGuztiak, cancellationToken).ConfigureAwait(false);
+            }
+            else if (sektoreIragazkia is > 0)
             {
                 const string sqlSektorea = """
                     SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
                            COALESCE(Sektorea, '') AS Sektorea,
-                           COALESCE(Aktiboa, 1) AS Aktiboa
+                           COALESCE(Aktiboa, 1) AS Aktiboa,
+                           COALESCE(Rola, 0) AS Rola
                     FROM Erabiltzaileak
                     WHERE Rola = ? AND Sektorea = ?
                     ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
@@ -1029,7 +1067,8 @@ public sealed partial class DatuBaseaZerbitzua
                 const string sql = """
                     SELECT ErabiltzaileId AS Id, Izena, Abizena, Email AS Posta,
                            COALESCE(Sektorea, '') AS Sektorea,
-                           COALESCE(Aktiboa, 1) AS Aktiboa
+                           COALESCE(Aktiboa, 1) AS Aktiboa,
+                           COALESCE(Rola, 0) AS Rola
                     FROM Erabiltzaileak
                     WHERE Rola = ?
                     ORDER BY Izena COLLATE NOCASE, Abizena COLLATE NOCASE;
@@ -1156,7 +1195,8 @@ public sealed partial class DatuBaseaZerbitzua
                 Abizena = IrakurriMapaTestua(mapa, "Abizena"),
                 Posta = IrakurriMapaTestua(mapa, "Posta"),
                 Sektorea = IrakurriMapaTestua(mapa, "Sektorea"),
-                Aktiboa = IrakurriMapaOsoaLehenetsia(mapa, "Aktiboa", 1)
+                Aktiboa = IrakurriMapaOsoaLehenetsia(mapa, "Aktiboa", 1),
+                Rola = IrakurriMapaOsoaLehenetsia(mapa, "Rola", 0)
             });
         }
 

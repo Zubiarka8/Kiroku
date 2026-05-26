@@ -67,12 +67,66 @@
                                 <Label Text="{Binding Izena}" FontAttributes="Bold" />
                                 <Label Text="{Binding Abizena}" FontAttributes="Bold" />
                             </HorizontalStackLayout>
+                            <!-- CEO (IsIkusketaSoilik) ikuspegian, gai ilunean testua zuria; argian eta administratzailearen ikuspegian kolore arruntak mantentzen dira. -->
                             <Label Text="{Binding Posta}"
                                    FontSize="13"
-                                   Style="{StaticResource TestuBigarrenMailaEstiloa}" />
-                            <Label Text="{Binding AktiboTestua}"
-                                   FontSize="12"
-                                   TextColor="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                                   FontFamily="OpenSansRegular">
+                                <Label.Style>
+                                    <Style TargetType="Label">
+                                        <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource TestuBigarrenMailaIluna}}" />
+                                        <Style.Triggers>
+                                            <DataTrigger TargetType="Label"
+                                                         Binding="{Binding Source={x:Reference LangileZerrendaOrriOrokorra}, Path=BindingContext.IsIkusketaSoilik, x:DataType={x:Null}}"
+                                                         Value="True">
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource TestuBigarrenMailaArgia}, Dark={StaticResource White}}" />
+                                            </DataTrigger>
+                                        </Style.Triggers>
+                                    </Style>
+                                </Label.Style>
+                            </Label>
+                            <HorizontalStackLayout Spacing="8">
+                                <Border Padding="8,2"
+                                        StrokeThickness="0"
+                                        BackgroundColor="{AppThemeBinding Light=#E8EAF6, Dark=#2A2D45}">
+                                    <Border.StrokeShape>
+                                        <RoundRectangle CornerRadius="10" />
+                                    </Border.StrokeShape>
+                                    <Label Text="{Binding RolaTestua}"
+                                           FontSize="11"
+                                           FontAttributes="Bold"
+                                           FontFamily="OpenSansRegular">
+                                        <Label.Style>
+                                            <Style TargetType="Label">
+                                                <Setter Property="TextColor" Value="{AppThemeBinding Light=#3949AB, Dark=#9FA8DA}" />
+                                                <Style.Triggers>
+                                                    <DataTrigger TargetType="Label"
+                                                                 Binding="{Binding Source={x:Reference LangileZerrendaOrriOrokorra}, Path=BindingContext.IsIkusketaSoilik, x:DataType={x:Null}}"
+                                                                 Value="True">
+                                                        <Setter Property="TextColor" Value="{AppThemeBinding Light=#3949AB, Dark={StaticResource White}}" />
+                                                    </DataTrigger>
+                                                </Style.Triggers>
+                                            </Style>
+                                        </Label.Style>
+                                    </Label>
+                                </Border>
+                                <Label Text="{Binding AktiboTestua}"
+                                       FontSize="12"
+                                       VerticalOptions="Center"
+                                       FontFamily="OpenSansRegular">
+                                    <Label.Style>
+                                        <Style TargetType="Label">
+                                            <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource Gray400}}" />
+                                            <Style.Triggers>
+                                                <DataTrigger TargetType="Label"
+                                                             Binding="{Binding Source={x:Reference LangileZerrendaOrriOrokorra}, Path=BindingContext.IsIkusketaSoilik, x:DataType={x:Null}}"
+                                                             Value="True">
+                                                    <Setter Property="TextColor" Value="{AppThemeBinding Light={StaticResource Gray600}, Dark={StaticResource White}}" />
+                                                </DataTrigger>
+                                            </Style.Triggers>
+                                        </Style>
+                                    </Label.Style>
+                                </Label>
+                            </HorizontalStackLayout>
                         </VerticalStackLayout>
                     </Border>
                 </DataTemplate>

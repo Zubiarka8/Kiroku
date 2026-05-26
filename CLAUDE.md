@@ -406,7 +406,7 @@ catch (Exception ex)
 - Pull-to-refresh on all lists
 - Phone: StackLayout vertical, min 44px touch targets
 - Tablet: Grid 2-column master-detail via `OnIdiom`
-- Role labels in Spanish: "Administrador", "Empleado", "Director general (CEO)"
+- Role labels in Basque: "Administratzailea", "Langilea", "Zuzendari Nagusia (CEO)"
 - Sector/cargo labels in Basque via `SektoreaKargoarenHiztegia`
 
 ---
